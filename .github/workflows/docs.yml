@@ -1,0 +1,59 @@
+name: Docs
+on:
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+jobs:
+  docs:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up our JDK environment
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 21
+      - name: Set up Ruby for Jekyll
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+      - name: Build Dokka HTML
+        run: ./gradlew dokkaHtmlMultiModule
+      - name: Setup docs folder
+        run: |
+          mkdir -p build/docs
+          mkdir -p build/docs/api
+          echo "kourier.dev" > build/docs/CNAME
+          cp -r build/dokka/htmlMultiModule/* build/docs/api
+          cp -r docs/* build/docs
+          cat README.md >> build/docs/index.md
+      - name: Generate sitemap
+        uses: guimauvedigital/generate-sitemap@v1
+        with:
+          base_url: https://kourier.dev
+          output_path: build/docs/sitemap.xml
+          input_dir: build/docs
+      - name: Build with Jekyll
+        env:
+          JEKYLL_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd build/docs
+          bundle install
+          bundle exec jekyll build --source . --destination _site
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/docs/_site
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
