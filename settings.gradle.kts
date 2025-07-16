@@ -40,10 +40,11 @@ dependencyResolutionManagement {
             library("tests-coroutines", "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
 
             // Others
-            library("kotlinx-io", "org.jetbrains.kotlinx:kotlinx-io-core:0.8.0")
+            library("kotlinx-io", "org.jetbrains.kotlinx:kotlinx-io-core:0.7.0")
         }
     }
 }
 
 rootProject.name = "kourier"
 include(":amqp-core")
+include(":amqp-client")
