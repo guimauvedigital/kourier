@@ -73,6 +73,7 @@ kotlin {
     sourceSets {
         all {
             languageSettings.apply {
+                optIn("dev.kourier.amqp.InternalAmqpApi")
                 optIn("kotlin.js.ExperimentalJsExport")
             }
         }

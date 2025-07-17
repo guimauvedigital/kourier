@@ -1,33 +1,27 @@
 package dev.kourier.amqp
 
-import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class AMQPConnectionTest {
 
     @Test
-    fun testCanOpenChannelAndShutdown() = runBlocking {
-        val connection = AMQPConnection.connect(
-            this, AMQPConnectionConfiguration(
-                AMQPConnectionConfiguration.Connection.Plain,
-                AMQPConnectionConfiguration.Server()
-            )
-        )
+    fun testCanOpenChannelAndShutdown() = withConnection { connection ->
+        val channel1 = connection.openChannel()
+        assertEquals(1u, channel1.id)
 
-        // TODO: Test opening channels
+        val channel2 = connection.openChannel()
+        assertEquals(2u, channel2.id)
 
-        connection.close()
+        val channel3 = connection.openChannel()
+        assertEquals(3u, channel3.id)
+
+        val channel4 = connection.openChannel()
+        assertEquals(4u, channel4.id)
     }
 
     @Test
-    fun testCloseMultipleTimes() = runBlocking {
-        val connection = AMQPConnection.connect(
-            this, AMQPConnectionConfiguration(
-                AMQPConnectionConfiguration.Connection.Plain,
-                AMQPConnectionConfiguration.Server()
-            )
-        )
-
+    fun testCloseMultipleTimes() = withConnection { connection ->
         connection.close()
         connection.close()
     }

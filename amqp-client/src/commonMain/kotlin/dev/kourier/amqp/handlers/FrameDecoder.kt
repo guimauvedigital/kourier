@@ -34,7 +34,6 @@ object FrameDecoder {
 
                 try {
                     val value = decoder.decodeSerializableValue(FrameSerializer)
-                    println("Decoded frame: $value")
                     onItem(value)
 
                     // Remove consumed bytes

@@ -1,7 +1,7 @@
 package dev.kourier.amqp
 
 class AMQPChannels(
-    private val channelMax: UShort,
+    var channelMax: UShort = 0u,
 ) {
 
     private sealed class ChannelSlot {
@@ -11,11 +11,15 @@ class AMQPChannels(
 
     private val channels: MutableMap<UShort, ChannelSlot> = mutableMapOf()
 
-    fun get(id: UShort): AMQPChannel? {
+    operator fun get(id: UShort): AMQPChannel? {
         return when (val slot = channels[id]) {
             is ChannelSlot.Channel -> slot.channel
             else -> null
         }
+    }
+
+    fun list(): List<AMQPChannel> {
+        return channels.values.filterIsInstance<ChannelSlot.Channel>().map { it.channel }
     }
 
     fun reserveNext(): UShort? {
