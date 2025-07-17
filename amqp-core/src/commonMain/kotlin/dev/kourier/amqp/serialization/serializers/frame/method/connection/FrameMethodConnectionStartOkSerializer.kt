@@ -22,18 +22,18 @@ object FrameMethodConnectionStartOkSerializer : KSerializer<Frame.Method.MethodC
         require(encoder is ProtocolBinaryEncoder)
 
         encoder.encodeSerializableValue(TableSerializer, value.clientProperties)
-        encoder.encodeLongString(value.mechanism)
+        encoder.encodeShortString(value.mechanism)
         encoder.encodeLongString(value.response)
-        encoder.encodeLongString(value.locale)
+        encoder.encodeShortString(value.locale)
     }
 
     override fun deserialize(decoder: Decoder): Frame.Method.MethodConnection.ConnectionStartOk {
         require(decoder is ProtocolBinaryDecoder)
 
         val clientProperties = decoder.decodeSerializableValue(TableSerializer)
-        val mechanism = decoder.decodeLongString().first
+        val mechanism = decoder.decodeShortString().first
         val response = decoder.decodeLongString().first
-        val locale = decoder.decodeLongString().first
+        val locale = decoder.decodeShortString().first
 
         return Frame.Method.MethodConnection.ConnectionStartOk(
             clientProperties = clientProperties,

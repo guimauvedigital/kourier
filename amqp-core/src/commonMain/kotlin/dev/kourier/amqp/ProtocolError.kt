@@ -1,6 +1,6 @@
 package dev.kourier.amqp
 
-sealed class ProtocolError : Throwable() {
+sealed class ProtocolError : Exception() {
 
     data class Decode(
         val type: Any? = null,

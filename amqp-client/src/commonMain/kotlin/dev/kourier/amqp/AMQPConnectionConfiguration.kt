@@ -1,5 +1,6 @@
 package dev.kourier.amqp
 
+import io.ktor.network.tls.*
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -9,7 +10,7 @@ data class AMQPConnectionConfiguration(
 ) {
 
     sealed class Connection {
-        //data class Tls(val tlsConfiguration: TLSConfiguration? = null, val sniServerName: String? = null) : Connection()
+        data class Tls(val tlsConfiguration: TLSConfig? = null, val sniServerName: String? = null) : Connection()
         object Plain : Connection()
     }
 
@@ -30,26 +31,9 @@ data class AMQPConnectionConfiguration(
             const val password: String = "guest"
             const val vhost: String = "/"
             val timeout: Duration = 60.seconds
-            const val connectionName: String = "RabbitMQNIO"
+            const val connectionName: String = "Kourier AMQP Client"
         }
 
-        constructor(
-            host: String? = null,
-            port: Int? = null,
-            user: String? = null,
-            password: String? = null,
-            vhost: String? = null,
-            timeout: Duration? = null,
-            connectionName: String? = null,
-        ) : this(
-            host = host ?: Defaults.host,
-            port = port ?: Defaults.port,
-            user = user ?: Defaults.user,
-            password = password ?: if (user == null) Defaults.password else "",
-            vhost = vhost ?: Defaults.vhost,
-            timeout = timeout ?: Defaults.timeout,
-            connectionName = connectionName ?: Defaults.connectionName
-        )
     }
 
 }
