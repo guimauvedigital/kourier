@@ -22,6 +22,178 @@ class AMQPChannel(
     }
 
     /**
+     * Declares a queue.
+     *
+     * @param name Name of the queue.
+     * @param passive If enabled, broker will raise exception if queue already exists.
+     * @param durable If enabled, creates a queue stored on disk; otherwise, transient.
+     * @param exclusive If enabled, queue will be deleted when the channel is closed.
+     * @param autoDelete If enabled, queue will be deleted when the last consumer has stopped consuming.
+     * @param arguments Additional arguments (check RabbitMQ documentation).
+     *
+     * @return AMQPResponse.Channel.Queue.Declared confirming that broker has accepted the request.
+     */
+    suspend fun queueDeclare(
+        name: String,
+        passive: Boolean = false,
+        durable: Boolean = false,
+        exclusive: Boolean = false,
+        autoDelete: Boolean = false,
+        arguments: Table = Table(emptyMap()),
+    ): AMQPResponse.Channel.Queue.Declared {
+        val declare = Frame(
+            channelId = id,
+            payload = Frame.Payload.Method(
+                Frame.Method.Queue(
+                    Frame.Method.MethodQueue.Declare(
+                        Frame.Method.MethodQueue.QueueDeclare(
+                            reserved1 = 0u,
+                            queueName = name,
+                            passive = passive,
+                            durable = durable,
+                            exclusive = exclusive,
+                            autoDelete = autoDelete,
+                            noWait = false,
+                            arguments = arguments
+                        )
+                    )
+                )
+            )
+        )
+        return connection.writeAndWaitForResponse(declare)
+    }
+
+    /**
+     * Deletes a queue.
+     *
+     * @param name Name of the queue.
+     * @param ifUnused If enabled, queue will be deleted only when there are no consumers subscribed to it.
+     * @param ifEmpty If enabled, queue will be deleted only when it's empty.
+     *
+     * @return AMQPResponse.Channel.Queue.Deleted confirming that broker has accepted the delete request.
+     */
+    suspend fun queueDelete(
+        name: String,
+        ifUnused: Boolean = false,
+        ifEmpty: Boolean = false,
+    ): AMQPResponse.Channel.Queue.Deleted {
+        val delete = Frame(
+            channelId = id,
+            payload = Frame.Payload.Method(
+                Frame.Method.Queue(
+                    Frame.Method.MethodQueue.Delete(
+                        Frame.Method.MethodQueue.QueueDelete(
+                            reserved1 = 0u,
+                            queueName = name,
+                            ifUnused = ifUnused,
+                            ifEmpty = ifEmpty,
+                            noWait = false
+                        )
+                    )
+                )
+            )
+        )
+        return connection.writeAndWaitForResponse(delete)
+    }
+
+    /**
+     * Deletes all messages from a queue.
+     *
+     * @param name Name of the queue.
+     * @return AMQPResponse.Channel.Queue.Purged confirming that broker has accepted the delete request.
+     */
+    suspend fun queuePurge(
+        name: String,
+    ): AMQPResponse.Channel.Queue.Purged {
+        val purge = Frame(
+            channelId = id,
+            payload = Frame.Payload.Method(
+                Frame.Method.Queue(
+                    Frame.Method.MethodQueue.Purge(
+                        Frame.Method.MethodQueue.QueuePurge(
+                            reserved1 = 0u,
+                            queueName = name,
+                            noWait = false
+                        )
+                    )
+                )
+            )
+        )
+        return connection.writeAndWaitForResponse(purge)
+    }
+
+    /**
+     * Binds a queue to an exchange.
+     *
+     * @param queue Name of the queue.
+     * @param exchange Name of the exchange.
+     * @param routingKey Bind only to messages matching routingKey.
+     * @param arguments Bind only to messages matching given options.
+     *
+     * @return AMQPResponse.Channel.Queue.Bound confirming that broker has accepted the request.
+     */
+    suspend fun queueBind(
+        queue: String,
+        exchange: String,
+        routingKey: String = "",
+        arguments: Table = Table(emptyMap()),
+    ): AMQPResponse.Channel.Queue.Bound {
+        val bind = Frame(
+            channelId = id,
+            payload = Frame.Payload.Method(
+                Frame.Method.Queue(
+                    Frame.Method.MethodQueue.Bind(
+                        Frame.Method.MethodQueue.QueueBind(
+                            reserved1 = 0u,
+                            queueName = queue,
+                            exchangeName = exchange,
+                            routingKey = routingKey,
+                            noWait = false,
+                            arguments = arguments
+                        )
+                    )
+                )
+            )
+        )
+        return connection.writeAndWaitForResponse(bind)
+    }
+
+    /**
+     * Unbinds a queue from an exchange.
+     *
+     * @param queue Name of the queue.
+     * @param exchange Name of the exchange.
+     * @param routingKey Unbind only from messages matching routingKey.
+     * @param arguments Unbind only from messages matching given options.
+     *
+     * @return AMQPResponse.Channel.Queue.Unbound confirming that broker has accepted the unbind request.
+     */
+    suspend fun queueUnbind(
+        queue: String,
+        exchange: String,
+        routingKey: String = "",
+        arguments: Table = Table(emptyMap()),
+    ): AMQPResponse.Channel.Queue.Unbound {
+        val unbind = Frame(
+            channelId = id,
+            payload = Frame.Payload.Method(
+                Frame.Method.Queue(
+                    Frame.Method.MethodQueue.Unbind(
+                        Frame.Method.MethodQueue.QueueUnbind(
+                            reserved1 = 0u,
+                            queueName = queue,
+                            exchangeName = exchange,
+                            routingKey = routingKey,
+                            arguments = arguments
+                        )
+                    )
+                )
+            )
+        )
+        return connection.writeAndWaitForResponse(unbind)
+    }
+
+    /**
      * Declare an exchange.
      *
      * @param name Name of the exchange.
