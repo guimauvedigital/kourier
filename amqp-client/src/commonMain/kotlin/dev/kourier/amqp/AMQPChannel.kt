@@ -7,6 +7,21 @@ class AMQPChannel(
 ) {
 
     /**
+     * Closes the channel.
+     *
+     * @param reason Reason that can be logged by the broker.
+     * @param code Code that can be logged by the broker.
+     *
+     * @return Nothing. The channel is closed synchronously.
+     */
+    fun close(
+        reason: String = "",
+        code: UShort = 200u,
+    ) {
+        // TODO
+    }
+
+    /**
      * Declare an exchange.
      *
      * @param name Name of the exchange.
@@ -79,6 +94,78 @@ class AMQPChannel(
             )
         )
         return connection.writeAndWaitForResponse(delete)
+    }
+
+    /**
+     * Bind an exchange to another exchange.
+     *
+     * @param destination Output exchange.
+     * @param source Input exchange.
+     * @param routingKey Bind only to messages matching routingKey.
+     * @param arguments Bind only to messages matching given options.
+     *
+     * @return AMQPResponse.Channel.Exchange.Bound
+     */
+    suspend fun exchangeBind(
+        destination: String,
+        source: String,
+        routingKey: String,
+        arguments: Table = Table(emptyMap()),
+    ): AMQPResponse.Channel.Exchange.Bound {
+        val bind = Frame(
+            channelId = id,
+            payload = Frame.Payload.Method(
+                Frame.Method.Exchange(
+                    Frame.Method.MethodExchange.Bind(
+                        Frame.Method.MethodExchange.ExchangeBind(
+                            reserved1 = 0u,
+                            destination = destination,
+                            source = source,
+                            routingKey = routingKey,
+                            noWait = false,
+                            arguments = arguments
+                        )
+                    )
+                )
+            )
+        )
+        return connection.writeAndWaitForResponse(bind)
+    }
+
+    /**
+     * Unbind an exchange from another exchange.
+     *
+     * @param destination Output exchange.
+     * @param source Input exchange.
+     * @param routingKey Unbind only from messages matching routingKey.
+     * @param arguments Unbind only from messages matching given options.
+     *
+     * @return AMQPResponse.Channel.Exchange.Unbound
+     */
+    suspend fun exchangeUnbind(
+        destination: String,
+        source: String,
+        routingKey: String,
+        arguments: Table = Table(emptyMap()),
+    ): AMQPResponse.Channel.Exchange.Unbound {
+        val unbind = Frame(
+            channelId = id,
+            payload = Frame.Payload.Method(
+                Frame.Method.Exchange(
+                    Frame.Method.MethodExchange.Unbind(
+                        Frame.Method.MethodExchange.ExchangeUnbind(
+                            reserved1 = 0u,
+                            destination = destination,
+                            source = source,
+                            routingKey = routingKey,
+                            noWait = false,
+                            arguments = arguments
+                        )
+                    )
+                )
+            )
+        )
+        return connection.writeAndWaitForResponse(unbind)
     }
 
 }

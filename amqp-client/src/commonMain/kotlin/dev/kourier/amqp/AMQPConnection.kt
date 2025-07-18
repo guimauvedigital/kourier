@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.io.IOException
 import kotlinx.serialization.encodeToByteArray
-import kotlin.coroutines.coroutineContext
 
 class AMQPConnection private constructor(
     private val config: AMQPConnectionConfiguration,
@@ -41,12 +40,6 @@ class AMQPConnection private constructor(
             return instance
         }
 
-    }
-
-    internal enum class ConnectionState {
-        OPEN,
-        SHUTTING_DOWN,
-        CLOSED
     }
 
     private val logger = KtorSimpleLogger("AMQPConnection")
@@ -243,10 +236,14 @@ class AMQPConnection private constructor(
                     )
 
                     is Frame.Method.MethodExchange.Bind -> error("Unexpected Bind frame received: $exchange")
-                    is Frame.Method.MethodExchange.BindOk -> TODO()
+                    is Frame.Method.MethodExchange.BindOk -> allResponses.emit(
+                        AMQPResponse.Channel.Exchange.Bound
+                    )
 
                     is Frame.Method.MethodExchange.Unbind -> error("Unexpected Unbind frame received: $exchange")
-                    is Frame.Method.MethodExchange.UnbindOk -> TODO()
+                    is Frame.Method.MethodExchange.UnbindOk -> allResponses.emit(
+                        AMQPResponse.Channel.Exchange.Unbound
+                    )
                 }
 
                 is Frame.Method.Confirm -> TODO()
@@ -281,12 +278,8 @@ class AMQPConnection private constructor(
     @InternalAmqpApi
     @Suppress("Unchecked_Cast")
     suspend fun <T : AMQPResponse> writeAndWaitForResponse(frame: Frame): T {
-        val responseDeferred = CompletableDeferred<T>()
-        CoroutineScope(coroutineContext).launch {
-            responseDeferred.complete(allResponses.mapNotNull { it as? T }.first())
-        }
         write(frame)
-        return withTimeout(10_000) { responseDeferred.await() }
+        return allResponses.mapNotNull { it as? T }.first()
     }
 
     /**
@@ -330,6 +323,8 @@ class AMQPConnection private constructor(
         reason: String = "",
         code: UShort = 200u,
     ) {
+        // TODO: Send close frame
+
         socketSubscription?.cancel()
         heartbeatSubscription?.cancel()
         socket?.close()

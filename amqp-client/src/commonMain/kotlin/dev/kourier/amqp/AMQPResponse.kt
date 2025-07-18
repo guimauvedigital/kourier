@@ -45,10 +45,10 @@ sealed class AMQPResponse {
                 val consumerCount: UInt,
             ) : Queue()
 
-            data object Binded : Queue()
+            data object Bound : Queue()
             data class Purged(val messageCount: UInt) : Queue()
             data class Deleted(val messageCount: UInt) : Queue()
-            data object Unbinded : Queue()
+            data object Unbound : Queue()
 
         }
 
@@ -56,8 +56,8 @@ sealed class AMQPResponse {
 
             data object Declared : Exchange()
             data object Deleted : Exchange()
-            data object Binded : Exchange()
-            data object Unbinded : Exchange()
+            data object Bound : Exchange()
+            data object Unbound : Exchange()
 
         }
 
