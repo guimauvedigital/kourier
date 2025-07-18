@@ -24,9 +24,10 @@ object FrameSerializer : KSerializer<Frame> {
         require(encoder is ProtocolBinaryEncoder)
 
         encoder.encodeByte(value.kind.value.toByte())
+        encoder.encodeShort(value.channelId.toShort())
+
         when (val payload = value.payload) {
             is Frame.Payload.Method -> {
-                encoder.encodeShort(value.channelId.toShort())
                 val innerEncoder = ProtocolBinaryEncoder(Buffer())
                 innerEncoder.encodeSerializableValue(FrameMethodSerializer, payload.method)
                 encoder.encodeInt(innerEncoder.buffer.size.toInt())
@@ -34,7 +35,6 @@ object FrameSerializer : KSerializer<Frame> {
             }
 
             is Frame.Payload.Header -> {
-                encoder.encodeShort(value.channelId.toShort())
                 val innerEncoder = ProtocolBinaryEncoder(Buffer())
                 innerEncoder.encodeSerializableValue(FrameHeaderSerializer, payload.header)
                 encoder.encodeInt(innerEncoder.buffer.size.toInt())
@@ -43,19 +43,17 @@ object FrameSerializer : KSerializer<Frame> {
 
             is Frame.Payload.Body -> {
                 val size = payload.body.size
-                encoder.encodeShort(value.channelId.toShort())
                 encoder.encodeInt(size)
                 encoder.encodeSerializableValue(ByteArraySerializer(), payload.body)
             }
 
             is Frame.Payload.Heartbeat -> {
-                val size = 0u
-                encoder.encodeShort(value.channelId.toShort())
-                encoder.encodeInt(size.toInt())
+                val size = 0
+                encoder.encodeInt(size)
             }
         }
 
-        encoder.encodeByte(206.toUInt().toByte()) // endMarker
+        encoder.encodeByte(206.toByte()) // endMarker
     }
 
     override fun deserialize(decoder: Decoder): Frame {

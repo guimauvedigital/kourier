@@ -104,9 +104,7 @@ class AMQPConnection private constructor(
         heartbeatSubscription = messageListeningScope.launch {
             while (isActive) {
                 delay(config.server.timeout.inWholeMilliseconds / 2)
-                channels.list().forEach {
-                    write(Frame(channelId = it.id, payload = Frame.Payload.Heartbeat))
-                }
+                sendHeartbeat()
             }
         }
     }
@@ -309,6 +307,13 @@ class AMQPConnection private constructor(
             id = response.channelId,
             frameMax = frameMax
         ).also { channels.add(it) }
+    }
+
+    /**
+     * Sends a heartbeat frame.
+     */
+    suspend fun sendHeartbeat() {
+        write(Frame(channelId = 0u, payload = Frame.Payload.Heartbeat))
     }
 
     /**

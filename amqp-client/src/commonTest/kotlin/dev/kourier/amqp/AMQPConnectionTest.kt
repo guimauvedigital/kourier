@@ -26,4 +26,9 @@ class AMQPConnectionTest {
         connection.close()
     }
 
+    @Test
+    fun testHeartbeat() = withConnection { connection ->
+        connection.sendHeartbeat()
+    }
+
 }
