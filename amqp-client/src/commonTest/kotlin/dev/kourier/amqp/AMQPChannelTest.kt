@@ -1,6 +1,6 @@
 package dev.kourier.amqp
 
-import org.junit.jupiter.api.Test
+import kotlin.test.Test
 
 class AMQPChannelTest {
 

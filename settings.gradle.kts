@@ -30,11 +30,6 @@ dependencyResolutionManagement {
             library("ktor-network", "io.ktor", "ktor-network").versionRef("ktor")
             library("ktor-network-tls", "io.ktor", "ktor-network-tls").versionRef("ktor")
 
-            // Tests
-            library("tests-mockk", "io.mockk:mockk:1.13.12")
-            library("tests-jsoup", "org.jsoup:jsoup:1.16.2")
-            library("tests-coroutines", "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
-
             // Others
             library("kotlinx-io", "org.jetbrains.kotlinx:kotlinx-io-core:0.7.0")
         }

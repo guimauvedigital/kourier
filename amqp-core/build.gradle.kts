@@ -89,10 +89,9 @@ kotlin {
                 api(libs.kotlinx.io)
             }
         }
-        val jvmTest by getting {
+        val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation(libs.tests.mockk)
             }
         }
     }
