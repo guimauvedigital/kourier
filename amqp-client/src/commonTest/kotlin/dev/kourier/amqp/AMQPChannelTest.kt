@@ -1,8 +1,25 @@
 package dev.kourier.amqp
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class AMQPChannelTest {
+
+    @Test
+    fun testQueue() = withConnection { connection ->
+        val channel = connection.openChannel()
+
+        val queueDeclare = channel.queueDeclare("test", durable = false)
+        assertEquals("test", queueDeclare.queueName)
+
+        channel.queueBind("test", "amq.topic", "test")
+        channel.queueUnbind("test", "amq.topic", "test")
+
+        channel.queuePurge("test")
+        channel.queueDelete("test")
+
+        channel.close()
+    }
 
     @Test
     fun testExchange() = withConnection { connection ->

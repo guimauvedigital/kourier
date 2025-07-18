@@ -219,7 +219,41 @@ class AMQPConnection private constructor(
                     is Frame.Method.MethodChannel.FlowOk -> TODO()
                 }
 
-                is Frame.Method.Queue -> TODO()
+                is Frame.Method.Queue -> when (val queue = method.queue) {
+                    is Frame.Method.MethodQueue.Declare -> error("Unexpected Declare frame received: $queue")
+                    is Frame.Method.MethodQueue.DeclareOk -> allResponses.emit(
+                        AMQPResponse.Channel.Queue.Declared(
+                            queueName = queue.declareOk.queueName,
+                            messageCount = queue.declareOk.messageCount,
+                            consumerCount = queue.declareOk.consumerCount
+                        )
+                    )
+
+                    is Frame.Method.MethodQueue.Bind -> error("Unexpected Bind frame received: $queue")
+                    is Frame.Method.MethodQueue.BindOk -> allResponses.emit(
+                        AMQPResponse.Channel.Queue.Bound
+                    )
+
+                    is Frame.Method.MethodQueue.Purge -> error("Unexpected Purge frame received: $queue")
+                    is Frame.Method.MethodQueue.PurgeOk -> allResponses.emit(
+                        AMQPResponse.Channel.Queue.Purged(
+                            messageCount = queue.messageCount
+                        )
+                    )
+
+                    is Frame.Method.MethodQueue.Delete -> error("Unexpected Delete frame received: $queue")
+                    is Frame.Method.MethodQueue.DeleteOk -> allResponses.emit(
+                        AMQPResponse.Channel.Queue.Deleted(
+                            messageCount = queue.messageCount,
+                        )
+                    )
+
+                    is Frame.Method.MethodQueue.Unbind -> error("Unexpected Unbind frame received: $queue")
+                    is Frame.Method.MethodQueue.UnbindOk -> allResponses.emit(
+                        AMQPResponse.Channel.Queue.Unbound
+                    )
+                }
+
                 is Frame.Method.Basic -> TODO()
 
                 is Frame.Method.Exchange -> when (val exchange = method.exchange) {

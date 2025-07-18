@@ -9,7 +9,7 @@ import dev.kourier.amqp.serialization.serializers.frame.method.channel.FrameMeth
 import dev.kourier.amqp.serialization.serializers.frame.method.confirm.FrameMethodConfirmSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.connection.*
 import dev.kourier.amqp.serialization.serializers.frame.method.exchange.*
-import dev.kourier.amqp.serialization.serializers.frame.method.queue.FrameMethodQueueSerializer
+import dev.kourier.amqp.serialization.serializers.frame.method.queue.*
 import dev.kourier.amqp.serialization.serializers.frame.method.tx.FrameMethodTxSerializer
 import kotlinx.serialization.Serializable
 
@@ -308,7 +308,103 @@ data class Frame(
         @Serializable(with = FrameMethodQueueSerializer::class)
         sealed class MethodQueue {
 
-            // TODO
+            data class Declare(val declare: QueueDeclare) : MethodQueue()
+            data class DeclareOk(val declareOk: QueueDeclareOk) : MethodQueue()
+            data class Bind(val bind: QueueBind) : MethodQueue()
+            data object BindOk : MethodQueue()
+            data class Purge(val purge: QueuePurge) : MethodQueue()
+
+            @Serializable(with = FrameMethodQueuePurgeOkSerializer::class)
+            data class PurgeOk(val messageCount: UInt) : MethodQueue()
+
+            data class Delete(val delete: QueueDelete) : MethodQueue()
+
+            @Serializable(with = FrameMethodQueueDeleteOkSerializer::class)
+            data class DeleteOk(val messageCount: UInt) : MethodQueue()
+
+            data class Unbind(val unbind: QueueUnbind) : MethodQueue()
+            data object UnbindOk : MethodQueue()
+
+            val kind: Kind
+                get() = when (this) {
+                    is Declare -> Kind.DECLARE
+                    is DeclareOk -> Kind.DECLARE_OK
+                    is Bind -> Kind.BIND
+                    is BindOk -> Kind.BIND_OK
+                    is Purge -> Kind.PURGE
+                    is PurgeOk -> Kind.PURGE_OK
+                    is Delete -> Kind.DELETE
+                    is DeleteOk -> Kind.DELETE_OK
+                    is Unbind -> Kind.UNBIND
+                    is UnbindOk -> Kind.UNBIND_OK
+                }
+
+            enum class Kind(val value: UShort) {
+                DECLARE(10u),
+                DECLARE_OK(11u),
+                BIND(20u),
+                BIND_OK(21u),
+                PURGE(30u),
+                PURGE_OK(31u),
+                DELETE(40u),
+                DELETE_OK(41u),
+                UNBIND(50u),
+                UNBIND_OK(51u)
+            }
+
+            @Serializable(with = FrameMethodQueueDeclareSerializer::class)
+            data class QueueDeclare(
+                val reserved1: UShort,
+                val queueName: String,
+                val passive: Boolean,
+                val durable: Boolean,
+                val exclusive: Boolean,
+                val autoDelete: Boolean,
+                val noWait: Boolean,
+                val arguments: Table,
+            )
+
+            @Serializable(with = FrameMethodQueueDeclareOkSerializer::class)
+            data class QueueDeclareOk(
+                val queueName: String,
+                val messageCount: UInt,
+                val consumerCount: UInt,
+            )
+
+            @Serializable(with = FrameMethodQueueBindSerializer::class)
+            data class QueueBind(
+                val reserved1: UShort,
+                val queueName: String,
+                val exchangeName: String,
+                val routingKey: String,
+                val noWait: Boolean,
+                val arguments: Table,
+            )
+
+            @Serializable(with = FrameMethodQueuePurgeSerializer::class)
+            data class QueuePurge(
+                val reserved1: UShort,
+                val queueName: String,
+                val noWait: Boolean,
+            )
+
+            @Serializable(with = FrameMethodQueueDeleteSerializer::class)
+            data class QueueDelete(
+                val reserved1: UShort,
+                val queueName: String,
+                val ifUnused: Boolean,
+                val ifEmpty: Boolean,
+                val noWait: Boolean,
+            )
+
+            @Serializable(with = FrameMethodQueueUnbindSerializer::class)
+            data class QueueUnbind(
+                val reserved1: UShort,
+                val queueName: String,
+                val exchangeName: String,
+                val routingKey: String,
+                val arguments: Table,
+            )
 
         }
 
