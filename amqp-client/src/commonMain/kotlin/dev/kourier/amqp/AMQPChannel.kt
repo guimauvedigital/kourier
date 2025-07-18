@@ -43,17 +43,15 @@ class AMQPChannel(
     ): AMQPResponse.Channel.Queue.Declared {
         val declare = Frame(
             channelId = id,
-            payload = Frame.Payload.Method(
-                Frame.Method.Queue.Declare(
-                    reserved1 = 0u,
-                    queueName = name,
-                    passive = passive,
-                    durable = durable,
-                    exclusive = exclusive,
-                    autoDelete = autoDelete,
-                    noWait = false,
-                    arguments = arguments
-                )
+            payload = Frame.Method.Queue.Declare(
+                reserved1 = 0u,
+                queueName = name,
+                passive = passive,
+                durable = durable,
+                exclusive = exclusive,
+                autoDelete = autoDelete,
+                noWait = false,
+                arguments = arguments
             )
         )
         return connection.writeAndWaitForResponse(declare)
@@ -75,14 +73,12 @@ class AMQPChannel(
     ): AMQPResponse.Channel.Queue.Deleted {
         val delete = Frame(
             channelId = id,
-            payload = Frame.Payload.Method(
-                Frame.Method.Queue.Delete(
-                    reserved1 = 0u,
-                    queueName = name,
-                    ifUnused = ifUnused,
-                    ifEmpty = ifEmpty,
-                    noWait = false
-                )
+            payload = Frame.Method.Queue.Delete(
+                reserved1 = 0u,
+                queueName = name,
+                ifUnused = ifUnused,
+                ifEmpty = ifEmpty,
+                noWait = false
             )
         )
         return connection.writeAndWaitForResponse(delete)
@@ -99,12 +95,10 @@ class AMQPChannel(
     ): AMQPResponse.Channel.Queue.Purged {
         val purge = Frame(
             channelId = id,
-            payload = Frame.Payload.Method(
-                Frame.Method.Queue.Purge(
-                    reserved1 = 0u,
-                    queueName = name,
-                    noWait = false
-                )
+            payload = Frame.Method.Queue.Purge(
+                reserved1 = 0u,
+                queueName = name,
+                noWait = false
             )
         )
         return connection.writeAndWaitForResponse(purge)
@@ -128,15 +122,13 @@ class AMQPChannel(
     ): AMQPResponse.Channel.Queue.Bound {
         val bind = Frame(
             channelId = id,
-            payload = Frame.Payload.Method(
-                Frame.Method.Queue.Bind(
-                    reserved1 = 0u,
-                    queueName = queue,
-                    exchangeName = exchange,
-                    routingKey = routingKey,
-                    noWait = false,
-                    arguments = arguments
-                )
+            payload = Frame.Method.Queue.Bind(
+                reserved1 = 0u,
+                queueName = queue,
+                exchangeName = exchange,
+                routingKey = routingKey,
+                noWait = false,
+                arguments = arguments
             )
         )
         return connection.writeAndWaitForResponse(bind)
@@ -160,14 +152,12 @@ class AMQPChannel(
     ): AMQPResponse.Channel.Queue.Unbound {
         val unbind = Frame(
             channelId = id,
-            payload = Frame.Payload.Method(
-                Frame.Method.Queue.Unbind(
-                    reserved1 = 0u,
-                    queueName = queue,
-                    exchangeName = exchange,
-                    routingKey = routingKey,
-                    arguments = arguments
-                )
+            payload = Frame.Method.Queue.Unbind(
+                reserved1 = 0u,
+                queueName = queue,
+                exchangeName = exchange,
+                routingKey = routingKey,
+                arguments = arguments
             )
         )
         return connection.writeAndWaitForResponse(unbind)
@@ -197,18 +187,16 @@ class AMQPChannel(
     ): AMQPResponse.Channel.Exchange.Declared {
         val declare = Frame(
             channelId = id,
-            payload = Frame.Payload.Method(
-                Frame.Method.Exchange.Declare(
-                    reserved1 = 0u,
-                    exchangeName = name,
-                    exchangeType = type,
-                    passive = passive,
-                    durable = durable,
-                    autoDelete = autoDelete,
-                    internal = internal,
-                    noWait = false,
-                    arguments = arguments
-                )
+            payload = Frame.Method.Exchange.Declare(
+                reserved1 = 0u,
+                exchangeName = name,
+                exchangeType = type,
+                passive = passive,
+                durable = durable,
+                autoDelete = autoDelete,
+                internal = internal,
+                noWait = false,
+                arguments = arguments
             )
         )
         return connection.writeAndWaitForResponse(declare)
@@ -228,13 +216,11 @@ class AMQPChannel(
     ): AMQPResponse.Channel.Exchange.Deleted {
         val delete = Frame(
             channelId = id,
-            payload = Frame.Payload.Method(
-                Frame.Method.Exchange.Delete(
-                    reserved1 = 0u,
-                    exchangeName = name,
-                    ifUnused = ifUnused,
-                    noWait = false
-                )
+            payload = Frame.Method.Exchange.Delete(
+                reserved1 = 0u,
+                exchangeName = name,
+                ifUnused = ifUnused,
+                noWait = false
             )
         )
         return connection.writeAndWaitForResponse(delete)
@@ -258,15 +244,13 @@ class AMQPChannel(
     ): AMQPResponse.Channel.Exchange.Bound {
         val bind = Frame(
             channelId = id,
-            payload = Frame.Payload.Method(
-                Frame.Method.Exchange.Bind(
-                    reserved1 = 0u,
-                    destination = destination,
-                    source = source,
-                    routingKey = routingKey,
-                    noWait = false,
-                    arguments = arguments
-                )
+            payload = Frame.Method.Exchange.Bind(
+                reserved1 = 0u,
+                destination = destination,
+                source = source,
+                routingKey = routingKey,
+                noWait = false,
+                arguments = arguments
             )
         )
         return connection.writeAndWaitForResponse(bind)
@@ -290,15 +274,13 @@ class AMQPChannel(
     ): AMQPResponse.Channel.Exchange.Unbound {
         val unbind = Frame(
             channelId = id,
-            payload = Frame.Payload.Method(
-                Frame.Method.Exchange.Unbind(
-                    reserved1 = 0u,
-                    destination = destination,
-                    source = source,
-                    routingKey = routingKey,
-                    noWait = false,
-                    arguments = arguments
-                )
+            payload = Frame.Method.Exchange.Unbind(
+                reserved1 = 0u,
+                destination = destination,
+                source = source,
+                routingKey = routingKey,
+                noWait = false,
+                arguments = arguments
             )
         )
         return connection.writeAndWaitForResponse(unbind)

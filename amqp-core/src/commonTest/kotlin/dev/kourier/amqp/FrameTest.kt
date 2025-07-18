@@ -12,18 +12,16 @@ class FrameTest {
     fun testFrameMethodExchangeDeclare() {
         val frame = Frame(
             channelId = 1u,
-            payload = Frame.Payload.Method(
-                Frame.Method.Exchange.Declare(
-                    reserved1 = 0u,
-                    exchangeName = "testExchange",
-                    exchangeType = "direct",
-                    passive = false,
-                    durable = true,
-                    autoDelete = false,
-                    internal = false,
-                    noWait = false,
-                    arguments = Table(emptyMap())
-                )
+            payload = Frame.Method.Exchange.Declare(
+                reserved1 = 0u,
+                exchangeName = "testExchange",
+                exchangeType = "direct",
+                passive = false,
+                durable = true,
+                autoDelete = false,
+                internal = false,
+                noWait = false,
+                arguments = Table(emptyMap())
             )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
@@ -35,13 +33,11 @@ class FrameTest {
     fun testFrameMethodExchangeDelete() {
         val frame = Frame(
             channelId = 1u,
-            payload = Frame.Payload.Method(
-                Frame.Method.Exchange.Delete(
-                    reserved1 = 0u,
-                    exchangeName = "testExchange",
-                    ifUnused = false,
-                    noWait = false,
-                )
+            payload = Frame.Method.Exchange.Delete(
+                reserved1 = 0u,
+                exchangeName = "testExchange",
+                ifUnused = false,
+                noWait = false,
             )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
@@ -53,15 +49,13 @@ class FrameTest {
     fun testFrameMethodExchangeBind() {
         val frame = Frame(
             channelId = 1u,
-            payload = Frame.Payload.Method(
-                Frame.Method.Exchange.Bind(
-                    reserved1 = 0u,
-                    destination = "testExchangeDestination",
-                    source = "testExchangeSource",
-                    routingKey = "testRoutingKey",
-                    noWait = false,
-                    arguments = Table(emptyMap())
-                )
+            payload = Frame.Method.Exchange.Bind(
+                reserved1 = 0u,
+                destination = "testExchangeDestination",
+                source = "testExchangeSource",
+                routingKey = "testRoutingKey",
+                noWait = false,
+                arguments = Table(emptyMap())
             )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
@@ -73,15 +67,13 @@ class FrameTest {
     fun testFrameMethodExchangeUnbind() {
         val frame = Frame(
             channelId = 1u,
-            payload = Frame.Payload.Method(
-                Frame.Method.Exchange.Unbind(
-                    reserved1 = 0u,
-                    destination = "testExchangeDestination",
-                    source = "testExchangeSource",
-                    routingKey = "testRoutingKey",
-                    noWait = false,
-                    arguments = Table(emptyMap())
-                )
+            payload = Frame.Method.Exchange.Unbind(
+                reserved1 = 0u,
+                destination = "testExchangeDestination",
+                source = "testExchangeSource",
+                routingKey = "testRoutingKey",
+                noWait = false,
+                arguments = Table(emptyMap())
             )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
@@ -93,17 +85,15 @@ class FrameTest {
     fun testFrameMethodQueueDeclare() {
         val frame = Frame(
             channelId = 1u,
-            payload = Frame.Payload.Method(
-                Frame.Method.Queue.Declare(
-                    reserved1 = 0u,
-                    queueName = "testQueue",
-                    passive = false,
-                    durable = true,
-                    exclusive = false,
-                    autoDelete = false,
-                    noWait = false,
-                    arguments = Table(emptyMap())
-                )
+            payload = Frame.Method.Queue.Declare(
+                reserved1 = 0u,
+                queueName = "testQueue",
+                passive = false,
+                durable = true,
+                exclusive = false,
+                autoDelete = false,
+                noWait = false,
+                arguments = Table(emptyMap())
             )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
@@ -115,12 +105,10 @@ class FrameTest {
     fun testFrameMethodQueueDeclareOk() {
         val frame = Frame(
             channelId = 1u,
-            payload = Frame.Payload.Method(
-                Frame.Method.Queue.DeclareOk(
-                    queueName = "testQueue",
-                    messageCount = 0u,
-                    consumerCount = 0u,
-                )
+            payload = Frame.Method.Queue.DeclareOk(
+                queueName = "testQueue",
+                messageCount = 0u,
+                consumerCount = 0u,
             )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
@@ -132,15 +120,13 @@ class FrameTest {
     fun testFrameMethodQueueBind() {
         val frame = Frame(
             channelId = 1u,
-            payload = Frame.Payload.Method(
-                Frame.Method.Queue.Bind(
-                    reserved1 = 0u,
-                    queueName = "testQueue",
-                    exchangeName = "testExchange",
-                    routingKey = "testRoutingKey",
-                    noWait = false,
-                    arguments = Table(emptyMap())
-                )
+            payload = Frame.Method.Queue.Bind(
+                reserved1 = 0u,
+                queueName = "testQueue",
+                exchangeName = "testExchange",
+                routingKey = "testRoutingKey",
+                noWait = false,
+                arguments = Table(emptyMap())
             )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
@@ -152,9 +138,7 @@ class FrameTest {
     fun testFrameMethodQueueBindOk() {
         val frame = Frame(
             channelId = 1u,
-            payload = Frame.Payload.Method(
-                Frame.Method.Queue.BindOk
-            )
+            payload = Frame.Method.Queue.BindOk
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
         val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
@@ -165,12 +149,10 @@ class FrameTest {
     fun testFrameMethodQueuePurge() {
         val frame = Frame(
             channelId = 1u,
-            payload = Frame.Payload.Method(
-                Frame.Method.Queue.Purge(
-                    reserved1 = 0u,
-                    queueName = "testQueue",
-                    noWait = false,
-                )
+            payload = Frame.Method.Queue.Purge(
+                reserved1 = 0u,
+                queueName = "testQueue",
+                noWait = false,
             )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
@@ -182,10 +164,8 @@ class FrameTest {
     fun testFrameMethodQueuePurgeOk() {
         val frame = Frame(
             channelId = 1u,
-            payload = Frame.Payload.Method(
-                Frame.Method.Queue.PurgeOk(
-                    messageCount = 0u,
-                )
+            payload = Frame.Method.Queue.PurgeOk(
+                messageCount = 0u,
             )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
@@ -197,14 +177,12 @@ class FrameTest {
     fun testFrameMethodQueueDelete() {
         val frame = Frame(
             channelId = 1u,
-            payload = Frame.Payload.Method(
-                Frame.Method.Queue.Delete(
-                    reserved1 = 0u,
-                    queueName = "testQueue",
-                    ifUnused = false,
-                    ifEmpty = false,
-                    noWait = false,
-                )
+            payload = Frame.Method.Queue.Delete(
+                reserved1 = 0u,
+                queueName = "testQueue",
+                ifUnused = false,
+                ifEmpty = false,
+                noWait = false,
             )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
@@ -216,10 +194,8 @@ class FrameTest {
     fun testFrameMethodQueueDeleteOk() {
         val frame = Frame(
             channelId = 1u,
-            payload = Frame.Payload.Method(
-                Frame.Method.Queue.DeleteOk(
-                    messageCount = 0u,
-                )
+            payload = Frame.Method.Queue.DeleteOk(
+                messageCount = 0u,
             )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
@@ -231,14 +207,12 @@ class FrameTest {
     fun testFrameMethodQueueUnbind() {
         val frame = Frame(
             channelId = 1u,
-            payload = Frame.Payload.Method(
-                Frame.Method.Queue.Unbind(
-                    reserved1 = 0u,
-                    queueName = "testQueue",
-                    exchangeName = "testExchange",
-                    routingKey = "testRoutingKey",
-                    arguments = Table(emptyMap())
-                )
+            payload = Frame.Method.Queue.Unbind(
+                reserved1 = 0u,
+                queueName = "testQueue",
+                exchangeName = "testExchange",
+                routingKey = "testRoutingKey",
+                arguments = Table(emptyMap())
             )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
@@ -250,9 +224,7 @@ class FrameTest {
     fun testFrameMethodQueueUnbindOk() {
         val frame = Frame(
             channelId = 1u,
-            payload = Frame.Payload.Method(
-                Frame.Method.Queue.UnbindOk
-            )
+            payload = Frame.Method.Queue.UnbindOk
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
         val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)

@@ -21,10 +21,10 @@ data class Frame(
 
     val kind: Kind
         get() = when (payload) {
-            is Payload.Method -> Kind.METHOD
-            is Payload.Header -> Kind.HEADER
-            is Payload.Body -> Kind.BODY
-            is Payload.Heartbeat -> Kind.HEARTBEAT
+            is Method -> Kind.METHOD
+            is Header -> Kind.HEADER
+            is Body -> Kind.BODY
+            is Heartbeat -> Kind.HEARTBEAT
         }
 
     enum class Kind(val value: UByte) {
@@ -34,12 +34,7 @@ data class Frame(
         HEARTBEAT(8u)
     }
 
-    sealed class Payload {
-        data class Method(val method: Frame.Method) : Payload()
-        data class Header(val header: Frame.Header) : Payload()
-        data class Body(val body: ByteArray) : Payload()
-        object Heartbeat : Payload()
-    }
+    sealed class Payload
 
     @Serializable(with = FrameHeaderSerializer::class)
     data class Header(
@@ -47,10 +42,10 @@ data class Frame(
         val weight: UShort,
         val bodySize: ULong,
         val properties: Properties,
-    )
+    ) : Payload()
 
     @Serializable(with = FrameMethodSerializer::class)
-    sealed class Method {
+    sealed class Method : Payload() {
 
         val kind: Kind
             get() = when (this) {
@@ -438,5 +433,11 @@ data class Frame(
         }
 
     }
+
+    data class Body(
+        val body: ByteArray,
+    ) : Payload()
+
+    object Heartbeat : Payload()
 
 }

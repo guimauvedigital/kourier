@@ -111,168 +111,160 @@ class AMQPConnection private constructor(
 
     private suspend fun read(frame: Frame) {
         when (val payload = frame.payload) {
-            is Frame.Payload.Method -> when (val method = payload.method) {
-                is Frame.Method.Connection.Start -> {
-                    val clientProperties = Table(
-                        mapOf(
-                            "connection_name" to Field.LongString(config.server.connectionName),
-                            "product" to Field.LongString("kourier-amqp-client"),
-                            "platform" to Field.LongString("Kotlin"),
-                            "version" to Field.LongString("0.1"),
-                            "capabilities" to Field.Table(
-                                Table(
-                                    mapOf(
-                                        "publisher_confirms" to Field.Boolean(true),
-                                        "exchange_exchange_bindings" to Field.Boolean(true),
-                                        "basic.nack" to Field.Boolean(true),
-                                        "per_consumer_qos" to Field.Boolean(true),
-                                        "authentication_failure_close" to Field.Boolean(true),
-                                        "consumer_cancel_notify" to Field.Boolean(true),
-                                        "connection.blocked" to Field.Boolean(true),
-                                    )
+            is Frame.Method.Connection.Start -> {
+                val clientProperties = Table(
+                    mapOf(
+                        "connection_name" to Field.LongString(config.server.connectionName),
+                        "product" to Field.LongString("kourier-amqp-client"),
+                        "platform" to Field.LongString("Kotlin"),
+                        "version" to Field.LongString("0.1"),
+                        "capabilities" to Field.Table(
+                            Table(
+                                mapOf(
+                                    "publisher_confirms" to Field.Boolean(true),
+                                    "exchange_exchange_bindings" to Field.Boolean(true),
+                                    "basic.nack" to Field.Boolean(true),
+                                    "per_consumer_qos" to Field.Boolean(true),
+                                    "authentication_failure_close" to Field.Boolean(true),
+                                    "consumer_cancel_notify" to Field.Boolean(true),
+                                    "connection.blocked" to Field.Boolean(true),
                                 )
                             )
                         )
                     )
-                    val startOk = Frame(
-                        channelId = frame.channelId,
-                        payload = Frame.Payload.Method(
-                            Frame.Method.Connection.StartOk(
-                                clientProperties = clientProperties,
-                                mechanism = "PLAIN",
-                                response = "\u0000${config.server.user}\u0000${config.server.password}",
-                                locale = "en_US"
-                            )
-                        )
-                    )
-                    write(startOk)
-                }
-
-                is Frame.Method.Connection.StartOk -> error("Unexpected StartOk frame received: $method")
-
-                is Frame.Method.Connection.Tune -> {
-                    this@AMQPConnection.channelMax = method.channelMax
-                    this@AMQPConnection.frameMax = method.frameMax
-                    this@AMQPConnection.channels.channelMax = method.channelMax
-                    val tuneOk = Frame(
-                        channelId = frame.channelId,
-                        payload = Frame.Payload.Method(
-                            Frame.Method.Connection.TuneOk(
-                                channelMax = method.channelMax,
-                                frameMax = method.frameMax,
-                                heartbeat = method.heartbeat
-                            )
-                        )
-                    )
-                    val open = Frame(
-                        channelId = frame.channelId,
-                        payload = Frame.Payload.Method(
-                            Frame.Method.Connection.Open(
-                                vhost = config.server.vhost,
-                            )
-                        )
-                    )
-                    write(tuneOk)
-                    write(open)
-                }
-
-                is Frame.Method.Connection.TuneOk -> error("Unexpected TuneOk frame received: $method")
-
-                is Frame.Method.Connection.Open -> error("Unexpected Open frame received: $method")
-                is Frame.Method.Connection.OpenOk -> allResponses.emit(
-                    AMQPResponse.Connection.Connected(
-                        channelMax = channelMax,
-                        frameMax = frameMax,
+                )
+                val startOk = Frame(
+                    channelId = frame.channelId,
+                    payload = Frame.Method.Connection.StartOk(
+                        clientProperties = clientProperties,
+                        mechanism = "PLAIN",
+                        response = "\u0000${config.server.user}\u0000${config.server.password}",
+                        locale = "en_US"
                     )
                 )
-
-                is Frame.Method.Connection.Blocked -> TODO()
-                is Frame.Method.Connection.Close -> TODO()
-                is Frame.Method.Connection.CloseOk -> TODO()
-                is Frame.Method.Connection.Secure -> TODO()
-                is Frame.Method.Connection.SecureOk -> TODO()
-                is Frame.Method.Connection.Unblocked -> TODO()
-
-                is Frame.Method.Channel.Open -> error("Unexpected Open frame received: $method")
-                is Frame.Method.Channel.OpenOk -> allResponses.emit(
-                    AMQPResponse.Channel.Opened(
-                        channelId = frame.channelId,
-                    )
-                )
-
-                is Frame.Method.Channel.Close -> TODO()
-                is Frame.Method.Channel.CloseOk -> TODO()
-                is Frame.Method.Channel.Flow -> TODO()
-                is Frame.Method.Channel.FlowOk -> TODO()
-
-                is Frame.Method.Queue.Declare -> error("Unexpected Declare frame received: $method")
-                is Frame.Method.Queue.DeclareOk -> allResponses.emit(
-                    AMQPResponse.Channel.Queue.Declared(
-                        queueName = method.queueName,
-                        messageCount = method.messageCount,
-                        consumerCount = method.consumerCount
-                    )
-                )
-
-                is Frame.Method.Queue.Bind -> error("Unexpected Bind frame received: $method")
-                is Frame.Method.Queue.BindOk -> allResponses.emit(
-                    AMQPResponse.Channel.Queue.Bound
-                )
-
-                is Frame.Method.Queue.Purge -> error("Unexpected Purge frame received: $method")
-                is Frame.Method.Queue.PurgeOk -> allResponses.emit(
-                    AMQPResponse.Channel.Queue.Purged(
-                        messageCount = method.messageCount
-                    )
-                )
-
-                is Frame.Method.Queue.Delete -> error("Unexpected Delete frame received: $method")
-                is Frame.Method.Queue.DeleteOk -> allResponses.emit(
-                    AMQPResponse.Channel.Queue.Deleted(
-                        messageCount = method.messageCount,
-                    )
-                )
-
-                is Frame.Method.Queue.Unbind -> error("Unexpected Unbind frame received: $method")
-                is Frame.Method.Queue.UnbindOk -> allResponses.emit(
-                    AMQPResponse.Channel.Queue.Unbound
-                )
-
-                is Frame.Method.Basic -> TODO()
-
-                is Frame.Method.Exchange.Declare -> error("Unexpected Declare frame received: $method")
-                is Frame.Method.Exchange.DeclareOk -> allResponses.emit(
-                    AMQPResponse.Channel.Exchange.Declared
-                )
-
-                is Frame.Method.Exchange.Delete -> error("Unexpected Delete frame received: $method")
-                is Frame.Method.Exchange.DeleteOk -> allResponses.emit(
-                    AMQPResponse.Channel.Exchange.Deleted
-                )
-
-                is Frame.Method.Exchange.Bind -> error("Unexpected Bind frame received: $method")
-                is Frame.Method.Exchange.BindOk -> allResponses.emit(
-                    AMQPResponse.Channel.Exchange.Bound
-                )
-
-                is Frame.Method.Exchange.Unbind -> error("Unexpected Unbind frame received: $method")
-                is Frame.Method.Exchange.UnbindOk -> allResponses.emit(
-                    AMQPResponse.Channel.Exchange.Unbound
-                )
-
-                is Frame.Method.Confirm -> TODO()
-                is Frame.Method.Tx -> TODO()
+                write(startOk)
             }
 
-            is Frame.Payload.Header -> {
+            is Frame.Method.Connection.StartOk -> error("Unexpected StartOk frame received: $payload")
+
+            is Frame.Method.Connection.Tune -> {
+                this@AMQPConnection.channelMax = payload.channelMax
+                this@AMQPConnection.frameMax = payload.frameMax
+                this@AMQPConnection.channels.channelMax = payload.channelMax
+                val tuneOk = Frame(
+                    channelId = frame.channelId,
+                    payload = Frame.Method.Connection.TuneOk(
+                        channelMax = payload.channelMax,
+                        frameMax = payload.frameMax,
+                        heartbeat = payload.heartbeat
+                    )
+                )
+                val open = Frame(
+                    channelId = frame.channelId,
+                    payload = Frame.Method.Connection.Open(
+                        vhost = config.server.vhost,
+                    )
+                )
+                write(tuneOk)
+                write(open)
+            }
+
+            is Frame.Method.Connection.TuneOk -> error("Unexpected TuneOk frame received: $payload")
+
+            is Frame.Method.Connection.Open -> error("Unexpected Open frame received: $payload")
+            is Frame.Method.Connection.OpenOk -> allResponses.emit(
+                AMQPResponse.Connection.Connected(
+                    channelMax = channelMax,
+                    frameMax = frameMax,
+                )
+            )
+
+            is Frame.Method.Connection.Blocked -> TODO()
+            is Frame.Method.Connection.Close -> TODO()
+            is Frame.Method.Connection.CloseOk -> TODO()
+            is Frame.Method.Connection.Secure -> TODO()
+            is Frame.Method.Connection.SecureOk -> TODO()
+            is Frame.Method.Connection.Unblocked -> TODO()
+
+            is Frame.Method.Channel.Open -> error("Unexpected Open frame received: $payload")
+            is Frame.Method.Channel.OpenOk -> allResponses.emit(
+                AMQPResponse.Channel.Opened(
+                    channelId = frame.channelId,
+                )
+            )
+
+            is Frame.Method.Channel.Close -> TODO()
+            is Frame.Method.Channel.CloseOk -> TODO()
+            is Frame.Method.Channel.Flow -> TODO()
+            is Frame.Method.Channel.FlowOk -> TODO()
+
+            is Frame.Method.Queue.Declare -> error("Unexpected Declare frame received: $payload")
+            is Frame.Method.Queue.DeclareOk -> allResponses.emit(
+                AMQPResponse.Channel.Queue.Declared(
+                    queueName = payload.queueName,
+                    messageCount = payload.messageCount,
+                    consumerCount = payload.consumerCount
+                )
+            )
+
+            is Frame.Method.Queue.Bind -> error("Unexpected Bind frame received: $payload")
+            is Frame.Method.Queue.BindOk -> allResponses.emit(
+                AMQPResponse.Channel.Queue.Bound
+            )
+
+            is Frame.Method.Queue.Purge -> error("Unexpected Purge frame received: $payload")
+            is Frame.Method.Queue.PurgeOk -> allResponses.emit(
+                AMQPResponse.Channel.Queue.Purged(
+                    messageCount = payload.messageCount
+                )
+            )
+
+            is Frame.Method.Queue.Delete -> error("Unexpected Delete frame received: $payload")
+            is Frame.Method.Queue.DeleteOk -> allResponses.emit(
+                AMQPResponse.Channel.Queue.Deleted(
+                    messageCount = payload.messageCount,
+                )
+            )
+
+            is Frame.Method.Queue.Unbind -> error("Unexpected Unbind frame received: $payload")
+            is Frame.Method.Queue.UnbindOk -> allResponses.emit(
+                AMQPResponse.Channel.Queue.Unbound
+            )
+
+            is Frame.Method.Basic -> TODO()
+
+            is Frame.Method.Exchange.Declare -> error("Unexpected Declare frame received: $payload")
+            is Frame.Method.Exchange.DeclareOk -> allResponses.emit(
+                AMQPResponse.Channel.Exchange.Declared
+            )
+
+            is Frame.Method.Exchange.Delete -> error("Unexpected Delete frame received: $payload")
+            is Frame.Method.Exchange.DeleteOk -> allResponses.emit(
+                AMQPResponse.Channel.Exchange.Deleted
+            )
+
+            is Frame.Method.Exchange.Bind -> error("Unexpected Bind frame received: $payload")
+            is Frame.Method.Exchange.BindOk -> allResponses.emit(
+                AMQPResponse.Channel.Exchange.Bound
+            )
+
+            is Frame.Method.Exchange.Unbind -> error("Unexpected Unbind frame received: $payload")
+            is Frame.Method.Exchange.UnbindOk -> allResponses.emit(
+                AMQPResponse.Channel.Exchange.Unbound
+            )
+
+            is Frame.Method.Confirm -> TODO()
+            is Frame.Method.Tx -> TODO()
+
+            is Frame.Header -> {
 
             }
 
-            is Frame.Payload.Body -> {
+            is Frame.Body -> {
 
             }
 
-            is Frame.Payload.Heartbeat -> write(Frame(channelId = frame.channelId, payload = Frame.Payload.Heartbeat))
+            is Frame.Heartbeat -> write(Frame(channelId = frame.channelId, payload = Frame.Heartbeat))
         }
     }
 
@@ -309,10 +301,8 @@ class AMQPConnection private constructor(
 
         val channelOpen = Frame(
             channelId = channelId,
-            payload = Frame.Payload.Method(
-                Frame.Method.Channel.Open(
-                    reserved1 = ""
-                )
+            payload = Frame.Method.Channel.Open(
+                reserved1 = ""
             )
         )
         val response = writeAndWaitForResponse<AMQPResponse.Channel.Opened>(channelOpen)
@@ -327,7 +317,7 @@ class AMQPConnection private constructor(
      * Sends a heartbeat frame.
      */
     suspend fun sendHeartbeat() {
-        write(Frame(channelId = 0u, payload = Frame.Payload.Heartbeat))
+        write(Frame(channelId = 0u, payload = Frame.Heartbeat))
     }
 
     /**
