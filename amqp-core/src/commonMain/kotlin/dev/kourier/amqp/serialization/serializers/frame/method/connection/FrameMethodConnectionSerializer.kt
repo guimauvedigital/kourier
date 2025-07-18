@@ -11,97 +11,83 @@ import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-object FrameMethodConnectionSerializer : KSerializer<Frame.Method.MethodConnection> {
+object FrameMethodConnectionSerializer : KSerializer<Frame.Method.Connection> {
 
     @OptIn(InternalSerializationApi::class)
     override val descriptor: SerialDescriptor
-        get() = buildSerialDescriptor("Frame.Method.MethodConnection", StructureKind.OBJECT)
+        get() = buildSerialDescriptor("Frame.Method.Connection", StructureKind.OBJECT)
 
-    override fun serialize(encoder: Encoder, value: Frame.Method.MethodConnection) {
+    override fun serialize(encoder: Encoder, value: Frame.Method.Connection) {
         require(encoder is ProtocolBinaryEncoder)
 
-        encoder.encodeShort(value.kind.value.toShort())
+        encoder.encodeShort(value.connectionKind.value.toShort())
         when (value) {
-            is Frame.Method.MethodConnection.Start ->
+            is Frame.Method.Connection.Start ->
                 encoder.encodeSerializableValue(FrameMethodConnectionStartSerializer, value)
 
-            is Frame.Method.MethodConnection.StartOk ->
+            is Frame.Method.Connection.StartOk ->
                 encoder.encodeSerializableValue(FrameMethodConnectionStartOkSerializer, value)
 
-            is Frame.Method.MethodConnection.Secure -> encoder.encodeLongString(value.challenge)
-            is Frame.Method.MethodConnection.SecureOk -> encoder.encodeLongString(value.response)
-            is Frame.Method.MethodConnection.Tune -> {
+            is Frame.Method.Connection.Secure -> encoder.encodeLongString(value.challenge)
+            is Frame.Method.Connection.SecureOk -> encoder.encodeLongString(value.response)
+            is Frame.Method.Connection.Tune -> {
                 encoder.encodeShort(value.channelMax.toShort())
                 encoder.encodeInt(value.frameMax.toInt())
                 encoder.encodeShort(value.heartbeat.toShort())
             }
 
-            is Frame.Method.MethodConnection.TuneOk -> {
+            is Frame.Method.Connection.TuneOk -> {
                 encoder.encodeShort(value.channelMax.toShort())
                 encoder.encodeInt(value.frameMax.toInt())
                 encoder.encodeShort(value.heartbeat.toShort())
             }
 
-            is Frame.Method.MethodConnection.Open ->
+            is Frame.Method.Connection.Open ->
                 encoder.encodeSerializableValue(FrameMethodConnectionOpenSerializer, value)
 
-            is Frame.Method.MethodConnection.OpenOk -> encoder.encodeShortString(value.reserved1)
-            is Frame.Method.MethodConnection.Close ->
+            is Frame.Method.Connection.OpenOk -> encoder.encodeShortString(value.reserved1)
+            is Frame.Method.Connection.Close ->
                 encoder.encodeSerializableValue(FrameMethodConnectionCloseSerializer, value)
 
-            is Frame.Method.MethodConnection.CloseOk -> {}
-            is Frame.Method.MethodConnection.Blocked -> encoder.encodeShortString(value.reason)
-            is Frame.Method.MethodConnection.Unblocked -> {}
+            is Frame.Method.Connection.CloseOk -> {}
+            is Frame.Method.Connection.Blocked -> encoder.encodeShortString(value.reason)
+            is Frame.Method.Connection.Unblocked -> {}
         }
     }
 
-    override fun deserialize(decoder: Decoder): Frame.Method.MethodConnection {
+    override fun deserialize(decoder: Decoder): Frame.Method.Connection {
         require(decoder is ProtocolBinaryDecoder)
 
         val kind = decoder.decodeShort().toUShort().let { byte ->
-            Frame.Method.MethodConnection.Kind.entries.first { it.value == byte }
+            Frame.Method.Connection.Kind.entries.first { it.value == byte }
         }
         return when (kind) {
-            Frame.Method.MethodConnection.Kind.START ->
-                decoder.decodeSerializableValue(FrameMethodConnectionStartSerializer)
-
-            Frame.Method.MethodConnection.Kind.START_OK ->
+            Frame.Method.Connection.Kind.START -> decoder.decodeSerializableValue(FrameMethodConnectionStartSerializer)
+            Frame.Method.Connection.Kind.START_OK ->
                 decoder.decodeSerializableValue(FrameMethodConnectionStartOkSerializer)
 
-            Frame.Method.MethodConnection.Kind.SECURE ->
-                Frame.Method.MethodConnection.Secure(decoder.decodeLongString().first)
-
-            Frame.Method.MethodConnection.Kind.SECURE_OK ->
-                Frame.Method.MethodConnection.SecureOk(decoder.decodeLongString().first)
-
-            Frame.Method.MethodConnection.Kind.TUNE -> {
+            Frame.Method.Connection.Kind.SECURE -> Frame.Method.Connection.Secure(decoder.decodeLongString().first)
+            Frame.Method.Connection.Kind.SECURE_OK -> Frame.Method.Connection.SecureOk(decoder.decodeLongString().first)
+            Frame.Method.Connection.Kind.TUNE -> {
                 val channelMax = decoder.decodeShort().toUShort()
                 val frameMax = decoder.decodeInt().toUInt()
                 val heartbeat = decoder.decodeShort().toUShort()
-                Frame.Method.MethodConnection.Tune(channelMax, frameMax, heartbeat)
+                Frame.Method.Connection.Tune(channelMax, frameMax, heartbeat)
             }
 
-            Frame.Method.MethodConnection.Kind.TUNE_OK -> {
+            Frame.Method.Connection.Kind.TUNE_OK -> {
                 val channelMax = decoder.decodeShort().toUShort()
                 val frameMax = decoder.decodeInt().toUInt()
                 val heartbeat = decoder.decodeShort().toUShort()
-                Frame.Method.MethodConnection.TuneOk(channelMax, frameMax, heartbeat)
+                Frame.Method.Connection.TuneOk(channelMax, frameMax, heartbeat)
             }
 
-            Frame.Method.MethodConnection.Kind.OPEN ->
-                decoder.decodeSerializableValue(FrameMethodConnectionOpenSerializer)
-
-            Frame.Method.MethodConnection.Kind.OPEN_OK ->
-                Frame.Method.MethodConnection.OpenOk(decoder.decodeShortString().first)
-
-            Frame.Method.MethodConnection.Kind.CLOSE ->
-                decoder.decodeSerializableValue(FrameMethodConnectionCloseSerializer)
-
-            Frame.Method.MethodConnection.Kind.CLOSE_OK -> Frame.Method.MethodConnection.CloseOk
-            Frame.Method.MethodConnection.Kind.BLOCKED ->
-                Frame.Method.MethodConnection.Blocked(decoder.decodeShortString().first)
-
-            Frame.Method.MethodConnection.Kind.UNBLOCKED -> Frame.Method.MethodConnection.Unblocked
+            Frame.Method.Connection.Kind.OPEN -> decoder.decodeSerializableValue(FrameMethodConnectionOpenSerializer)
+            Frame.Method.Connection.Kind.OPEN_OK -> Frame.Method.Connection.OpenOk(decoder.decodeShortString().first)
+            Frame.Method.Connection.Kind.CLOSE -> decoder.decodeSerializableValue(FrameMethodConnectionCloseSerializer)
+            Frame.Method.Connection.Kind.CLOSE_OK -> Frame.Method.Connection.CloseOk
+            Frame.Method.Connection.Kind.BLOCKED -> Frame.Method.Connection.Blocked(decoder.decodeShortString().first)
+            Frame.Method.Connection.Kind.UNBLOCKED -> Frame.Method.Connection.Unblocked
         }
     }
 

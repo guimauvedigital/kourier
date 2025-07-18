@@ -12,13 +12,13 @@ import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-object FrameMethodConnectionStartSerializer : KSerializer<Frame.Method.MethodConnection.Start> {
+object FrameMethodConnectionStartSerializer : KSerializer<Frame.Method.Connection.Start> {
 
     @OptIn(InternalSerializationApi::class)
     override val descriptor: SerialDescriptor
-        get() = buildSerialDescriptor("Frame.Method.MethodConnection.Start", StructureKind.OBJECT)
+        get() = buildSerialDescriptor("Frame.Method.Connection.Start", StructureKind.OBJECT)
 
-    override fun serialize(encoder: Encoder, value: Frame.Method.MethodConnection.Start) {
+    override fun serialize(encoder: Encoder, value: Frame.Method.Connection.Start) {
         require(encoder is ProtocolBinaryEncoder)
 
         encoder.encodeByte(value.versionMajor.toByte())
@@ -28,7 +28,7 @@ object FrameMethodConnectionStartSerializer : KSerializer<Frame.Method.MethodCon
         encoder.encodeLongString(value.locales)
     }
 
-    override fun deserialize(decoder: Decoder): Frame.Method.MethodConnection.Start {
+    override fun deserialize(decoder: Decoder): Frame.Method.Connection.Start {
         require(decoder is ProtocolBinaryDecoder)
 
         val versionMajor = decoder.decodeByte().toUByte()
@@ -37,7 +37,7 @@ object FrameMethodConnectionStartSerializer : KSerializer<Frame.Method.MethodCon
         val mechanisms = decoder.decodeLongString().first
         val locales = decoder.decodeLongString().first
 
-        return Frame.Method.MethodConnection.Start(
+        return Frame.Method.Connection.Start(
             versionMajor = versionMajor,
             versionMinor = versionMinor,
             serverProperties = serverProperties,

@@ -9,17 +9,17 @@ import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-object FrameMethodConfirmSerializer : KSerializer<Frame.Method.MethodConfirm> {
+object FrameMethodConfirmSerializer : KSerializer<Frame.Method.Confirm> {
 
     @OptIn(InternalSerializationApi::class)
     override val descriptor: SerialDescriptor
-        get() = buildSerialDescriptor("Frame.Method.MethodConfirm", StructureKind.OBJECT)
+        get() = buildSerialDescriptor("Frame.Method.Confirm", StructureKind.OBJECT)
 
-    override fun serialize(encoder: Encoder, value: Frame.Method.MethodConfirm) {
+    override fun serialize(encoder: Encoder, value: Frame.Method.Confirm) {
         TODO("Not yet implemented")
     }
 
-    override fun deserialize(decoder: Decoder): Frame.Method.MethodConfirm {
+    override fun deserialize(decoder: Decoder): Frame.Method.Confirm {
         TODO("Not yet implemented")
     }
 

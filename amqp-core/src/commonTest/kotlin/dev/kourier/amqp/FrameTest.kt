@@ -13,18 +13,16 @@ class FrameTest {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Payload.Method(
-                Frame.Method.Exchange(
-                    Frame.Method.MethodExchange.Declare(
-                        reserved1 = 0u,
-                        exchangeName = "testExchange",
-                        exchangeType = "direct",
-                        passive = false,
-                        durable = true,
-                        autoDelete = false,
-                        internal = false,
-                        noWait = false,
-                        arguments = Table(emptyMap())
-                    )
+                Frame.Method.Exchange.Declare(
+                    reserved1 = 0u,
+                    exchangeName = "testExchange",
+                    exchangeType = "direct",
+                    passive = false,
+                    durable = true,
+                    autoDelete = false,
+                    internal = false,
+                    noWait = false,
+                    arguments = Table(emptyMap())
                 )
             )
         )
@@ -38,13 +36,11 @@ class FrameTest {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Payload.Method(
-                Frame.Method.Exchange(
-                    Frame.Method.MethodExchange.Delete(
-                        reserved1 = 0u,
-                        exchangeName = "testExchange",
-                        ifUnused = false,
-                        noWait = false,
-                    )
+                Frame.Method.Exchange.Delete(
+                    reserved1 = 0u,
+                    exchangeName = "testExchange",
+                    ifUnused = false,
+                    noWait = false,
                 )
             )
         )
@@ -58,15 +54,13 @@ class FrameTest {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Payload.Method(
-                Frame.Method.Exchange(
-                    Frame.Method.MethodExchange.Bind(
-                        reserved1 = 0u,
-                        destination = "testExchangeDestination",
-                        source = "testExchangeSource",
-                        routingKey = "testRoutingKey",
-                        noWait = false,
-                        arguments = Table(emptyMap())
-                    )
+                Frame.Method.Exchange.Bind(
+                    reserved1 = 0u,
+                    destination = "testExchangeDestination",
+                    source = "testExchangeSource",
+                    routingKey = "testRoutingKey",
+                    noWait = false,
+                    arguments = Table(emptyMap())
                 )
             )
         )
@@ -80,15 +74,13 @@ class FrameTest {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Payload.Method(
-                Frame.Method.Exchange(
-                    Frame.Method.MethodExchange.Unbind(
-                        reserved1 = 0u,
-                        destination = "testExchangeDestination",
-                        source = "testExchangeSource",
-                        routingKey = "testRoutingKey",
-                        noWait = false,
-                        arguments = Table(emptyMap())
-                    )
+                Frame.Method.Exchange.Unbind(
+                    reserved1 = 0u,
+                    destination = "testExchangeDestination",
+                    source = "testExchangeSource",
+                    routingKey = "testRoutingKey",
+                    noWait = false,
+                    arguments = Table(emptyMap())
                 )
             )
         )
@@ -102,17 +94,15 @@ class FrameTest {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Payload.Method(
-                Frame.Method.Queue(
-                    Frame.Method.MethodQueue.Declare(
-                        reserved1 = 0u,
-                        queueName = "testQueue",
-                        passive = false,
-                        durable = true,
-                        exclusive = false,
-                        autoDelete = false,
-                        noWait = false,
-                        arguments = Table(emptyMap())
-                    )
+                Frame.Method.Queue.Declare(
+                    reserved1 = 0u,
+                    queueName = "testQueue",
+                    passive = false,
+                    durable = true,
+                    exclusive = false,
+                    autoDelete = false,
+                    noWait = false,
+                    arguments = Table(emptyMap())
                 )
             )
         )
@@ -126,12 +116,10 @@ class FrameTest {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Payload.Method(
-                Frame.Method.Queue(
-                    Frame.Method.MethodQueue.DeclareOk(
-                        queueName = "testQueue",
-                        messageCount = 0u,
-                        consumerCount = 0u,
-                    )
+                Frame.Method.Queue.DeclareOk(
+                    queueName = "testQueue",
+                    messageCount = 0u,
+                    consumerCount = 0u,
                 )
             )
         )
@@ -145,15 +133,13 @@ class FrameTest {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Payload.Method(
-                Frame.Method.Queue(
-                    Frame.Method.MethodQueue.Bind(
-                        reserved1 = 0u,
-                        queueName = "testQueue",
-                        exchangeName = "testExchange",
-                        routingKey = "testRoutingKey",
-                        noWait = false,
-                        arguments = Table(emptyMap())
-                    )
+                Frame.Method.Queue.Bind(
+                    reserved1 = 0u,
+                    queueName = "testQueue",
+                    exchangeName = "testExchange",
+                    routingKey = "testRoutingKey",
+                    noWait = false,
+                    arguments = Table(emptyMap())
                 )
             )
         )
@@ -167,9 +153,7 @@ class FrameTest {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Payload.Method(
-                Frame.Method.Queue(
-                    Frame.Method.MethodQueue.BindOk
-                )
+                Frame.Method.Queue.BindOk
             )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
@@ -182,12 +166,10 @@ class FrameTest {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Payload.Method(
-                Frame.Method.Queue(
-                    Frame.Method.MethodQueue.Purge(
-                        reserved1 = 0u,
-                        queueName = "testQueue",
-                        noWait = false,
-                    )
+                Frame.Method.Queue.Purge(
+                    reserved1 = 0u,
+                    queueName = "testQueue",
+                    noWait = false,
                 )
             )
         )
@@ -201,10 +183,8 @@ class FrameTest {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Payload.Method(
-                Frame.Method.Queue(
-                    Frame.Method.MethodQueue.PurgeOk(
-                        messageCount = 0u,
-                    )
+                Frame.Method.Queue.PurgeOk(
+                    messageCount = 0u,
                 )
             )
         )
@@ -218,14 +198,12 @@ class FrameTest {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Payload.Method(
-                Frame.Method.Queue(
-                    Frame.Method.MethodQueue.Delete(
-                        reserved1 = 0u,
-                        queueName = "testQueue",
-                        ifUnused = false,
-                        ifEmpty = false,
-                        noWait = false,
-                    )
+                Frame.Method.Queue.Delete(
+                    reserved1 = 0u,
+                    queueName = "testQueue",
+                    ifUnused = false,
+                    ifEmpty = false,
+                    noWait = false,
                 )
             )
         )
@@ -239,10 +217,8 @@ class FrameTest {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Payload.Method(
-                Frame.Method.Queue(
-                    Frame.Method.MethodQueue.DeleteOk(
-                        messageCount = 0u,
-                    )
+                Frame.Method.Queue.DeleteOk(
+                    messageCount = 0u,
                 )
             )
         )
@@ -256,14 +232,12 @@ class FrameTest {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Payload.Method(
-                Frame.Method.Queue(
-                    Frame.Method.MethodQueue.Unbind(
-                        reserved1 = 0u,
-                        queueName = "testQueue",
-                        exchangeName = "testExchange",
-                        routingKey = "testRoutingKey",
-                        arguments = Table(emptyMap())
-                    )
+                Frame.Method.Queue.Unbind(
+                    reserved1 = 0u,
+                    queueName = "testQueue",
+                    exchangeName = "testExchange",
+                    routingKey = "testRoutingKey",
+                    arguments = Table(emptyMap())
                 )
             )
         )
@@ -277,9 +251,7 @@ class FrameTest {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Payload.Method(
-                Frame.Method.Queue(
-                    Frame.Method.MethodQueue.UnbindOk
-                )
+                Frame.Method.Queue.UnbindOk
             )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)

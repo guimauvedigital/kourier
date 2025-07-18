@@ -25,26 +25,13 @@ object FrameMethodSerializer : KSerializer<Frame.Method> {
     override fun serialize(encoder: Encoder, value: Frame.Method) {
         encoder.encodeShort(value.kind.value.toShort())
         when (value) {
-            is Frame.Method.Connection ->
-                encoder.encodeSerializableValue(FrameMethodConnectionSerializer, value.connection)
-
-            is Frame.Method.Channel ->
-                encoder.encodeSerializableValue(FrameMethodChannelSerializer, value.channel)
-
-            is Frame.Method.Exchange ->
-                encoder.encodeSerializableValue(FrameMethodExchangeSerializer, value.exchange)
-
-            is Frame.Method.Queue ->
-                encoder.encodeSerializableValue(FrameMethodQueueSerializer, value.queue)
-
-            is Frame.Method.Basic ->
-                encoder.encodeSerializableValue(FrameMethodBasicSerializer, value.basic)
-
-            is Frame.Method.Confirm ->
-                encoder.encodeSerializableValue(FrameMethodConfirmSerializer, value.confirm)
-
-            is Frame.Method.Tx ->
-                encoder.encodeSerializableValue(FrameMethodTxSerializer, value.tx)
+            is Frame.Method.Connection -> encoder.encodeSerializableValue(FrameMethodConnectionSerializer, value)
+            is Frame.Method.Channel -> encoder.encodeSerializableValue(FrameMethodChannelSerializer, value)
+            is Frame.Method.Exchange -> encoder.encodeSerializableValue(FrameMethodExchangeSerializer, value)
+            is Frame.Method.Queue -> encoder.encodeSerializableValue(FrameMethodQueueSerializer, value)
+            is Frame.Method.Basic -> encoder.encodeSerializableValue(FrameMethodBasicSerializer, value)
+            is Frame.Method.Confirm -> encoder.encodeSerializableValue(FrameMethodConfirmSerializer, value)
+            is Frame.Method.Tx -> encoder.encodeSerializableValue(FrameMethodTxSerializer, value)
         }
     }
 
@@ -53,26 +40,13 @@ object FrameMethodSerializer : KSerializer<Frame.Method> {
             Frame.Method.Kind.entries.first { it.value == byte }
         }
         return when (kind) {
-            Frame.Method.Kind.CONNECTION ->
-                Frame.Method.Connection(decoder.decodeSerializableValue(FrameMethodConnectionSerializer))
-
-            Frame.Method.Kind.CHANNEL ->
-                Frame.Method.Channel(decoder.decodeSerializableValue(FrameMethodChannelSerializer))
-
-            Frame.Method.Kind.EXCHANGE ->
-                Frame.Method.Exchange(decoder.decodeSerializableValue(FrameMethodExchangeSerializer))
-
-            Frame.Method.Kind.QUEUE ->
-                Frame.Method.Queue(decoder.decodeSerializableValue(FrameMethodQueueSerializer))
-
-            Frame.Method.Kind.BASIC ->
-                Frame.Method.Basic(decoder.decodeSerializableValue(FrameMethodBasicSerializer))
-
-            Frame.Method.Kind.CONFIRM ->
-                Frame.Method.Confirm(decoder.decodeSerializableValue(FrameMethodConfirmSerializer))
-
-            Frame.Method.Kind.TX ->
-                Frame.Method.Tx(decoder.decodeSerializableValue(FrameMethodTxSerializer))
+            Frame.Method.Kind.CONNECTION -> decoder.decodeSerializableValue(FrameMethodConnectionSerializer)
+            Frame.Method.Kind.CHANNEL -> decoder.decodeSerializableValue(FrameMethodChannelSerializer)
+            Frame.Method.Kind.EXCHANGE -> decoder.decodeSerializableValue(FrameMethodExchangeSerializer)
+            Frame.Method.Kind.QUEUE -> decoder.decodeSerializableValue(FrameMethodQueueSerializer)
+            Frame.Method.Kind.BASIC -> decoder.decodeSerializableValue(FrameMethodBasicSerializer)
+            Frame.Method.Kind.CONFIRM -> decoder.decodeSerializableValue(FrameMethodConfirmSerializer)
+            Frame.Method.Kind.TX -> decoder.decodeSerializableValue(FrameMethodTxSerializer)
         }
     }
 

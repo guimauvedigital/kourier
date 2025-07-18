@@ -9,17 +9,17 @@ import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-object FrameMethodBasicSerializer : KSerializer<Frame.Method.MethodBasic> {
+object FrameMethodBasicSerializer : KSerializer<Frame.Method.Basic> {
 
     @OptIn(InternalSerializationApi::class)
     override val descriptor: SerialDescriptor
-        get() = buildSerialDescriptor("Frame.Method.MethodBasic", StructureKind.OBJECT)
+        get() = buildSerialDescriptor("Frame.Method.Basic", StructureKind.OBJECT)
 
-    override fun serialize(encoder: Encoder, value: Frame.Method.MethodBasic) {
+    override fun serialize(encoder: Encoder, value: Frame.Method.Basic) {
         TODO("Not yet implemented")
     }
 
-    override fun deserialize(decoder: Decoder): Frame.Method.MethodBasic {
+    override fun deserialize(decoder: Decoder): Frame.Method.Basic {
         TODO("Not yet implemented")
     }
 

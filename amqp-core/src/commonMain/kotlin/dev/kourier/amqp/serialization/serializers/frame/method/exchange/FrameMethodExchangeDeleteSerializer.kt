@@ -11,13 +11,13 @@ import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-object FrameMethodExchangeDeleteSerializer : KSerializer<Frame.Method.MethodExchange.Delete> {
+object FrameMethodExchangeDeleteSerializer : KSerializer<Frame.Method.Exchange.Delete> {
 
     @OptIn(InternalSerializationApi::class)
     override val descriptor: SerialDescriptor
-        get() = buildSerialDescriptor("Frame.Method.MethodExchange.Delete", StructureKind.OBJECT)
+        get() = buildSerialDescriptor("Frame.Method.Exchange.Delete", StructureKind.OBJECT)
 
-    override fun serialize(encoder: Encoder, value: Frame.Method.MethodExchange.Delete) {
+    override fun serialize(encoder: Encoder, value: Frame.Method.Exchange.Delete) {
         require(encoder is ProtocolBinaryEncoder)
 
         encoder.encodeShort(value.reserved1.toShort())
@@ -30,7 +30,7 @@ object FrameMethodExchangeDeleteSerializer : KSerializer<Frame.Method.MethodExch
         encoder.encodeByte(bits.toByte())
     }
 
-    override fun deserialize(decoder: Decoder): Frame.Method.MethodExchange.Delete {
+    override fun deserialize(decoder: Decoder): Frame.Method.Exchange.Delete {
         require(decoder is ProtocolBinaryDecoder)
 
         val reserved1 = decoder.decodeShort().toUShort()
@@ -41,7 +41,7 @@ object FrameMethodExchangeDeleteSerializer : KSerializer<Frame.Method.MethodExch
         val ifUnused = bits and (1u shl 0) != 0u
         val noWait = bits and (1u shl 1) != 0u
 
-        return Frame.Method.MethodExchange.Delete(
+        return Frame.Method.Exchange.Delete(
             reserved1 = reserved1,
             exchangeName = exchangeName,
             ifUnused = ifUnused,

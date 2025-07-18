@@ -11,13 +11,13 @@ import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-object FrameMethodChannelCloseSerializer : KSerializer<Frame.Method.MethodChannel.Close> {
+object FrameMethodChannelCloseSerializer : KSerializer<Frame.Method.Channel.Close> {
 
     @OptIn(InternalSerializationApi::class)
     override val descriptor: SerialDescriptor
-        get() = buildSerialDescriptor("Frame.Method.MethodChannel.Close", StructureKind.OBJECT)
+        get() = buildSerialDescriptor("Frame.Method.Channel.Close", StructureKind.OBJECT)
 
-    override fun serialize(encoder: Encoder, value: Frame.Method.MethodChannel.Close) {
+    override fun serialize(encoder: Encoder, value: Frame.Method.Channel.Close) {
         require(encoder is ProtocolBinaryEncoder)
 
         encoder.encodeShort(value.replyCode.toShort())
@@ -26,7 +26,7 @@ object FrameMethodChannelCloseSerializer : KSerializer<Frame.Method.MethodChanne
         encoder.encodeShort(value.methodId.toShort())
     }
 
-    override fun deserialize(decoder: Decoder): Frame.Method.MethodChannel.Close {
+    override fun deserialize(decoder: Decoder): Frame.Method.Channel.Close {
         require(decoder is ProtocolBinaryDecoder)
 
         val replyCode = decoder.decodeShort().toUShort()
@@ -34,7 +34,7 @@ object FrameMethodChannelCloseSerializer : KSerializer<Frame.Method.MethodChanne
         val classId = decoder.decodeShort().toUShort()
         val methodId = decoder.decodeShort().toUShort()
 
-        return Frame.Method.MethodChannel.Close(
+        return Frame.Method.Channel.Close(
             replyCode = replyCode,
             replyText = replyText,
             classId = classId,

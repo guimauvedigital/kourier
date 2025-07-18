@@ -12,13 +12,13 @@ import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-object FrameMethodConnectionStartOkSerializer : KSerializer<Frame.Method.MethodConnection.StartOk> {
+object FrameMethodConnectionStartOkSerializer : KSerializer<Frame.Method.Connection.StartOk> {
 
     @OptIn(InternalSerializationApi::class)
     override val descriptor: SerialDescriptor
-        get() = buildSerialDescriptor("Frame.Method.MethodConnection.StartOk", StructureKind.OBJECT)
+        get() = buildSerialDescriptor("Frame.Method.Connection.StartOk", StructureKind.OBJECT)
 
-    override fun serialize(encoder: Encoder, value: Frame.Method.MethodConnection.StartOk) {
+    override fun serialize(encoder: Encoder, value: Frame.Method.Connection.StartOk) {
         require(encoder is ProtocolBinaryEncoder)
 
         encoder.encodeSerializableValue(TableSerializer, value.clientProperties)
@@ -27,7 +27,7 @@ object FrameMethodConnectionStartOkSerializer : KSerializer<Frame.Method.MethodC
         encoder.encodeShortString(value.locale)
     }
 
-    override fun deserialize(decoder: Decoder): Frame.Method.MethodConnection.StartOk {
+    override fun deserialize(decoder: Decoder): Frame.Method.Connection.StartOk {
         require(decoder is ProtocolBinaryDecoder)
 
         val clientProperties = decoder.decodeSerializableValue(TableSerializer)
@@ -35,7 +35,7 @@ object FrameMethodConnectionStartOkSerializer : KSerializer<Frame.Method.MethodC
         val response = decoder.decodeLongString().first
         val locale = decoder.decodeShortString().first
 
-        return Frame.Method.MethodConnection.StartOk(
+        return Frame.Method.Connection.StartOk(
             clientProperties = clientProperties,
             mechanism = mechanism,
             response = response,

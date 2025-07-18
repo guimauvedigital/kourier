@@ -9,20 +9,20 @@ import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-object FrameMethodQueuePurgeOkSerializer : KSerializer<Frame.Method.MethodQueue.PurgeOk> {
+object FrameMethodQueuePurgeOkSerializer : KSerializer<Frame.Method.Queue.PurgeOk> {
 
     @OptIn(InternalSerializationApi::class)
     override val descriptor: SerialDescriptor
-        get() = buildSerialDescriptor("Frame.Method.MethodQueue.PurgeOk", StructureKind.OBJECT)
+        get() = buildSerialDescriptor("Frame.Method.Queue.PurgeOk", StructureKind.OBJECT)
 
-    override fun serialize(encoder: Encoder, value: Frame.Method.MethodQueue.PurgeOk) {
+    override fun serialize(encoder: Encoder, value: Frame.Method.Queue.PurgeOk) {
         encoder.encodeInt(value.messageCount.toInt())
     }
 
-    override fun deserialize(decoder: Decoder): Frame.Method.MethodQueue.PurgeOk {
+    override fun deserialize(decoder: Decoder): Frame.Method.Queue.PurgeOk {
         val messageCount = decoder.decodeInt().toUInt()
 
-        return Frame.Method.MethodQueue.PurgeOk(
+        return Frame.Method.Queue.PurgeOk(
             messageCount = messageCount,
         )
     }

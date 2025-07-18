@@ -44,17 +44,15 @@ class AMQPChannel(
         val declare = Frame(
             channelId = id,
             payload = Frame.Payload.Method(
-                Frame.Method.Queue(
-                    Frame.Method.MethodQueue.Declare(
-                        reserved1 = 0u,
-                        queueName = name,
-                        passive = passive,
-                        durable = durable,
-                        exclusive = exclusive,
-                        autoDelete = autoDelete,
-                        noWait = false,
-                        arguments = arguments
-                    )
+                Frame.Method.Queue.Declare(
+                    reserved1 = 0u,
+                    queueName = name,
+                    passive = passive,
+                    durable = durable,
+                    exclusive = exclusive,
+                    autoDelete = autoDelete,
+                    noWait = false,
+                    arguments = arguments
                 )
             )
         )
@@ -78,14 +76,12 @@ class AMQPChannel(
         val delete = Frame(
             channelId = id,
             payload = Frame.Payload.Method(
-                Frame.Method.Queue(
-                    Frame.Method.MethodQueue.Delete(
-                        reserved1 = 0u,
-                        queueName = name,
-                        ifUnused = ifUnused,
-                        ifEmpty = ifEmpty,
-                        noWait = false
-                    )
+                Frame.Method.Queue.Delete(
+                    reserved1 = 0u,
+                    queueName = name,
+                    ifUnused = ifUnused,
+                    ifEmpty = ifEmpty,
+                    noWait = false
                 )
             )
         )
@@ -104,12 +100,10 @@ class AMQPChannel(
         val purge = Frame(
             channelId = id,
             payload = Frame.Payload.Method(
-                Frame.Method.Queue(
-                    Frame.Method.MethodQueue.Purge(
-                        reserved1 = 0u,
-                        queueName = name,
-                        noWait = false
-                    )
+                Frame.Method.Queue.Purge(
+                    reserved1 = 0u,
+                    queueName = name,
+                    noWait = false
                 )
             )
         )
@@ -135,15 +129,13 @@ class AMQPChannel(
         val bind = Frame(
             channelId = id,
             payload = Frame.Payload.Method(
-                Frame.Method.Queue(
-                    Frame.Method.MethodQueue.Bind(
-                        reserved1 = 0u,
-                        queueName = queue,
-                        exchangeName = exchange,
-                        routingKey = routingKey,
-                        noWait = false,
-                        arguments = arguments
-                    )
+                Frame.Method.Queue.Bind(
+                    reserved1 = 0u,
+                    queueName = queue,
+                    exchangeName = exchange,
+                    routingKey = routingKey,
+                    noWait = false,
+                    arguments = arguments
                 )
             )
         )
@@ -169,14 +161,12 @@ class AMQPChannel(
         val unbind = Frame(
             channelId = id,
             payload = Frame.Payload.Method(
-                Frame.Method.Queue(
-                    Frame.Method.MethodQueue.Unbind(
-                        reserved1 = 0u,
-                        queueName = queue,
-                        exchangeName = exchange,
-                        routingKey = routingKey,
-                        arguments = arguments
-                    )
+                Frame.Method.Queue.Unbind(
+                    reserved1 = 0u,
+                    queueName = queue,
+                    exchangeName = exchange,
+                    routingKey = routingKey,
+                    arguments = arguments
                 )
             )
         )
@@ -208,18 +198,16 @@ class AMQPChannel(
         val declare = Frame(
             channelId = id,
             payload = Frame.Payload.Method(
-                Frame.Method.Exchange(
-                    Frame.Method.MethodExchange.Declare(
-                        reserved1 = 0u,
-                        exchangeName = name,
-                        exchangeType = type,
-                        passive = passive,
-                        durable = durable,
-                        autoDelete = autoDelete,
-                        internal = internal,
-                        noWait = false,
-                        arguments = arguments
-                    )
+                Frame.Method.Exchange.Declare(
+                    reserved1 = 0u,
+                    exchangeName = name,
+                    exchangeType = type,
+                    passive = passive,
+                    durable = durable,
+                    autoDelete = autoDelete,
+                    internal = internal,
+                    noWait = false,
+                    arguments = arguments
                 )
             )
         )
@@ -241,13 +229,11 @@ class AMQPChannel(
         val delete = Frame(
             channelId = id,
             payload = Frame.Payload.Method(
-                Frame.Method.Exchange(
-                    Frame.Method.MethodExchange.Delete(
-                        reserved1 = 0u,
-                        exchangeName = name,
-                        ifUnused = ifUnused,
-                        noWait = false
-                    )
+                Frame.Method.Exchange.Delete(
+                    reserved1 = 0u,
+                    exchangeName = name,
+                    ifUnused = ifUnused,
+                    noWait = false
                 )
             )
         )
@@ -273,15 +259,13 @@ class AMQPChannel(
         val bind = Frame(
             channelId = id,
             payload = Frame.Payload.Method(
-                Frame.Method.Exchange(
-                    Frame.Method.MethodExchange.Bind(
-                        reserved1 = 0u,
-                        destination = destination,
-                        source = source,
-                        routingKey = routingKey,
-                        noWait = false,
-                        arguments = arguments
-                    )
+                Frame.Method.Exchange.Bind(
+                    reserved1 = 0u,
+                    destination = destination,
+                    source = source,
+                    routingKey = routingKey,
+                    noWait = false,
+                    arguments = arguments
                 )
             )
         )
@@ -307,15 +291,13 @@ class AMQPChannel(
         val unbind = Frame(
             channelId = id,
             payload = Frame.Payload.Method(
-                Frame.Method.Exchange(
-                    Frame.Method.MethodExchange.Unbind(
-                        reserved1 = 0u,
-                        destination = destination,
-                        source = source,
-                        routingKey = routingKey,
-                        noWait = false,
-                        arguments = arguments
-                    )
+                Frame.Method.Exchange.Unbind(
+                    reserved1 = 0u,
+                    destination = destination,
+                    source = source,
+                    routingKey = routingKey,
+                    noWait = false,
+                    arguments = arguments
                 )
             )
         )
