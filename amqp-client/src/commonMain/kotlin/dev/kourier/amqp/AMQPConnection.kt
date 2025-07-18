@@ -140,12 +140,10 @@ class AMQPConnection private constructor(
                             payload = Frame.Payload.Method(
                                 Frame.Method.Connection(
                                     Frame.Method.MethodConnection.StartOk(
-                                        Frame.Method.MethodConnection.ConnectionStartOk(
-                                            clientProperties = clientProperties,
-                                            mechanism = "PLAIN",
-                                            response = "\u0000${config.server.user}\u0000${config.server.password}",
-                                            locale = "en_US"
-                                        )
+                                        clientProperties = clientProperties,
+                                        mechanism = "PLAIN",
+                                        response = "\u0000${config.server.user}\u0000${config.server.password}",
+                                        locale = "en_US"
                                     )
                                 )
                             )
@@ -176,9 +174,7 @@ class AMQPConnection private constructor(
                             payload = Frame.Payload.Method(
                                 Frame.Method.Connection(
                                     Frame.Method.MethodConnection.Open(
-                                        Frame.Method.MethodConnection.ConnectionOpen(
-                                            vhost = config.server.vhost,
-                                        )
+                                        vhost = config.server.vhost,
                                     )
                                 )
                             )
@@ -223,9 +219,9 @@ class AMQPConnection private constructor(
                     is Frame.Method.MethodQueue.Declare -> error("Unexpected Declare frame received: $queue")
                     is Frame.Method.MethodQueue.DeclareOk -> allResponses.emit(
                         AMQPResponse.Channel.Queue.Declared(
-                            queueName = queue.declareOk.queueName,
-                            messageCount = queue.declareOk.messageCount,
-                            consumerCount = queue.declareOk.consumerCount
+                            queueName = queue.queueName,
+                            messageCount = queue.messageCount,
+                            consumerCount = queue.consumerCount
                         )
                     )
 

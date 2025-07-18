@@ -23,10 +23,10 @@ object FrameMethodConnectionSerializer : KSerializer<Frame.Method.MethodConnecti
         encoder.encodeShort(value.kind.value.toShort())
         when (value) {
             is Frame.Method.MethodConnection.Start ->
-                encoder.encodeSerializableValue(FrameMethodConnectionStartSerializer, value.start)
+                encoder.encodeSerializableValue(FrameMethodConnectionStartSerializer, value)
 
             is Frame.Method.MethodConnection.StartOk ->
-                encoder.encodeSerializableValue(FrameMethodConnectionStartOkSerializer, value.startOk)
+                encoder.encodeSerializableValue(FrameMethodConnectionStartOkSerializer, value)
 
             is Frame.Method.MethodConnection.Secure -> encoder.encodeLongString(value.challenge)
             is Frame.Method.MethodConnection.SecureOk -> encoder.encodeLongString(value.response)
@@ -43,11 +43,11 @@ object FrameMethodConnectionSerializer : KSerializer<Frame.Method.MethodConnecti
             }
 
             is Frame.Method.MethodConnection.Open ->
-                encoder.encodeSerializableValue(FrameMethodConnectionOpenSerializer, value.open)
+                encoder.encodeSerializableValue(FrameMethodConnectionOpenSerializer, value)
 
             is Frame.Method.MethodConnection.OpenOk -> encoder.encodeShortString(value.reserved1)
             is Frame.Method.MethodConnection.Close ->
-                encoder.encodeSerializableValue(FrameMethodConnectionCloseSerializer, value.close)
+                encoder.encodeSerializableValue(FrameMethodConnectionCloseSerializer, value)
 
             is Frame.Method.MethodConnection.CloseOk -> {}
             is Frame.Method.MethodConnection.Blocked -> encoder.encodeShortString(value.reason)
@@ -63,12 +63,10 @@ object FrameMethodConnectionSerializer : KSerializer<Frame.Method.MethodConnecti
         }
         return when (kind) {
             Frame.Method.MethodConnection.Kind.START ->
-                Frame.Method.MethodConnection.Start(decoder.decodeSerializableValue(FrameMethodConnectionStartSerializer))
+                decoder.decodeSerializableValue(FrameMethodConnectionStartSerializer)
 
             Frame.Method.MethodConnection.Kind.START_OK ->
-                Frame.Method.MethodConnection.StartOk(
-                    decoder.decodeSerializableValue(FrameMethodConnectionStartOkSerializer)
-                )
+                decoder.decodeSerializableValue(FrameMethodConnectionStartOkSerializer)
 
             Frame.Method.MethodConnection.Kind.SECURE ->
                 Frame.Method.MethodConnection.Secure(decoder.decodeLongString().first)
@@ -91,13 +89,13 @@ object FrameMethodConnectionSerializer : KSerializer<Frame.Method.MethodConnecti
             }
 
             Frame.Method.MethodConnection.Kind.OPEN ->
-                Frame.Method.MethodConnection.Open(decoder.decodeSerializableValue(FrameMethodConnectionOpenSerializer))
+                decoder.decodeSerializableValue(FrameMethodConnectionOpenSerializer)
 
             Frame.Method.MethodConnection.Kind.OPEN_OK ->
                 Frame.Method.MethodConnection.OpenOk(decoder.decodeShortString().first)
 
             Frame.Method.MethodConnection.Kind.CLOSE ->
-                Frame.Method.MethodConnection.Close(decoder.decodeSerializableValue(FrameMethodConnectionCloseSerializer))
+                decoder.decodeSerializableValue(FrameMethodConnectionCloseSerializer)
 
             Frame.Method.MethodConnection.Kind.CLOSE_OK -> Frame.Method.MethodConnection.CloseOk
             Frame.Method.MethodConnection.Kind.BLOCKED ->

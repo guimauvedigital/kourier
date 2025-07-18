@@ -12,13 +12,13 @@ import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-object FrameMethodExchangeDeclareSerializer : KSerializer<Frame.Method.MethodExchange.ExchangeDeclare> {
+object FrameMethodExchangeDeclareSerializer : KSerializer<Frame.Method.MethodExchange.Declare> {
 
     @OptIn(InternalSerializationApi::class)
     override val descriptor: SerialDescriptor
-        get() = buildSerialDescriptor("Frame.Method.MethodExchange.ExchangeDeclare", StructureKind.OBJECT)
+        get() = buildSerialDescriptor("Frame.Method.MethodExchange.Declare", StructureKind.OBJECT)
 
-    override fun serialize(encoder: Encoder, value: Frame.Method.MethodExchange.ExchangeDeclare) {
+    override fun serialize(encoder: Encoder, value: Frame.Method.MethodExchange.Declare) {
         require(encoder is ProtocolBinaryEncoder)
 
         encoder.encodeShort(value.reserved1.toShort())
@@ -36,7 +36,7 @@ object FrameMethodExchangeDeclareSerializer : KSerializer<Frame.Method.MethodExc
         encoder.encodeSerializableValue(TableSerializer, value.arguments)
     }
 
-    override fun deserialize(decoder: Decoder): Frame.Method.MethodExchange.ExchangeDeclare {
+    override fun deserialize(decoder: Decoder): Frame.Method.MethodExchange.Declare {
         require(decoder is ProtocolBinaryDecoder)
 
         val reserved1 = decoder.decodeShort().toUShort()
@@ -53,7 +53,7 @@ object FrameMethodExchangeDeclareSerializer : KSerializer<Frame.Method.MethodExc
 
         val arguments = decoder.decodeSerializableValue(TableSerializer)
 
-        return Frame.Method.MethodExchange.ExchangeDeclare(
+        return Frame.Method.MethodExchange.Declare(
             reserved1 = reserved1,
             exchangeName = exchangeName,
             exchangeType = exchangeType,

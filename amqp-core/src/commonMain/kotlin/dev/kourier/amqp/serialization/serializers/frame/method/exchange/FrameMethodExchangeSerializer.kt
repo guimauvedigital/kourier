@@ -23,20 +23,20 @@ object FrameMethodExchangeSerializer : KSerializer<Frame.Method.MethodExchange> 
         encoder.encodeShort(value.kind.value.toShort())
         when (value) {
             is Frame.Method.MethodExchange.Declare ->
-                encoder.encodeSerializableValue(FrameMethodExchangeDeclareSerializer, value.declare)
+                encoder.encodeSerializableValue(FrameMethodExchangeDeclareSerializer, value)
 
             is Frame.Method.MethodExchange.DeclareOk -> {}
             is Frame.Method.MethodExchange.Delete ->
-                encoder.encodeSerializableValue(FrameMethodExchangeDeleteSerializer, value.delete)
+                encoder.encodeSerializableValue(FrameMethodExchangeDeleteSerializer, value)
 
             is Frame.Method.MethodExchange.DeleteOk -> {}
             is Frame.Method.MethodExchange.Bind ->
-                encoder.encodeSerializableValue(FrameMethodExchangeBindSerializer, value.bind)
+                encoder.encodeSerializableValue(FrameMethodExchangeBindSerializer, value)
 
             is Frame.Method.MethodExchange.BindOk -> {}
 
             is Frame.Method.MethodExchange.Unbind ->
-                encoder.encodeSerializableValue(FrameMethodExchangeUnbindSerializer, value.unbind)
+                encoder.encodeSerializableValue(FrameMethodExchangeUnbindSerializer, value)
 
             is Frame.Method.MethodExchange.UnbindOk -> {}
         }
@@ -50,19 +50,18 @@ object FrameMethodExchangeSerializer : KSerializer<Frame.Method.MethodExchange> 
         }
         return when (kind) {
             Frame.Method.MethodExchange.Kind.DECLARE ->
-                Frame.Method.MethodExchange.Declare(decoder.decodeSerializableValue(FrameMethodExchangeDeclareSerializer))
+                decoder.decodeSerializableValue(FrameMethodExchangeDeclareSerializer)
 
             Frame.Method.MethodExchange.Kind.DECLARE_OK -> Frame.Method.MethodExchange.DeclareOk
             Frame.Method.MethodExchange.Kind.DELETE ->
-                Frame.Method.MethodExchange.Delete(decoder.decodeSerializableValue(FrameMethodExchangeDeleteSerializer))
+                decoder.decodeSerializableValue(FrameMethodExchangeDeleteSerializer)
 
             Frame.Method.MethodExchange.Kind.DELETE_OK -> Frame.Method.MethodExchange.DeleteOk
-            Frame.Method.MethodExchange.Kind.BIND ->
-                Frame.Method.MethodExchange.Bind(decoder.decodeSerializableValue(FrameMethodExchangeBindSerializer))
+            Frame.Method.MethodExchange.Kind.BIND -> decoder.decodeSerializableValue(FrameMethodExchangeBindSerializer)
 
             Frame.Method.MethodExchange.Kind.BIND_OK -> Frame.Method.MethodExchange.BindOk
             Frame.Method.MethodExchange.Kind.UNBIND ->
-                Frame.Method.MethodExchange.Unbind(decoder.decodeSerializableValue(FrameMethodExchangeUnbindSerializer))
+                decoder.decodeSerializableValue(FrameMethodExchangeUnbindSerializer)
 
             Frame.Method.MethodExchange.Kind.UNBIND_OK -> Frame.Method.MethodExchange.UnbindOk
         }

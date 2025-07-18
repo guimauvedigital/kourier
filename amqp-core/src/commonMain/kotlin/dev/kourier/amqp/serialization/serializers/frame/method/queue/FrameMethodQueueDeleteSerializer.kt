@@ -11,13 +11,13 @@ import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-object FrameMethodQueueDeleteSerializer : KSerializer<Frame.Method.MethodQueue.QueueDelete> {
+object FrameMethodQueueDeleteSerializer : KSerializer<Frame.Method.MethodQueue.Delete> {
 
     @OptIn(InternalSerializationApi::class)
     override val descriptor: SerialDescriptor
-        get() = buildSerialDescriptor("Frame.Method.MethodQueue.QueueDelete", StructureKind.OBJECT)
+        get() = buildSerialDescriptor("Frame.Method.MethodQueue.Delete", StructureKind.OBJECT)
 
-    override fun serialize(encoder: Encoder, value: Frame.Method.MethodQueue.QueueDelete) {
+    override fun serialize(encoder: Encoder, value: Frame.Method.MethodQueue.Delete) {
         require(encoder is ProtocolBinaryEncoder)
 
         encoder.encodeShort(value.reserved1.toShort())
@@ -31,7 +31,7 @@ object FrameMethodQueueDeleteSerializer : KSerializer<Frame.Method.MethodQueue.Q
         encoder.encodeByte(bits.toByte())
     }
 
-    override fun deserialize(decoder: Decoder): Frame.Method.MethodQueue.QueueDelete {
+    override fun deserialize(decoder: Decoder): Frame.Method.MethodQueue.Delete {
         require(decoder is ProtocolBinaryDecoder)
 
         val reserved1 = decoder.decodeShort().toUShort()
@@ -43,7 +43,7 @@ object FrameMethodQueueDeleteSerializer : KSerializer<Frame.Method.MethodQueue.Q
         val ifEmpty = bits and (1u shl 1) != 0u
         val noWait = bits and (1u shl 2) != 0u
 
-        return Frame.Method.MethodQueue.QueueDelete(
+        return Frame.Method.MethodQueue.Delete(
             reserved1 = reserved1,
             queueName = queueName,
             ifUnused = ifUnused,

@@ -23,29 +23,27 @@ object FrameMethodQueueSerializer : KSerializer<Frame.Method.MethodQueue> {
         encoder.encodeShort(value.kind.value.toShort())
         when (value) {
             is Frame.Method.MethodQueue.Declare ->
-                encoder.encodeSerializableValue(FrameMethodQueueDeclareSerializer, value.declare)
+                encoder.encodeSerializableValue(FrameMethodQueueDeclareSerializer, value)
 
             is Frame.Method.MethodQueue.DeclareOk ->
-                encoder.encodeSerializableValue(FrameMethodQueueDeclareOkSerializer, value.declareOk)
+                encoder.encodeSerializableValue(FrameMethodQueueDeclareOkSerializer, value)
 
             is Frame.Method.MethodQueue.Bind ->
-                encoder.encodeSerializableValue(FrameMethodQueueBindSerializer, value.bind)
+                encoder.encodeSerializableValue(FrameMethodQueueBindSerializer, value)
 
             is Frame.Method.MethodQueue.BindOk -> {}
-            is Frame.Method.MethodQueue.Purge ->
-                encoder.encodeSerializableValue(FrameMethodQueuePurgeSerializer, value.purge)
-
+            is Frame.Method.MethodQueue.Purge -> encoder.encodeSerializableValue(FrameMethodQueuePurgeSerializer, value)
             is Frame.Method.MethodQueue.PurgeOk ->
                 encoder.encodeSerializableValue(FrameMethodQueuePurgeOkSerializer, value)
 
             is Frame.Method.MethodQueue.Delete ->
-                encoder.encodeSerializableValue(FrameMethodQueueDeleteSerializer, value.delete)
+                encoder.encodeSerializableValue(FrameMethodQueueDeleteSerializer, value)
 
             is Frame.Method.MethodQueue.DeleteOk ->
                 encoder.encodeSerializableValue(FrameMethodQueueDeleteOkSerializer, value)
 
             is Frame.Method.MethodQueue.Unbind ->
-                encoder.encodeSerializableValue(FrameMethodQueueUnbindSerializer, value.unbind)
+                encoder.encodeSerializableValue(FrameMethodQueueUnbindSerializer, value)
 
             is Frame.Method.MethodQueue.UnbindOk -> {}
         }
@@ -58,30 +56,22 @@ object FrameMethodQueueSerializer : KSerializer<Frame.Method.MethodQueue> {
             Frame.Method.MethodQueue.Kind.entries.first { it.value == byte }
         }
         return when (kind) {
-            Frame.Method.MethodQueue.Kind.DECLARE ->
-                Frame.Method.MethodQueue.Declare(decoder.decodeSerializableValue(FrameMethodQueueDeclareSerializer))
+            Frame.Method.MethodQueue.Kind.DECLARE -> decoder.decodeSerializableValue(FrameMethodQueueDeclareSerializer)
 
             Frame.Method.MethodQueue.Kind.DECLARE_OK ->
-                Frame.Method.MethodQueue.DeclareOk(decoder.decodeSerializableValue(FrameMethodQueueDeclareOkSerializer))
+                decoder.decodeSerializableValue(FrameMethodQueueDeclareOkSerializer)
 
-            Frame.Method.MethodQueue.Kind.BIND ->
-                Frame.Method.MethodQueue.Bind(decoder.decodeSerializableValue(FrameMethodQueueBindSerializer))
+            Frame.Method.MethodQueue.Kind.BIND -> decoder.decodeSerializableValue(FrameMethodQueueBindSerializer)
 
             Frame.Method.MethodQueue.Kind.BIND_OK -> Frame.Method.MethodQueue.BindOk
-            Frame.Method.MethodQueue.Kind.PURGE ->
-                Frame.Method.MethodQueue.Purge(decoder.decodeSerializableValue(FrameMethodQueuePurgeSerializer))
-
+            Frame.Method.MethodQueue.Kind.PURGE -> decoder.decodeSerializableValue(FrameMethodQueuePurgeSerializer)
             Frame.Method.MethodQueue.Kind.PURGE_OK -> decoder.decodeSerializableValue(FrameMethodQueuePurgeOkSerializer)
-
-            Frame.Method.MethodQueue.Kind.DELETE ->
-                Frame.Method.MethodQueue.Delete(decoder.decodeSerializableValue(FrameMethodQueueDeleteSerializer))
+            Frame.Method.MethodQueue.Kind.DELETE -> decoder.decodeSerializableValue(FrameMethodQueueDeleteSerializer)
 
             Frame.Method.MethodQueue.Kind.DELETE_OK ->
                 decoder.decodeSerializableValue(FrameMethodQueueDeleteOkSerializer)
 
-            Frame.Method.MethodQueue.Kind.UNBIND ->
-                Frame.Method.MethodQueue.Unbind(decoder.decodeSerializableValue(FrameMethodQueueUnbindSerializer))
-
+            Frame.Method.MethodQueue.Kind.UNBIND -> decoder.decodeSerializableValue(FrameMethodQueueUnbindSerializer)
             Frame.Method.MethodQueue.Kind.UNBIND_OK -> Frame.Method.MethodQueue.UnbindOk
         }
     }

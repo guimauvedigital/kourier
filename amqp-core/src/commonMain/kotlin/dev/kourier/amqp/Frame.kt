@@ -84,8 +84,39 @@ data class Frame(
         @Serializable(with = FrameMethodConnectionSerializer::class)
         sealed class MethodConnection {
 
-            data class Start(val start: ConnectionStart) : MethodConnection()
-            data class StartOk(val startOk: ConnectionStartOk) : MethodConnection()
+            @Serializable(with = FrameMethodConnectionStartSerializer::class)
+            data class Start(
+                val versionMajor: UByte = 0u,
+                val versionMinor: UByte = 9u,
+                val serverProperties: Table = Table(
+                    mapOf(
+                        "capabilities" to Field.Table(
+                            Table(
+                                mapOf(
+                                    "publisher_confirms" to Field.Boolean(true),
+                                    "exchange_exchange_bindings" to Field.Boolean(true),
+                                    "basic.nack" to Field.Boolean(true),
+                                    "per_consumer_qos" to Field.Boolean(true),
+                                    "authentication_failure_close" to Field.Boolean(true),
+                                    "consumer_cancel_notify" to Field.Boolean(true),
+                                    "connection.blocked" to Field.Boolean(true),
+                                )
+                            )
+                        )
+                    )
+                ),
+                val mechanisms: String = "AMQPLAIN PLAIN",
+                val locales: String = "en_US",
+            ) : MethodConnection()
+
+            @Serializable(with = FrameMethodConnectionStartOkSerializer::class)
+            data class StartOk(
+                val clientProperties: Table,
+                val mechanism: String,
+                val response: String,
+                val locale: String,
+            ) : MethodConnection()
+
             data class Secure(val challenge: String) : MethodConnection()
             data class SecureOk(val response: String) : MethodConnection()
             data class Tune(
@@ -100,9 +131,23 @@ data class Frame(
                 val heartbeat: UShort = 60u,
             ) : MethodConnection()
 
-            data class Open(val open: ConnectionOpen) : MethodConnection()
+            @Serializable(with = FrameMethodConnectionOpenSerializer::class)
+            data class Open(
+                val vhost: String = "/",
+                val reserved1: String = "",
+                val reserved2: Boolean = false,
+            ) : MethodConnection()
+
             data class OpenOk(val reserved1: String) : MethodConnection()
-            data class Close(val close: ConnectionClose) : MethodConnection()
+
+            @Serializable(with = FrameMethodConnectionCloseSerializer::class)
+            data class Close(
+                val replyCode: UShort,
+                val replyText: String,
+                val failingClassId: UShort,
+                val failingMethodId: UShort,
+            ) : MethodConnection()
+
             object CloseOk : MethodConnection()
             data class Blocked(val reason: String) : MethodConnection()
             object Unblocked : MethodConnection()
@@ -138,54 +183,6 @@ data class Frame(
                 UNBLOCKED(61u)
             }
 
-            @Serializable(with = FrameMethodConnectionStartSerializer::class)
-            data class ConnectionStart(
-                val versionMajor: UByte = 0u,
-                val versionMinor: UByte = 9u,
-                val serverProperties: Table = Table(
-                    mapOf(
-                        "capabilities" to Field.Table(
-                            Table(
-                                mapOf(
-                                    "publisher_confirms" to Field.Boolean(true),
-                                    "exchange_exchange_bindings" to Field.Boolean(true),
-                                    "basic.nack" to Field.Boolean(true),
-                                    "per_consumer_qos" to Field.Boolean(true),
-                                    "authentication_failure_close" to Field.Boolean(true),
-                                    "consumer_cancel_notify" to Field.Boolean(true),
-                                    "connection.blocked" to Field.Boolean(true),
-                                )
-                            )
-                        )
-                    )
-                ),
-                val mechanisms: String = "AMQPLAIN PLAIN",
-                val locales: String = "en_US",
-            )
-
-            @Serializable(with = FrameMethodConnectionStartOkSerializer::class)
-            data class ConnectionStartOk(
-                val clientProperties: Table,
-                val mechanism: String,
-                val response: String,
-                val locale: String,
-            )
-
-            @Serializable(with = FrameMethodConnectionOpenSerializer::class)
-            data class ConnectionOpen(
-                val vhost: String = "/",
-                val reserved1: String = "",
-                val reserved2: Boolean = false,
-            )
-
-            @Serializable(with = FrameMethodConnectionCloseSerializer::class)
-            data class ConnectionClose(
-                val replyCode: UShort,
-                val replyText: String,
-                val failingClassId: UShort,
-                val failingMethodId: UShort,
-            )
-
         }
 
         @Serializable(with = FrameMethodChannelSerializer::class)
@@ -195,7 +192,15 @@ data class Frame(
             data class OpenOk(val reserved1: String) : MethodChannel()
             data class Flow(val active: Boolean) : MethodChannel()
             data class FlowOk(val active: Boolean) : MethodChannel()
-            data class Close(val close: ChannelClose) : MethodChannel()
+
+            @Serializable(with = FrameMethodChannelCloseSerializer::class)
+            data class Close(
+                val replyCode: UShort,
+                val replyText: String,
+                val classId: UShort,
+                val methodId: UShort,
+            ) : MethodChannel()
+
             object CloseOk : MethodChannel()
 
             val kind: Kind
@@ -217,26 +222,58 @@ data class Frame(
                 CLOSE_OK(41u)
             }
 
-            @Serializable(with = FrameMethodChannelCloseSerializer::class)
-            data class ChannelClose(
-                val replyCode: UShort,
-                val replyText: String,
-                val classId: UShort,
-                val methodId: UShort,
-            )
-
         }
 
         @Serializable(with = FrameMethodExchangeSerializer::class)
         sealed class MethodExchange {
 
-            data class Declare(val declare: ExchangeDeclare) : MethodExchange()
+            @Serializable(with = FrameMethodExchangeDeclareSerializer::class)
+            data class Declare(
+                val reserved1: UShort,
+                val exchangeName: String,
+                val exchangeType: String,
+                val passive: Boolean,
+                val durable: Boolean,
+                val autoDelete: Boolean,
+                val internal: Boolean,
+                val noWait: Boolean,
+                val arguments: Table,
+            ) : MethodExchange()
+
             object DeclareOk : MethodExchange()
-            data class Delete(val delete: ExchangeDelete) : MethodExchange()
+
+            @Serializable(with = FrameMethodExchangeDeleteSerializer::class)
+            data class Delete(
+                val reserved1: UShort,
+                val exchangeName: String,
+                val ifUnused: Boolean,
+                val noWait: Boolean,
+            ) : MethodExchange()
+
             object DeleteOk : MethodExchange()
-            data class Bind(val bind: ExchangeBind) : MethodExchange()
+
+            @Serializable(with = FrameMethodExchangeBindSerializer::class)
+            data class Bind(
+                val reserved1: UShort,
+                val destination: String,
+                val source: String,
+                val routingKey: String,
+                val noWait: Boolean,
+                val arguments: Table,
+            ) : MethodExchange()
+
             object BindOk : MethodExchange()
-            data class Unbind(val unbind: ExchangeUnbind) : MethodExchange()
+
+            @Serializable(with = FrameMethodExchangeUnbindSerializer::class)
+            data class Unbind(
+                val reserved1: UShort,
+                val destination: String,
+                val source: String,
+                val routingKey: String,
+                val noWait: Boolean,
+                val arguments: Table,
+            ) : MethodExchange()
+
             object UnbindOk : MethodExchange()
 
             val kind: Kind
@@ -262,67 +299,77 @@ data class Frame(
                 UNBIND_OK(51u)
             }
 
-            @Serializable(with = FrameMethodExchangeDeclareSerializer::class)
-            data class ExchangeDeclare(
-                val reserved1: UShort,
-                val exchangeName: String,
-                val exchangeType: String,
-                val passive: Boolean,
-                val durable: Boolean,
-                val autoDelete: Boolean,
-                val internal: Boolean,
-                val noWait: Boolean,
-                val arguments: Table,
-            )
-
-            @Serializable(with = FrameMethodExchangeDeleteSerializer::class)
-            data class ExchangeDelete(
-                val reserved1: UShort,
-                val exchangeName: String,
-                val ifUnused: Boolean,
-                val noWait: Boolean,
-            )
-
-            @Serializable(with = FrameMethodExchangeBindSerializer::class)
-            data class ExchangeBind(
-                val reserved1: UShort,
-                val destination: String,
-                val source: String,
-                val routingKey: String,
-                val noWait: Boolean,
-                val arguments: Table,
-            )
-
-            @Serializable(with = FrameMethodExchangeUnbindSerializer::class)
-            data class ExchangeUnbind(
-                val reserved1: UShort,
-                val destination: String,
-                val source: String,
-                val routingKey: String,
-                val noWait: Boolean,
-                val arguments: Table,
-            )
-
         }
 
         @Serializable(with = FrameMethodQueueSerializer::class)
         sealed class MethodQueue {
 
-            data class Declare(val declare: QueueDeclare) : MethodQueue()
-            data class DeclareOk(val declareOk: QueueDeclareOk) : MethodQueue()
-            data class Bind(val bind: QueueBind) : MethodQueue()
+            @Serializable(with = FrameMethodQueueDeclareSerializer::class)
+            data class Declare(
+                val reserved1: UShort,
+                val queueName: String,
+                val passive: Boolean,
+                val durable: Boolean,
+                val exclusive: Boolean,
+                val autoDelete: Boolean,
+                val noWait: Boolean,
+                val arguments: Table,
+            ) : MethodQueue()
+
+            @Serializable(with = FrameMethodQueueDeclareOkSerializer::class)
+            data class DeclareOk(
+                val queueName: String,
+                val messageCount: UInt,
+                val consumerCount: UInt,
+            ) : MethodQueue()
+
+            @Serializable(with = FrameMethodQueueBindSerializer::class)
+            data class Bind(
+                val reserved1: UShort,
+                val queueName: String,
+                val exchangeName: String,
+                val routingKey: String,
+                val noWait: Boolean,
+                val arguments: Table,
+            ) : MethodQueue()
+
             data object BindOk : MethodQueue()
-            data class Purge(val purge: QueuePurge) : MethodQueue()
+
+            @Serializable(with = FrameMethodQueuePurgeSerializer::class)
+            data class Purge(
+                val reserved1: UShort,
+                val queueName: String,
+                val noWait: Boolean,
+            ) : MethodQueue()
 
             @Serializable(with = FrameMethodQueuePurgeOkSerializer::class)
-            data class PurgeOk(val messageCount: UInt) : MethodQueue()
+            data class PurgeOk(
+                val messageCount: UInt,
+            ) : MethodQueue()
 
-            data class Delete(val delete: QueueDelete) : MethodQueue()
+            @Serializable(with = FrameMethodQueueDeleteSerializer::class)
+            data class Delete(
+                val reserved1: UShort,
+                val queueName: String,
+                val ifUnused: Boolean,
+                val ifEmpty: Boolean,
+                val noWait: Boolean,
+            ) : MethodQueue()
 
             @Serializable(with = FrameMethodQueueDeleteOkSerializer::class)
-            data class DeleteOk(val messageCount: UInt) : MethodQueue()
+            data class DeleteOk(
+                val messageCount: UInt,
+            ) : MethodQueue()
 
-            data class Unbind(val unbind: QueueUnbind) : MethodQueue()
+            @Serializable(with = FrameMethodQueueUnbindSerializer::class)
+            data class Unbind(
+                val reserved1: UShort,
+                val queueName: String,
+                val exchangeName: String,
+                val routingKey: String,
+                val arguments: Table,
+            ) : MethodQueue()
+
             data object UnbindOk : MethodQueue()
 
             val kind: Kind
@@ -351,60 +398,6 @@ data class Frame(
                 UNBIND(50u),
                 UNBIND_OK(51u)
             }
-
-            @Serializable(with = FrameMethodQueueDeclareSerializer::class)
-            data class QueueDeclare(
-                val reserved1: UShort,
-                val queueName: String,
-                val passive: Boolean,
-                val durable: Boolean,
-                val exclusive: Boolean,
-                val autoDelete: Boolean,
-                val noWait: Boolean,
-                val arguments: Table,
-            )
-
-            @Serializable(with = FrameMethodQueueDeclareOkSerializer::class)
-            data class QueueDeclareOk(
-                val queueName: String,
-                val messageCount: UInt,
-                val consumerCount: UInt,
-            )
-
-            @Serializable(with = FrameMethodQueueBindSerializer::class)
-            data class QueueBind(
-                val reserved1: UShort,
-                val queueName: String,
-                val exchangeName: String,
-                val routingKey: String,
-                val noWait: Boolean,
-                val arguments: Table,
-            )
-
-            @Serializable(with = FrameMethodQueuePurgeSerializer::class)
-            data class QueuePurge(
-                val reserved1: UShort,
-                val queueName: String,
-                val noWait: Boolean,
-            )
-
-            @Serializable(with = FrameMethodQueueDeleteSerializer::class)
-            data class QueueDelete(
-                val reserved1: UShort,
-                val queueName: String,
-                val ifUnused: Boolean,
-                val ifEmpty: Boolean,
-                val noWait: Boolean,
-            )
-
-            @Serializable(with = FrameMethodQueueUnbindSerializer::class)
-            data class QueueUnbind(
-                val reserved1: UShort,
-                val queueName: String,
-                val exchangeName: String,
-                val routingKey: String,
-                val arguments: Table,
-            )
 
         }
 

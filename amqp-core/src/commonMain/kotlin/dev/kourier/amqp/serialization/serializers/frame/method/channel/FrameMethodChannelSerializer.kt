@@ -27,7 +27,7 @@ object FrameMethodChannelSerializer : KSerializer<Frame.Method.MethodChannel> {
             is Frame.Method.MethodChannel.Flow -> encoder.encodeBoolean(value.active)
             is Frame.Method.MethodChannel.FlowOk -> encoder.encodeBoolean(value.active)
             is Frame.Method.MethodChannel.Close ->
-                encoder.encodeSerializableValue(FrameMethodChannelCloseSerializer, value.close)
+                encoder.encodeSerializableValue(FrameMethodChannelCloseSerializer, value)
 
             is Frame.Method.MethodChannel.CloseOk -> {}
         }
@@ -60,10 +60,7 @@ object FrameMethodChannelSerializer : KSerializer<Frame.Method.MethodChannel> {
                 Frame.Method.MethodChannel.FlowOk(active)
             }
 
-            Frame.Method.MethodChannel.Kind.CLOSE -> Frame.Method.MethodChannel.Close(
-                decoder.decodeSerializableValue(FrameMethodChannelCloseSerializer)
-            )
-
+            Frame.Method.MethodChannel.Kind.CLOSE -> decoder.decodeSerializableValue(FrameMethodChannelCloseSerializer)
             Frame.Method.MethodChannel.Kind.CLOSE_OK -> Frame.Method.MethodChannel.CloseOk
         }
     }

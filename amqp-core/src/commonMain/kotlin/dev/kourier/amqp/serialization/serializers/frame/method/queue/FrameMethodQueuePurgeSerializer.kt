@@ -11,13 +11,13 @@ import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-object FrameMethodQueuePurgeSerializer : KSerializer<Frame.Method.MethodQueue.QueuePurge> {
+object FrameMethodQueuePurgeSerializer : KSerializer<Frame.Method.MethodQueue.Purge> {
 
     @OptIn(InternalSerializationApi::class)
     override val descriptor: SerialDescriptor
-        get() = buildSerialDescriptor("Frame.Method.MethodQueue.QueuePurge", StructureKind.OBJECT)
+        get() = buildSerialDescriptor("Frame.Method.MethodQueue.Purge", StructureKind.OBJECT)
 
-    override fun serialize(encoder: Encoder, value: Frame.Method.MethodQueue.QueuePurge) {
+    override fun serialize(encoder: Encoder, value: Frame.Method.MethodQueue.Purge) {
         require(encoder is ProtocolBinaryEncoder)
 
         encoder.encodeShort(value.reserved1.toShort())
@@ -29,7 +29,7 @@ object FrameMethodQueuePurgeSerializer : KSerializer<Frame.Method.MethodQueue.Qu
         encoder.encodeByte(bits.toByte())
     }
 
-    override fun deserialize(decoder: Decoder): Frame.Method.MethodQueue.QueuePurge {
+    override fun deserialize(decoder: Decoder): Frame.Method.MethodQueue.Purge {
         require(decoder is ProtocolBinaryDecoder)
 
         val reserved1 = decoder.decodeShort().toUShort()
@@ -39,7 +39,7 @@ object FrameMethodQueuePurgeSerializer : KSerializer<Frame.Method.MethodQueue.Qu
 
         val noWait = bits and (1u shl 0) != 0u
 
-        return Frame.Method.MethodQueue.QueuePurge(
+        return Frame.Method.MethodQueue.Purge(
             reserved1 = reserved1,
             queueName = queueName,
             noWait = noWait,

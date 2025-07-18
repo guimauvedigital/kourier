@@ -46,16 +46,14 @@ class AMQPChannel(
             payload = Frame.Payload.Method(
                 Frame.Method.Queue(
                     Frame.Method.MethodQueue.Declare(
-                        Frame.Method.MethodQueue.QueueDeclare(
-                            reserved1 = 0u,
-                            queueName = name,
-                            passive = passive,
-                            durable = durable,
-                            exclusive = exclusive,
-                            autoDelete = autoDelete,
-                            noWait = false,
-                            arguments = arguments
-                        )
+                        reserved1 = 0u,
+                        queueName = name,
+                        passive = passive,
+                        durable = durable,
+                        exclusive = exclusive,
+                        autoDelete = autoDelete,
+                        noWait = false,
+                        arguments = arguments
                     )
                 )
             )
@@ -82,13 +80,11 @@ class AMQPChannel(
             payload = Frame.Payload.Method(
                 Frame.Method.Queue(
                     Frame.Method.MethodQueue.Delete(
-                        Frame.Method.MethodQueue.QueueDelete(
-                            reserved1 = 0u,
-                            queueName = name,
-                            ifUnused = ifUnused,
-                            ifEmpty = ifEmpty,
-                            noWait = false
-                        )
+                        reserved1 = 0u,
+                        queueName = name,
+                        ifUnused = ifUnused,
+                        ifEmpty = ifEmpty,
+                        noWait = false
                     )
                 )
             )
@@ -110,11 +106,9 @@ class AMQPChannel(
             payload = Frame.Payload.Method(
                 Frame.Method.Queue(
                     Frame.Method.MethodQueue.Purge(
-                        Frame.Method.MethodQueue.QueuePurge(
-                            reserved1 = 0u,
-                            queueName = name,
-                            noWait = false
-                        )
+                        reserved1 = 0u,
+                        queueName = name,
+                        noWait = false
                     )
                 )
             )
@@ -143,14 +137,12 @@ class AMQPChannel(
             payload = Frame.Payload.Method(
                 Frame.Method.Queue(
                     Frame.Method.MethodQueue.Bind(
-                        Frame.Method.MethodQueue.QueueBind(
-                            reserved1 = 0u,
-                            queueName = queue,
-                            exchangeName = exchange,
-                            routingKey = routingKey,
-                            noWait = false,
-                            arguments = arguments
-                        )
+                        reserved1 = 0u,
+                        queueName = queue,
+                        exchangeName = exchange,
+                        routingKey = routingKey,
+                        noWait = false,
+                        arguments = arguments
                     )
                 )
             )
@@ -179,13 +171,11 @@ class AMQPChannel(
             payload = Frame.Payload.Method(
                 Frame.Method.Queue(
                     Frame.Method.MethodQueue.Unbind(
-                        Frame.Method.MethodQueue.QueueUnbind(
-                            reserved1 = 0u,
-                            queueName = queue,
-                            exchangeName = exchange,
-                            routingKey = routingKey,
-                            arguments = arguments
-                        )
+                        reserved1 = 0u,
+                        queueName = queue,
+                        exchangeName = exchange,
+                        routingKey = routingKey,
+                        arguments = arguments
                     )
                 )
             )
@@ -220,17 +210,15 @@ class AMQPChannel(
             payload = Frame.Payload.Method(
                 Frame.Method.Exchange(
                     Frame.Method.MethodExchange.Declare(
-                        Frame.Method.MethodExchange.ExchangeDeclare(
-                            reserved1 = 0u,
-                            exchangeName = name,
-                            exchangeType = type,
-                            passive = passive,
-                            durable = durable,
-                            autoDelete = autoDelete,
-                            internal = internal,
-                            noWait = false,
-                            arguments = arguments
-                        )
+                        reserved1 = 0u,
+                        exchangeName = name,
+                        exchangeType = type,
+                        passive = passive,
+                        durable = durable,
+                        autoDelete = autoDelete,
+                        internal = internal,
+                        noWait = false,
+                        arguments = arguments
                     )
                 )
             )
@@ -255,12 +243,10 @@ class AMQPChannel(
             payload = Frame.Payload.Method(
                 Frame.Method.Exchange(
                     Frame.Method.MethodExchange.Delete(
-                        Frame.Method.MethodExchange.ExchangeDelete(
-                            reserved1 = 0u,
-                            exchangeName = name,
-                            ifUnused = ifUnused,
-                            noWait = false
-                        )
+                        reserved1 = 0u,
+                        exchangeName = name,
+                        ifUnused = ifUnused,
+                        noWait = false
                     )
                 )
             )
@@ -289,14 +275,12 @@ class AMQPChannel(
             payload = Frame.Payload.Method(
                 Frame.Method.Exchange(
                     Frame.Method.MethodExchange.Bind(
-                        Frame.Method.MethodExchange.ExchangeBind(
-                            reserved1 = 0u,
-                            destination = destination,
-                            source = source,
-                            routingKey = routingKey,
-                            noWait = false,
-                            arguments = arguments
-                        )
+                        reserved1 = 0u,
+                        destination = destination,
+                        source = source,
+                        routingKey = routingKey,
+                        noWait = false,
+                        arguments = arguments
                     )
                 )
             )
@@ -325,14 +309,12 @@ class AMQPChannel(
             payload = Frame.Payload.Method(
                 Frame.Method.Exchange(
                     Frame.Method.MethodExchange.Unbind(
-                        Frame.Method.MethodExchange.ExchangeUnbind(
-                            reserved1 = 0u,
-                            destination = destination,
-                            source = source,
-                            routingKey = routingKey,
-                            noWait = false,
-                            arguments = arguments
-                        )
+                        reserved1 = 0u,
+                        destination = destination,
+                        source = source,
+                        routingKey = routingKey,
+                        noWait = false,
+                        arguments = arguments
                     )
                 )
             )

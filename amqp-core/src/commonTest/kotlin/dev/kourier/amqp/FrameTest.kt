@@ -9,22 +9,109 @@ import kotlin.test.assertEquals
 class FrameTest {
 
     @Test
+    fun testFrameMethodExchangeDeclare() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Payload.Method(
+                Frame.Method.Exchange(
+                    Frame.Method.MethodExchange.Declare(
+                        reserved1 = 0u,
+                        exchangeName = "testExchange",
+                        exchangeType = "direct",
+                        passive = false,
+                        durable = true,
+                        autoDelete = false,
+                        internal = false,
+                        noWait = false,
+                        arguments = Table(emptyMap())
+                    )
+                )
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodExchangeDelete() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Payload.Method(
+                Frame.Method.Exchange(
+                    Frame.Method.MethodExchange.Delete(
+                        reserved1 = 0u,
+                        exchangeName = "testExchange",
+                        ifUnused = false,
+                        noWait = false,
+                    )
+                )
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodExchangeBind() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Payload.Method(
+                Frame.Method.Exchange(
+                    Frame.Method.MethodExchange.Bind(
+                        reserved1 = 0u,
+                        destination = "testExchangeDestination",
+                        source = "testExchangeSource",
+                        routingKey = "testRoutingKey",
+                        noWait = false,
+                        arguments = Table(emptyMap())
+                    )
+                )
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodExchangeUnbind() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Payload.Method(
+                Frame.Method.Exchange(
+                    Frame.Method.MethodExchange.Unbind(
+                        reserved1 = 0u,
+                        destination = "testExchangeDestination",
+                        source = "testExchangeSource",
+                        routingKey = "testRoutingKey",
+                        noWait = false,
+                        arguments = Table(emptyMap())
+                    )
+                )
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
     fun testFrameMethodQueueDeclare() {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Payload.Method(
                 Frame.Method.Queue(
                     Frame.Method.MethodQueue.Declare(
-                        Frame.Method.MethodQueue.QueueDeclare(
-                            reserved1 = 0u,
-                            queueName = "testQueue",
-                            passive = false,
-                            durable = true,
-                            exclusive = false,
-                            autoDelete = false,
-                            noWait = false,
-                            arguments = Table(emptyMap())
-                        )
+                        reserved1 = 0u,
+                        queueName = "testQueue",
+                        passive = false,
+                        durable = true,
+                        exclusive = false,
+                        autoDelete = false,
+                        noWait = false,
+                        arguments = Table(emptyMap())
                     )
                 )
             )
@@ -41,11 +128,9 @@ class FrameTest {
             payload = Frame.Payload.Method(
                 Frame.Method.Queue(
                     Frame.Method.MethodQueue.DeclareOk(
-                        Frame.Method.MethodQueue.QueueDeclareOk(
-                            queueName = "testQueue",
-                            messageCount = 0u,
-                            consumerCount = 0u,
-                        )
+                        queueName = "testQueue",
+                        messageCount = 0u,
+                        consumerCount = 0u,
                     )
                 )
             )
@@ -62,14 +147,12 @@ class FrameTest {
             payload = Frame.Payload.Method(
                 Frame.Method.Queue(
                     Frame.Method.MethodQueue.Bind(
-                        Frame.Method.MethodQueue.QueueBind(
-                            reserved1 = 0u,
-                            queueName = "testQueue",
-                            exchangeName = "testExchange",
-                            routingKey = "testRoutingKey",
-                            noWait = false,
-                            arguments = Table(emptyMap())
-                        )
+                        reserved1 = 0u,
+                        queueName = "testQueue",
+                        exchangeName = "testExchange",
+                        routingKey = "testRoutingKey",
+                        noWait = false,
+                        arguments = Table(emptyMap())
                     )
                 )
             )
@@ -101,11 +184,9 @@ class FrameTest {
             payload = Frame.Payload.Method(
                 Frame.Method.Queue(
                     Frame.Method.MethodQueue.Purge(
-                        Frame.Method.MethodQueue.QueuePurge(
-                            reserved1 = 0u,
-                            queueName = "testQueue",
-                            noWait = false,
-                        )
+                        reserved1 = 0u,
+                        queueName = "testQueue",
+                        noWait = false,
                     )
                 )
             )
@@ -139,13 +220,11 @@ class FrameTest {
             payload = Frame.Payload.Method(
                 Frame.Method.Queue(
                     Frame.Method.MethodQueue.Delete(
-                        Frame.Method.MethodQueue.QueueDelete(
-                            reserved1 = 0u,
-                            queueName = "testQueue",
-                            ifUnused = false,
-                            ifEmpty = false,
-                            noWait = false,
-                        )
+                        reserved1 = 0u,
+                        queueName = "testQueue",
+                        ifUnused = false,
+                        ifEmpty = false,
+                        noWait = false,
                     )
                 )
             )
@@ -179,13 +258,11 @@ class FrameTest {
             payload = Frame.Payload.Method(
                 Frame.Method.Queue(
                     Frame.Method.MethodQueue.Unbind(
-                        Frame.Method.MethodQueue.QueueUnbind(
-                            reserved1 = 0u,
-                            queueName = "testQueue",
-                            exchangeName = "testExchange",
-                            routingKey = "testRoutingKey",
-                            arguments = Table(emptyMap())
-                        )
+                        reserved1 = 0u,
+                        queueName = "testQueue",
+                        exchangeName = "testExchange",
+                        routingKey = "testRoutingKey",
+                        arguments = Table(emptyMap())
                     )
                 )
             )
