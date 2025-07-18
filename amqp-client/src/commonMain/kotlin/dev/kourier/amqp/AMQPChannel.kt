@@ -17,7 +17,7 @@ class AMQPChannel(
      * @param internal Whether the exchange cannot be directly published to by client.
      * @param arguments Additional arguments (check RabbitMQ documentation).
      *
-     * @return Suspends until declare response is received.
+     * @return AMQPResponse.Channel.Exchange.Declared
      */
     suspend fun exchangeDeclare(
         name: String,
@@ -27,7 +27,7 @@ class AMQPChannel(
         autoDelete: Boolean = false,
         internal: Boolean = false,
         arguments: Table = Table(emptyMap()),
-    ) {
+    ): AMQPResponse.Channel.Exchange.Declared {
         val declare = Frame(
             channelId = id,
             payload = Frame.Payload.Method(
@@ -48,7 +48,7 @@ class AMQPChannel(
                 )
             )
         )
-        connection.write(declare)
+        return connection.writeAndWaitForResponse(declare)
     }
 
     /**
@@ -57,9 +57,12 @@ class AMQPChannel(
      * @param name Name of the exchange.
      * @param ifUnused If enabled, exchange will be deleted only when it is not used.
      *
-     * @return Suspends until delete response is received.
+     * @return AMQPResponse.Channel.Exchange.Deleted
      */
-    suspend fun exchangeDelete(name: String, ifUnused: Boolean = false) {
+    suspend fun exchangeDelete(
+        name: String,
+        ifUnused: Boolean = false,
+    ): AMQPResponse.Channel.Exchange.Deleted {
         val delete = Frame(
             channelId = id,
             payload = Frame.Payload.Method(
@@ -75,7 +78,7 @@ class AMQPChannel(
                 )
             )
         )
-        connection.write(delete)
+        return connection.writeAndWaitForResponse(delete)
     }
 
 }

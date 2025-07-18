@@ -2,91 +2,16 @@ package dev.kourier.amqp
 
 sealed class AMQPResponse {
 
-    data class Channel(val channel: ChannelResponse) : AMQPResponse()
-    data class Connection(val connection: ConnectionResponse) : AMQPResponse()
+    sealed class Channel : AMQPResponse() {
 
-    sealed class ChannelResponse {
+        data class Opened(val channelId: ChannelId) : Channel()
+        data class Closed(val channelId: ChannelId) : Channel()
 
-        data class Opened(val channelId: ChannelId) : ChannelResponse()
-        data class Closed(val channelId: ChannelId) : ChannelResponse()
-        data class Message(val message: ChannelMessage) : ChannelResponse()
-        data class Queue(val queue: ChannelQueue) : ChannelResponse()
-        data class Exchange(val exchange: ChannelExchange) : ChannelResponse()
-        data class Basic(val basic: ChannelBasic) : ChannelResponse()
-        data class Confirm(val confirm: ChannelConfirm) : ChannelResponse()
-        data class Tx(val tx: ChannelTx) : ChannelResponse()
-        data class Flowed(val flowed: ChannelFlowed) : ChannelResponse()
+        sealed class Message : Channel() {
 
-        sealed class ChannelQueue {
-
-            data class Declared(
-                val queueName: String,
-                val messageCount: UInt,
-                val consumerCount: UInt,
-            ) : ChannelQueue()
-
-            data object Binded : ChannelQueue()
-            data class Purged(val messageCount: UInt) : ChannelQueue()
-            data class Deleted(val messageCount: UInt) : ChannelQueue()
-            data object Unbinded : ChannelQueue()
-
-        }
-
-        sealed class ChannelExchange {
-
-            data object Declared : ChannelExchange()
-            data object Deleted : ChannelExchange()
-            data object Binded : ChannelExchange()
-            data object Unbinded : ChannelExchange()
-
-        }
-
-        sealed class ChannelBasic {
-
-            data object Recovered : ChannelBasic()
-            data object QosOk : ChannelBasic()
-            data class ConsumeOk(val consumerTag: String) : ChannelBasic()
-            data object Canceled : ChannelBasic()
-            data class PublishConfirm(
-                val publishConfirm: BasicPublishConfirm,
-            ) : ChannelBasic()
-
-            data class Published(
-                val published: BasicPublished,
-            ) : ChannelBasic()
-
-            sealed class BasicPublishConfirm {
-
-                data class Ack(val deliveryTag: ULong, val multiple: Boolean) : BasicPublishConfirm()
-                data class Nack(val deliveryTag: ULong, val multiple: Boolean) : BasicPublishConfirm()
-
-            }
-
-            data class BasicPublished(val deliveryTag: ULong)
-
-        }
-
-        sealed class ChannelConfirm {
-
-            data object Selected : ChannelConfirm()
-
-        }
-
-        sealed class ChannelTx {
-
-            data object Selected : ChannelTx()
-            data object Committed : ChannelTx()
-            data object Rollbacked : ChannelTx()
-
-        }
-
-        data class ChannelFlowed(val active: Boolean)
-
-        sealed class ChannelMessage {
-
-            data class Delivery(val delivery: MessageDelivery) : ChannelMessage()
-            data class Get(val get: MessageGet?) : ChannelMessage()
-            data class Return(val returnValue: MessageReturn) : ChannelMessage()
+            data class Delivery(val delivery: MessageDelivery) : Message()
+            data class Get(val get: MessageGet?) : Message()
+            data class Return(val returnValue: MessageReturn) : Message()
 
             data class MessageDelivery(
                 val exchange: String,
@@ -112,12 +37,70 @@ sealed class AMQPResponse {
             )
         }
 
+        sealed class Queue : Channel() {
+
+            data class Declared(
+                val queueName: String,
+                val messageCount: UInt,
+                val consumerCount: UInt,
+            ) : Queue()
+
+            data object Binded : Queue()
+            data class Purged(val messageCount: UInt) : Queue()
+            data class Deleted(val messageCount: UInt) : Queue()
+            data object Unbinded : Queue()
+
+        }
+
+        sealed class Exchange : Channel() {
+
+            data object Declared : Exchange()
+            data object Deleted : Exchange()
+            data object Binded : Exchange()
+            data object Unbinded : Exchange()
+
+        }
+
+        sealed class Basic : Channel() {
+
+            data object Recovered : Basic()
+            data object QosOk : Basic()
+            data class ConsumeOk(val consumerTag: String) : Basic()
+            data object Canceled : Basic()
+
+            sealed class PublishConfirm : Basic() {
+
+                data class Ack(val deliveryTag: ULong, val multiple: Boolean) : PublishConfirm()
+                data class Nack(val deliveryTag: ULong, val multiple: Boolean) : PublishConfirm()
+
+            }
+
+            data class Published(val deliveryTag: ULong) : Basic()
+
+        }
+
+        sealed class Confirm : Channel() {
+
+            data object Selected : Confirm()
+
+        }
+
+        sealed class Tx : Channel() {
+
+            data object Selected : Tx()
+            data object Committed : Tx()
+            data object Rollbacked : Tx()
+
+        }
+
+        data class Flowed(val active: Boolean) : Channel()
+
     }
 
-    sealed class ConnectionResponse {
+    sealed class Connection : AMQPResponse() {
 
-        data class Connected(val channelMax: UShort, val frameMax: UInt) : ConnectionResponse()
-        data object Closed : ConnectionResponse()
+        data class Connected(val channelMax: UShort, val frameMax: UInt) : Connection()
+        data object Closed : Connection()
 
     }
 

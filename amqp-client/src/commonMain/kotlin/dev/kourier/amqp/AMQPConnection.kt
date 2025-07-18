@@ -90,7 +90,7 @@ class AMQPConnection private constructor(
         write(Protocol.PROTOCOL_START_0_9_1)
         val response = withTimeout(10_000) {
             allResponses
-                .mapNotNull { (it as? AMQPResponse.Connection)?.connection as? AMQPResponse.ConnectionResponse.Connected }
+                .mapNotNull { (it as? AMQPResponse.Connection.Connected) }
                 .first()
         }
 
@@ -200,11 +200,9 @@ class AMQPConnection private constructor(
 
                     is Frame.Method.MethodConnection.Open -> error("Unexpected Open frame received: $connection")
                     is Frame.Method.MethodConnection.OpenOk -> allResponses.emit(
-                        AMQPResponse.Connection(
-                            AMQPResponse.ConnectionResponse.Connected(
-                                channelMax = channelMax,
-                                frameMax = frameMax,
-                            )
+                        AMQPResponse.Connection.Connected(
+                            channelMax = channelMax,
+                            frameMax = frameMax,
                         )
                     )
 
@@ -219,10 +217,8 @@ class AMQPConnection private constructor(
                 is Frame.Method.Channel -> when (val channel = method.channel) {
                     is Frame.Method.MethodChannel.Open -> error("Unexpected Open frame received: $channel")
                     is Frame.Method.MethodChannel.OpenOk -> allResponses.emit(
-                        AMQPResponse.Channel(
-                            AMQPResponse.ChannelResponse.Opened(
-                                channelId = frame.channelId,
-                            )
+                        AMQPResponse.Channel.Opened(
+                            channelId = frame.channelId,
                         )
                     )
 
@@ -232,10 +228,28 @@ class AMQPConnection private constructor(
                     is Frame.Method.MethodChannel.FlowOk -> TODO()
                 }
 
-                is Frame.Method.Basic -> TODO()
-                is Frame.Method.Confirm -> TODO()
-                is Frame.Method.Exchange -> TODO()
                 is Frame.Method.Queue -> TODO()
+                is Frame.Method.Basic -> TODO()
+
+                is Frame.Method.Exchange -> when (val exchange = method.exchange) {
+                    is Frame.Method.MethodExchange.Declare -> error("Unexpected Declare frame received: $exchange")
+                    is Frame.Method.MethodExchange.DeclareOk -> allResponses.emit(
+                        AMQPResponse.Channel.Exchange.Declared
+                    )
+
+                    is Frame.Method.MethodExchange.Delete -> error("Unexpected Delete frame received: $exchange")
+                    is Frame.Method.MethodExchange.DeleteOk -> allResponses.emit(
+                        AMQPResponse.Channel.Exchange.Deleted
+                    )
+
+                    is Frame.Method.MethodExchange.Bind -> error("Unexpected Bind frame received: $exchange")
+                    is Frame.Method.MethodExchange.BindOk -> TODO()
+
+                    is Frame.Method.MethodExchange.Unbind -> error("Unexpected Unbind frame received: $exchange")
+                    is Frame.Method.MethodExchange.UnbindOk -> TODO()
+                }
+
+                is Frame.Method.Confirm -> TODO()
                 is Frame.Method.Tx -> TODO()
             }
 
@@ -265,10 +279,11 @@ class AMQPConnection private constructor(
     }
 
     @InternalAmqpApi
-    suspend fun <T> writeAndWaitForResponse(frame: Frame, block: (AMQPResponse) -> T?): T {
+    @Suppress("Unchecked_Cast")
+    suspend fun <T : AMQPResponse> writeAndWaitForResponse(frame: Frame): T {
         val responseDeferred = CompletableDeferred<T>()
         CoroutineScope(coroutineContext).launch {
-            responseDeferred.complete(allResponses.mapNotNull(block).first())
+            responseDeferred.complete(allResponses.mapNotNull { it as? T }.first())
         }
         write(frame)
         return withTimeout(10_000) { responseDeferred.await() }
@@ -295,9 +310,7 @@ class AMQPConnection private constructor(
                 )
             )
         )
-        val response = writeAndWaitForResponse(channelOpen) {
-            (it as? AMQPResponse.Channel)?.channel as? AMQPResponse.ChannelResponse.Opened
-        }
+        val response = writeAndWaitForResponse<AMQPResponse.Channel.Opened>(channelOpen)
         return AMQPChannel(
             connection = this,
             id = response.channelId,
