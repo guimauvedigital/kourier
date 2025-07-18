@@ -6,6 +6,12 @@ import kotlin.test.assertEquals
 class AMQPChannelTest {
 
     @Test
+    fun testCanCloseChannel() = withConnection { connection ->
+        val channel = connection.openChannel()
+        channel.close()
+    }
+
+    @Test
     fun testQueue() = withConnection { connection ->
         val channel = connection.openChannel()
 
@@ -33,6 +39,16 @@ class AMQPChannelTest {
 
         channel.exchangeDelete("test1")
         channel.exchangeDelete("test2")
+
+        channel.close()
+    }
+
+    @Test
+    fun testBasicQos() = withConnection { connection ->
+        val channel = connection.openChannel()
+
+        channel.basicQos(count = 100u, global = true)
+        channel.basicQos(count = 100u, global = false)
 
         channel.close()
     }

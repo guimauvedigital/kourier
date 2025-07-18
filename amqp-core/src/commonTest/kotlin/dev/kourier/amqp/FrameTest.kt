@@ -231,4 +231,63 @@ class FrameTest {
         assertEquals(frame, decoded)
     }
 
+    @Test
+    fun testFrameMethodQueueBasicQos() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.Qos(
+                prefetchSize = 0u,
+                prefetchCount = 1u,
+                global = false
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicQosOk() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.QosOk
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicConsume() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.Consume(
+                reserved1 = 0u,
+                queue = "testQueue",
+                consumerTag = "testConsumer",
+                noLocal = false,
+                noAck = true,
+                exclusive = false,
+                noWait = false,
+                arguments = Table(emptyMap())
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicConsumeOk() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.ConsumeOk(
+                consumerTag = "testConsumer",
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
 }

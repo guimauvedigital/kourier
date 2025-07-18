@@ -3,6 +3,9 @@ package dev.kourier.amqp
 import dev.kourier.amqp.serialization.serializers.frame.FrameHeaderSerializer
 import dev.kourier.amqp.serialization.serializers.frame.FrameSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.FrameMethodSerializer
+import dev.kourier.amqp.serialization.serializers.frame.method.basic.FrameMethodBasicConsumeOkSerializer
+import dev.kourier.amqp.serialization.serializers.frame.method.basic.FrameMethodBasicConsumeSerializer
+import dev.kourier.amqp.serialization.serializers.frame.method.basic.FrameMethodBasicQosSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.basic.FrameMethodBasicSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.channel.FrameMethodChannelCloseSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.channel.FrameMethodChannelSerializer
@@ -413,6 +416,61 @@ data class Frame(
 
         @Serializable(with = FrameMethodBasicSerializer::class)
         sealed class Basic : Method() {
+
+            val basicKind: Kind
+                get() = when (this) {
+                    is Qos -> Kind.QOS
+                    is QosOk -> Kind.QOS_OK
+                    is Consume -> Kind.CONSUME
+                    is ConsumeOk -> Kind.CONSUME_OK
+                }
+
+            enum class Kind(val value: UShort) {
+                QOS(10u),
+                QOS_OK(11u),
+                CONSUME(20u),
+                CONSUME_OK(21u),
+                CANCEL(30u),
+                CANCEL_OK(31u),
+                PUBLISH(40u),
+                RETURN(50u),
+                DELIVER(60u),
+                GET(70u),
+                GET_OK(71u),
+                GET_EMPTY(72u),
+                ACK(80u),
+                REJECT(90u),
+                RECOVER_ASYNC(100u),
+                RECOVER(110u),
+                RECOVER_OK(111u),
+                NACK(120u)
+            }
+
+            @Serializable(with = FrameMethodBasicQosSerializer::class)
+            data class Qos(
+                val prefetchSize: UInt,
+                val prefetchCount: UShort,
+                val global: Boolean,
+            ) : Basic()
+
+            data object QosOk : Basic()
+
+            @Serializable(with = FrameMethodBasicConsumeSerializer::class)
+            data class Consume(
+                val reserved1: UShort,
+                val queue: String,
+                val consumerTag: String,
+                val noLocal: Boolean,
+                val noAck: Boolean,
+                val exclusive: Boolean,
+                val noWait: Boolean,
+                val arguments: Table,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicConsumeOkSerializer::class)
+            data class ConsumeOk(
+                val consumerTag: String,
+            ) : Basic()
 
             // TODO
 

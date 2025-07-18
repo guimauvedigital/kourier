@@ -231,7 +231,17 @@ class AMQPConnection private constructor(
                 AMQPResponse.Channel.Queue.Unbound
             )
 
-            is Frame.Method.Basic -> TODO()
+            is Frame.Method.Basic.Qos -> error("Unexpected Qos frame received: $payload")
+            is Frame.Method.Basic.QosOk -> allResponses.emit(
+                AMQPResponse.Channel.Basic.QosOk
+            )
+
+            is Frame.Method.Basic.Consume -> error("Unexpected Consume frame received: $payload")
+            is Frame.Method.Basic.ConsumeOk -> allResponses.emit(
+                AMQPResponse.Channel.Basic.ConsumeOk(
+                    consumerTag = payload.consumerTag,
+                )
+            )
 
             is Frame.Method.Exchange.Declare -> error("Unexpected Declare frame received: $payload")
             is Frame.Method.Exchange.DeclareOk -> allResponses.emit(
