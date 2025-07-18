@@ -30,16 +30,24 @@ repositories {
 
 ## Usage
 
+Here is a simple example of how to connect to an AMQP server, open a channel and so some stuff with it:
+
 ```kotlin
 fun main() = runBlocking {
-    val connection = AMQPConnection.connect(
-        this, AMQPConnectionConfiguration(
-            AMQPConnectionConfiguration.Connection.Plain,
-            AMQPConnectionConfiguration.Server(
-                // Specify the AMQP server address, port, crendentials, ... here as needed
-            )
-        )
-    )
+    val config = amqpConnectionConfiguration {
+        server {
+            host = "127.0.0.1"
+            port = 5672
+            user = "guest"
+            password = "guest"
+        }
+    }
+    val connection = AMQPConnection.connect(this, config)
+
+    val channel = connection.openChannel()
+    channel.exchangeDeclare("my-exchange", "topic")
+
+    // More coming soon!
 
     connection.close()
 }

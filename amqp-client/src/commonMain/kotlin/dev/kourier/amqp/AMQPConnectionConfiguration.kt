@@ -15,23 +15,23 @@ data class AMQPConnectionConfiguration(
     }
 
     data class Server(
-        var host: String = Defaults.host,
-        var port: Int = Defaults.port,
-        var user: String = Defaults.user,
-        var password: String = Defaults.password,
-        var vhost: String = Defaults.vhost,
-        var timeout: Duration = Defaults.timeout,
-        var connectionName: String = Defaults.connectionName,
+        val host: String = Defaults.HOST,
+        val port: Int = Defaults.PORT,
+        val user: String = Defaults.USER,
+        val password: String = Defaults.PASSWORD,
+        val vhost: String = Defaults.VHOST,
+        val timeout: Duration = Defaults.timeout,
+        val connectionName: String = Defaults.CONNECTION_NAME,
     ) {
 
         object Defaults {
-            const val host: String = "localhost"
-            const val port: Int = 5672
-            const val user: String = "guest"
-            const val password: String = "guest"
-            const val vhost: String = "/"
+            const val HOST: String = "localhost"
+            const val PORT: Int = 5672
+            const val USER: String = "guest"
+            const val PASSWORD: String = "guest"
+            const val VHOST: String = "/"
             val timeout: Duration = 60.seconds
-            const val connectionName: String = "Kourier AMQP Client"
+            const val CONNECTION_NAME: String = "Kourier AMQP Client"
         }
 
     }
