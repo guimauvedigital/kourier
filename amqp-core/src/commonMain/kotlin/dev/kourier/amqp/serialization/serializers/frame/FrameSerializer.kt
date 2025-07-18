@@ -27,27 +27,27 @@ object FrameSerializer : KSerializer<Frame> {
         encoder.encodeShort(value.channelId.toShort())
 
         when (val payload = value.payload) {
-            is Frame.Payload.Method -> {
+            is Frame.Method -> {
                 val innerEncoder = ProtocolBinaryEncoder(Buffer())
-                innerEncoder.encodeSerializableValue(FrameMethodSerializer, payload.method)
+                innerEncoder.encodeSerializableValue(FrameMethodSerializer, payload)
                 encoder.encodeInt(innerEncoder.buffer.size.toInt())
                 innerEncoder.buffer.copyTo(encoder.buffer)
             }
 
-            is Frame.Payload.Header -> {
+            is Frame.Header -> {
                 val innerEncoder = ProtocolBinaryEncoder(Buffer())
-                innerEncoder.encodeSerializableValue(FrameHeaderSerializer, payload.header)
+                innerEncoder.encodeSerializableValue(FrameHeaderSerializer, payload)
                 encoder.encodeInt(innerEncoder.buffer.size.toInt())
                 innerEncoder.buffer.copyTo(encoder.buffer)
             }
 
-            is Frame.Payload.Body -> {
+            is Frame.Body -> {
                 val size = payload.body.size
                 encoder.encodeInt(size)
                 encoder.encodeSerializableValue(ByteArraySerializer(), payload.body)
             }
 
-            is Frame.Payload.Heartbeat -> {
+            is Frame.Heartbeat -> {
                 val size = 0
                 encoder.encodeInt(size)
             }
@@ -66,20 +66,20 @@ object FrameSerializer : KSerializer<Frame> {
         val result = when (kind) {
             Frame.Kind.METHOD -> {
                 val payload = decoder.decodeSerializableValue(FrameMethodSerializer)
-                Frame(channelId, Frame.Payload.Method(payload))
+                Frame(channelId, payload)
             }
 
             Frame.Kind.HEADER -> {
                 val payload = decoder.decodeSerializableValue(FrameHeaderSerializer)
-                Frame(channelId, Frame.Payload.Header(payload))
+                Frame(channelId, payload)
             }
 
             Frame.Kind.BODY -> {
                 val body = decoder.decodeSerializableValue(ByteArraySerializer())
-                Frame(channelId, Frame.Payload.Body(body))
+                Frame(channelId, Frame.Body(body))
             }
 
-            Frame.Kind.HEARTBEAT -> Frame(channelId, Frame.Payload.Heartbeat)
+            Frame.Kind.HEARTBEAT -> Frame(channelId, Frame.Heartbeat)
         }
 
         val endMarker = decoder.decodeByte().toUByte()

@@ -9,20 +9,20 @@ import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-object FrameMethodQueueDeleteOkSerializer : KSerializer<Frame.Method.MethodQueue.DeleteOk> {
+object FrameMethodQueueDeleteOkSerializer : KSerializer<Frame.Method.Queue.DeleteOk> {
 
     @OptIn(InternalSerializationApi::class)
     override val descriptor: SerialDescriptor
-        get() = buildSerialDescriptor("Frame.Method.MethodQueue.DeleteOk", StructureKind.OBJECT)
+        get() = buildSerialDescriptor("Frame.Method.Queue.DeleteOk", StructureKind.OBJECT)
 
-    override fun serialize(encoder: Encoder, value: Frame.Method.MethodQueue.DeleteOk) {
+    override fun serialize(encoder: Encoder, value: Frame.Method.Queue.DeleteOk) {
         encoder.encodeInt(value.messageCount.toInt())
     }
 
-    override fun deserialize(decoder: Decoder): Frame.Method.MethodQueue.DeleteOk {
+    override fun deserialize(decoder: Decoder): Frame.Method.Queue.DeleteOk {
         val messageCount = decoder.decodeInt().toUInt()
 
-        return Frame.Method.MethodQueue.DeleteOk(
+        return Frame.Method.Queue.DeleteOk(
             messageCount = messageCount,
         )
     }

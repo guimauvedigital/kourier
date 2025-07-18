@@ -11,13 +11,13 @@ import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-object FrameMethodQueueDeclareOkSerializer : KSerializer<Frame.Method.MethodQueue.QueueDeclareOk> {
+object FrameMethodQueueDeclareOkSerializer : KSerializer<Frame.Method.Queue.DeclareOk> {
 
     @OptIn(InternalSerializationApi::class)
     override val descriptor: SerialDescriptor
-        get() = buildSerialDescriptor("Frame.Method.MethodQueue.QueueDeclareOk", StructureKind.OBJECT)
+        get() = buildSerialDescriptor("Frame.Method.Queue.DeclareOk", StructureKind.OBJECT)
 
-    override fun serialize(encoder: Encoder, value: Frame.Method.MethodQueue.QueueDeclareOk) {
+    override fun serialize(encoder: Encoder, value: Frame.Method.Queue.DeclareOk) {
         require(encoder is ProtocolBinaryEncoder)
 
         encoder.encodeShortString(value.queueName)
@@ -25,14 +25,14 @@ object FrameMethodQueueDeclareOkSerializer : KSerializer<Frame.Method.MethodQueu
         encoder.encodeInt(value.consumerCount.toInt())
     }
 
-    override fun deserialize(decoder: Decoder): Frame.Method.MethodQueue.QueueDeclareOk {
+    override fun deserialize(decoder: Decoder): Frame.Method.Queue.DeclareOk {
         require(decoder is ProtocolBinaryDecoder)
 
         val queueName = decoder.decodeShortString().first
         val messageCount = decoder.decodeInt().toUInt()
         val consumerCount = decoder.decodeInt().toUInt()
 
-        return Frame.Method.MethodQueue.QueueDeclareOk(
+        return Frame.Method.Queue.DeclareOk(
             queueName = queueName,
             messageCount = messageCount,
             consumerCount = consumerCount

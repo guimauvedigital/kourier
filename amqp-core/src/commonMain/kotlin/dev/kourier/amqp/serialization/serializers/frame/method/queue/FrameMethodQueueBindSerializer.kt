@@ -12,13 +12,13 @@ import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-object FrameMethodQueueBindSerializer : KSerializer<Frame.Method.MethodQueue.QueueBind> {
+object FrameMethodQueueBindSerializer : KSerializer<Frame.Method.Queue.Bind> {
 
     @OptIn(InternalSerializationApi::class)
     override val descriptor: SerialDescriptor
-        get() = buildSerialDescriptor("Frame.Method.MethodQueue.QueueBind", StructureKind.OBJECT)
+        get() = buildSerialDescriptor("Frame.Method.Queue.Bind", StructureKind.OBJECT)
 
-    override fun serialize(encoder: Encoder, value: Frame.Method.MethodQueue.QueueBind) {
+    override fun serialize(encoder: Encoder, value: Frame.Method.Queue.Bind) {
         require(encoder is ProtocolBinaryEncoder)
 
         encoder.encodeShort(value.reserved1.toShort())
@@ -33,7 +33,7 @@ object FrameMethodQueueBindSerializer : KSerializer<Frame.Method.MethodQueue.Que
         encoder.encodeSerializableValue(TableSerializer, value.arguments)
     }
 
-    override fun deserialize(decoder: Decoder): Frame.Method.MethodQueue.QueueBind {
+    override fun deserialize(decoder: Decoder): Frame.Method.Queue.Bind {
         require(decoder is ProtocolBinaryDecoder)
 
         val reserved1 = decoder.decodeShort().toUShort()
@@ -47,7 +47,7 @@ object FrameMethodQueueBindSerializer : KSerializer<Frame.Method.MethodQueue.Que
 
         val arguments = decoder.decodeSerializableValue(TableSerializer)
 
-        return Frame.Method.MethodQueue.QueueBind(
+        return Frame.Method.Queue.Bind(
             reserved1 = reserved1,
             queueName = queueName,
             exchangeName = exchangeName,
