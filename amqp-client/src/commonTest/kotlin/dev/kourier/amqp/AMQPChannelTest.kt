@@ -1,5 +1,6 @@
 package dev.kourier.amqp
 
+import io.ktor.utils.io.core.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -39,6 +40,22 @@ class AMQPChannelTest {
 
         channel.exchangeDelete("test1")
         channel.exchangeDelete("test2")
+
+        channel.close()
+    }
+
+    @Test
+    fun testBasicPublish() = withConnection { connection ->
+        val channel = connection.openChannel()
+
+        channel.queueDeclare("test", durable = true)
+
+        val body = "{}".toByteArray()
+
+        val result = channel.basicPublish(body = body, exchange = "", routingKey = "test")
+        assertEquals(0u, result.deliveryTag)
+
+        channel.queueDelete("test")
 
         channel.close()
     }

@@ -27,6 +27,11 @@ object FrameMethodBasicSerializer : KSerializer<Frame.Method.Basic> {
             is Frame.Method.Basic.Consume -> encoder.encodeSerializableValue(FrameMethodBasicConsumeSerializer, value)
             is Frame.Method.Basic.ConsumeOk ->
                 encoder.encodeSerializableValue(FrameMethodBasicConsumeOkSerializer, value)
+
+            is Frame.Method.Basic.Cancel -> encoder.encodeSerializableValue(FrameMethodBasicCancelSerializer, value)
+            is Frame.Method.Basic.CancelOk -> encoder.encodeSerializableValue(FrameMethodBasicCancelOkSerializer, value)
+            is Frame.Method.Basic.Publish -> encoder.encodeSerializableValue(FrameMethodBasicPublishSerializer, value)
+            is Frame.Method.Basic.Return -> encoder.encodeSerializableValue(FrameMethodBasicReturnSerializer, value)
         }
     }
 
@@ -41,10 +46,10 @@ object FrameMethodBasicSerializer : KSerializer<Frame.Method.Basic> {
             Frame.Method.Basic.Kind.QOS_OK -> Frame.Method.Basic.QosOk
             Frame.Method.Basic.Kind.CONSUME -> decoder.decodeSerializableValue(FrameMethodBasicConsumeSerializer)
             Frame.Method.Basic.Kind.CONSUME_OK -> decoder.decodeSerializableValue(FrameMethodBasicConsumeOkSerializer)
-            Frame.Method.Basic.Kind.CANCEL -> TODO()
-            Frame.Method.Basic.Kind.CANCEL_OK -> TODO()
-            Frame.Method.Basic.Kind.PUBLISH -> TODO()
-            Frame.Method.Basic.Kind.RETURN -> TODO()
+            Frame.Method.Basic.Kind.CANCEL -> decoder.decodeSerializableValue(FrameMethodBasicCancelSerializer)
+            Frame.Method.Basic.Kind.CANCEL_OK -> decoder.decodeSerializableValue(FrameMethodBasicCancelOkSerializer)
+            Frame.Method.Basic.Kind.PUBLISH -> decoder.decodeSerializableValue(FrameMethodBasicPublishSerializer)
+            Frame.Method.Basic.Kind.RETURN -> decoder.decodeSerializableValue(FrameMethodBasicReturnSerializer)
             Frame.Method.Basic.Kind.DELIVER -> TODO()
             Frame.Method.Basic.Kind.GET -> TODO()
             Frame.Method.Basic.Kind.GET_OK -> TODO()

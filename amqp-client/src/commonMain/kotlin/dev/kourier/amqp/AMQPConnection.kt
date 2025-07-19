@@ -11,6 +11,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.io.IOException
 import kotlinx.serialization.encodeToByteArray
 
@@ -50,6 +52,8 @@ class AMQPConnection private constructor(
 
     private var socketSubscription: Job? = null
     private var heartbeatSubscription: Job? = null
+
+    private val writeMutex = Mutex()
 
     private var channelMax: UShort = 0u
     private var frameMax: UInt = 0u
@@ -243,6 +247,19 @@ class AMQPConnection private constructor(
                 )
             )
 
+            is Frame.Method.Basic.Cancel -> error("Unexpected Cancel frame received: $payload")
+            is Frame.Method.Basic.CancelOk -> allResponses.emit(
+                AMQPResponse.Channel.Basic.Canceled(
+                    consumerTag = payload.consumerTag,
+                ) // TODO: Handle cancellation (for example kotlin flows)
+            )
+
+            is Frame.Method.Basic.Publish -> error("Unexpected Publish frame received: $payload")
+
+            is Frame.Method.Basic.Return -> {
+                // TODO: `channel.nextMessage = PartialDelivery(method: basic)`
+            }
+
             is Frame.Method.Exchange.Declare -> error("Unexpected Declare frame received: $payload")
             is Frame.Method.Exchange.DeclareOk -> allResponses.emit(
                 AMQPResponse.Channel.Exchange.Declared
@@ -286,15 +303,19 @@ class AMQPConnection private constructor(
     }
 
     @InternalAmqpApi
-    suspend fun write(frame: Frame) {
-        logger.debug("Sent frame: $frame")
-        write(ProtocolBinary.encodeToByteArray(frame))
+    suspend fun write(vararg frames: Frame) {
+        writeMutex.withLock { // Ensure that all frames are sent in order, without any other writes in between
+            frames.forEach { frame ->
+                logger.debug("Sent frame: $frame")
+                write(ProtocolBinary.encodeToByteArray(frame))
+            }
+        }
     }
 
     @InternalAmqpApi
     @Suppress("Unchecked_Cast")
-    suspend fun <T : AMQPResponse> writeAndWaitForResponse(frame: Frame): T {
-        write(frame)
+    suspend fun <T : AMQPResponse> writeAndWaitForResponse(vararg frames: Frame): T {
+        write(*frames)
         return allResponses.mapNotNull { it as? T }.first()
     }
 

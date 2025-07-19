@@ -1,10 +1,18 @@
 package dev.kourier.amqp
 
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
 class AMQPChannel(
     private val connection: AMQPConnection,
     val id: ChannelId,
     val frameMax: UInt,
 ) {
+
+    private val isConfirmMode: Boolean = false
+
+    private val deliveryTagMutex = Mutex()
+    private var deliveryTag: ULong = 0u
 
     /**
      * Closes the channel.
@@ -22,27 +30,73 @@ class AMQPChannel(
     }
 
     /**
-     * Sets a prefetch limit when consuming messages.
-     * No more messages will be delivered to the consumer until one or more messages have been acknowledged or rejected.
+     * Publish a ByteArray message to exchange or queue.
      *
-     * @param count Size of the limit.
-     * @param global Whether the limit will be shared across all consumers on the channel.
+     * @param body Message payload that can be read from ByteArray.
+     * @param exchange Name of exchange on which the message is published. Can be empty.
+     * @param routingKey Name of routingKey that will be attached to the message.
+     *        An exchange looks at the routingKey while deciding how the message has to be routed.
+     *        When exchange parameter is empty routingKey is used as queueName.
+     * @param mandatory When a published message cannot be routed to any queue and mandatory is true, the message will be returned to publisher.
+     *        Returned message must be handled with returnListener or returnConsumer.
+     *        When a published message cannot be routed to any queue and mandatory is false, the message is discarded or republished to an alternate exchange, if any.
+     * @param immediate When matching queue has at least one or more consumers and immediate is set to true, message is delivered to them immediately.
+     *        When matching queue has zero active consumers and immediate is set to true, message is returned to publisher.
+     *        When matching queue has zero active consumers and immediate is set to false, message will be delivered to the queue.
+     * @param properties Additional message properties (check amqp documentation).
      *
-     * @return AMQPResponse.Channel.Basic.QosOk confirming that broker has accepted the qos request.
+     * @return DeliveryTag waiting for message write to the broker.
+     *         DeliveryTag is 0 when channel is not in confirm mode.
+     *         DeliveryTag is > 0 (monotonically increasing) when channel is in confirm mode.
      */
-    suspend fun basicQos(
-        count: UShort,
-        global: Boolean = false,
-    ): AMQPResponse.Channel.Basic.QosOk {
-        val qos = Frame(
-            channelId = id,
-            payload = Frame.Method.Basic.Qos(
-                prefetchSize = 0u,
-                prefetchCount = count,
-                global = global
-            )
+    suspend fun basicPublish(
+        body: ByteArray,
+        exchange: String,
+        routingKey: String,
+        mandatory: Boolean = false,
+        immediate: Boolean = false,
+        properties: Properties = Properties(),
+    ): AMQPResponse.Channel.Basic.Published {
+        val publish = Frame.Method.Basic.Publish(
+            reserved1 = 0u,
+            exchange = exchange,
+            routingKey = routingKey,
+            mandatory = mandatory,
+            immediate = immediate
         )
-        return connection.writeAndWaitForResponse(qos)
+        val classID = publish.kind.value
+        val header = Frame.Header(
+            classID = classID,
+            weight = 0u,
+            bodySize = body.size.toULong(),
+            properties = properties
+        )
+
+        val payloads = mutableListOf<Frame.Payload>()
+        if (body.size <= frameMax.toInt()) {
+            payloads.add(publish)
+            payloads.add(header)
+            payloads.add(Frame.Body(body))
+        } else {
+            payloads.add(publish)
+            payloads.add(header)
+            var offset = 0
+            while (offset < body.size) {
+                val length = minOf(frameMax.toInt(), body.size - offset)
+                val slice = body.copyOfRange(offset, offset + length)
+                payloads.add(Frame.Body(slice))
+                offset += length
+            }
+        }
+
+        connection.write(*payloads.map { Frame(channelId = id, payload = it) }.toTypedArray())
+
+        return if (isConfirmMode) {
+            val count = deliveryTagMutex.withLock { deliveryTag++ }
+            AMQPResponse.Channel.Basic.Published(deliveryTag = count)
+        } else {
+            AMQPResponse.Channel.Basic.Published(deliveryTag = 0u)
+        }
     }
 
     /**
@@ -77,6 +131,52 @@ class AMQPChannel(
             )
         )
         return connection.writeAndWaitForResponse(consume)
+    }
+
+    /**
+     * Cancel sending messages from server to consumer.
+     *
+     * @param consumerTag Identifier of the consumer.
+     *
+     * @return AMQPResponse.Channel.Basic.Canceled confirming that broker has accepted the cancel request.
+     */
+    suspend fun basicCancel(
+        consumerTag: String,
+    ): AMQPResponse.Channel.Basic.Canceled {
+        // TODO: Cancel consuming (for example kotlin flows)
+
+        val cancel = Frame(
+            channelId = id,
+            payload = Frame.Method.Basic.Cancel(
+                consumerTag = consumerTag,
+                noWait = false
+            )
+        )
+        return connection.writeAndWaitForResponse(cancel)
+    }
+
+    /**
+     * Sets a prefetch limit when consuming messages.
+     * No more messages will be delivered to the consumer until one or more messages have been acknowledged or rejected.
+     *
+     * @param count Size of the limit.
+     * @param global Whether the limit will be shared across all consumers on the channel.
+     *
+     * @return AMQPResponse.Channel.Basic.QosOk confirming that broker has accepted the qos request.
+     */
+    suspend fun basicQos(
+        count: UShort,
+        global: Boolean = false,
+    ): AMQPResponse.Channel.Basic.QosOk {
+        val qos = Frame(
+            channelId = id,
+            payload = Frame.Method.Basic.Qos(
+                prefetchSize = 0u,
+                prefetchCount = count,
+                global = global
+            )
+        )
+        return connection.writeAndWaitForResponse(qos)
     }
 
     /**
@@ -146,6 +246,7 @@ class AMQPChannel(
      * Deletes all messages from a queue.
      *
      * @param name Name of the queue.
+     *
      * @return AMQPResponse.Channel.Queue.Purged confirming that broker has accepted the delete request.
      */
     suspend fun queuePurge(

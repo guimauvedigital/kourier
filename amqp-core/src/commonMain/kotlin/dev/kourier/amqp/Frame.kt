@@ -3,10 +3,7 @@ package dev.kourier.amqp
 import dev.kourier.amqp.serialization.serializers.frame.FrameHeaderSerializer
 import dev.kourier.amqp.serialization.serializers.frame.FrameSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.FrameMethodSerializer
-import dev.kourier.amqp.serialization.serializers.frame.method.basic.FrameMethodBasicConsumeOkSerializer
-import dev.kourier.amqp.serialization.serializers.frame.method.basic.FrameMethodBasicConsumeSerializer
-import dev.kourier.amqp.serialization.serializers.frame.method.basic.FrameMethodBasicQosSerializer
-import dev.kourier.amqp.serialization.serializers.frame.method.basic.FrameMethodBasicSerializer
+import dev.kourier.amqp.serialization.serializers.frame.method.basic.*
 import dev.kourier.amqp.serialization.serializers.frame.method.channel.FrameMethodChannelCloseSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.channel.FrameMethodChannelSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.confirm.FrameMethodConfirmSerializer
@@ -423,6 +420,10 @@ data class Frame(
                     is QosOk -> Kind.QOS_OK
                     is Consume -> Kind.CONSUME
                     is ConsumeOk -> Kind.CONSUME_OK
+                    is Cancel -> Kind.CANCEL
+                    is CancelOk -> Kind.CANCEL_OK
+                    is Publish -> Kind.PUBLISH
+                    is Return -> Kind.RETURN
                 }
 
             enum class Kind(val value: UShort) {
@@ -472,6 +473,34 @@ data class Frame(
                 val consumerTag: String,
             ) : Basic()
 
+            @Serializable(with = FrameMethodBasicCancelSerializer::class)
+            data class Cancel(
+                val consumerTag: String,
+                val noWait: Boolean,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicCancelOkSerializer::class)
+            data class CancelOk(
+                val consumerTag: String,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicPublishSerializer::class)
+            data class Publish(
+                val reserved1: UShort,
+                val exchange: String,
+                val routingKey: String,
+                val mandatory: Boolean,
+                val immediate: Boolean,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicReturnSerializer::class)
+            data class Return(
+                val replyCode: UShort,
+                val replyText: String,
+                val exchange: String,
+                val routingKey: String,
+            ) : Basic()
+
             // TODO
 
         }
@@ -494,7 +523,18 @@ data class Frame(
 
     data class Body(
         val body: ByteArray,
-    ) : Payload()
+    ) : Payload() {
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other == null || this::class != other::class) return false
+            other as Body
+            return body.contentEquals(other.body)
+        }
+
+        override fun hashCode(): Int = body.contentHashCode()
+
+    }
 
     object Heartbeat : Payload()
 
