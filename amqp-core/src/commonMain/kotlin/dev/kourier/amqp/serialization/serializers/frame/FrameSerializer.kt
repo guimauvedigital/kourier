@@ -2,12 +2,13 @@ package dev.kourier.amqp.serialization.serializers.frame
 
 import dev.kourier.amqp.Frame
 import dev.kourier.amqp.ProtocolError
+import dev.kourier.amqp.serialization.ProtocolBinaryDecoder
 import dev.kourier.amqp.serialization.ProtocolBinaryEncoder
 import dev.kourier.amqp.serialization.serializers.frame.method.FrameMethodSerializer
 import kotlinx.io.Buffer
+import kotlinx.io.readByteArray
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.StructureKind
 import kotlinx.serialization.descriptors.buildSerialDescriptor
@@ -44,7 +45,7 @@ object FrameSerializer : KSerializer<Frame> {
             is Frame.Body -> {
                 val size = payload.body.size
                 encoder.encodeInt(size)
-                encoder.encodeSerializableValue(ByteArraySerializer(), payload.body)
+                encoder.buffer.write(payload.body)
             }
 
             is Frame.Heartbeat -> {
@@ -57,6 +58,8 @@ object FrameSerializer : KSerializer<Frame> {
     }
 
     override fun deserialize(decoder: Decoder): Frame {
+        require(decoder is ProtocolBinaryDecoder)
+
         val kind = decoder.decodeByte().toUByte().let { byte ->
             Frame.Kind.entries.first { it.value == byte }
         }
@@ -75,7 +78,7 @@ object FrameSerializer : KSerializer<Frame> {
             }
 
             Frame.Kind.BODY -> {
-                val body = decoder.decodeSerializableValue(ByteArraySerializer())
+                val body = decoder.buffer.readByteArray(size.toInt())
                 Frame(channelId, Frame.Body(body))
             }
 

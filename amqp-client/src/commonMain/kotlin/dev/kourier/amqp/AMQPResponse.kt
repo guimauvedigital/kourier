@@ -66,7 +66,7 @@ sealed class AMQPResponse {
             data object Recovered : Basic()
             data object QosOk : Basic()
             data class ConsumeOk(val consumerTag: String) : Basic()
-            data object Canceled : Basic()
+            data class Canceled(val consumerTag: String) : Basic()
 
             sealed class PublishConfirm : Basic() {
 
