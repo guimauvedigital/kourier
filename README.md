@@ -10,11 +10,30 @@
 
 Pure Kotlin AMQP client and protocol implementation, optimized for KMP and coroutines.
 
+* **Documentation:** [kourier.dev](https://kourier.dev)
+* **Repository:** [github.com/guimauvedigital/kourier](https://github.com/guimauvedigital/kourier)
+* **Code coverage:** [codecov.io/github/guimauvedigital/kourier](https://codecov.io/github/guimauvedigital/kourier)
+
 > This library is in early development and is not yet feature complete. It is not recommended for production use at this
 > time. Here is what you can expect based on version number: (see Maven Central badge above for latest version)
 > - **0.0.x**: Early development, API may change frequently, not feature complete.
 > - **0.1.x**: Feature complete, but may still have breaking changes in the API.
 > - **1.x.x**: Stable, no breaking changes, API is final.
+
+## Motivation
+
+Why we made kourier:
+
+* **Pure Kotlin Implementation**, with no dependency on the Java client or other library.
+* **Multiplatform support** allows compatibility with JVM but also Native targets.
+
+## Modules
+
+* `amqp-core`: Core AMQP 0.9.1 protocol implementation, including frames and encoding/decoding logic.
+* `amqp-client`: High-level AMQP client built on top of `amqp-core`, providing connection management, channel handling,
+  and basic operations like publishing and consuming messages.
+
+Most of the time you will only need the `amqp-client` module, which depends itself on `amqp-core`.
 
 ## Installation
 
