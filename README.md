@@ -24,7 +24,8 @@ Pure Kotlin AMQP client and protocol implementation, optimized for KMP and corou
 
 Why we made kourier:
 
-* **Pure Kotlin Implementation**, with no dependency on the Java client or other library.
+* **Pure Kotlin Implementation** with no dependency on the Java client or other library.
+* **Coroutines-first** design, allowing better integration with Kotlin's concurrency model and asynchronous consuming.
 * **Multiplatform support** allows compatibility with JVM but also Native targets.
 
 ## Modules
