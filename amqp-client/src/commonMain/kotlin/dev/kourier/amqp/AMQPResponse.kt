@@ -10,7 +10,7 @@ sealed class AMQPResponse {
         sealed class Message : Channel() {
 
             data class Delivery(val delivery: MessageDelivery) : Message()
-            data class Get(val get: MessageGet?) : Message()
+            data class Get(val get: MessageGet? = null) : Message()
             data class Return(val returnValue: MessageReturn) : Message()
 
             data class MessageDelivery(

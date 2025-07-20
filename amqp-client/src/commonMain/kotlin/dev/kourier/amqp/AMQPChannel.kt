@@ -100,6 +100,29 @@ class AMQPChannel(
     }
 
     /**
+     * Get a single message from a queue.
+     *
+     * @param queue Name of the queue.
+     * @param noAck Controls whether message will be acked or nacked automatically (`true`) or manually (`false`).
+     * @return AMQPResponse.Channel.Message.Get? when queue is not empty, otherwise null.
+     * @deprecated EventLoopFuture based public API will be removed in first stable release, please use Async API.
+     */
+    suspend fun basicGet(
+        queue: String,
+        noAck: Boolean = false,
+    ): AMQPResponse.Channel.Message.Get {
+        val get = Frame(
+            channelId = id,
+            payload = Frame.Method.Basic.Get(
+                reserved1 = 0u,
+                queue = queue,
+                noAck = noAck
+            )
+        )
+        return connection.writeAndWaitForResponse(get)
+    }
+
+    /**
      * Consume messages from a queue by sending them to registered consume listeners.
      *
      * @param queue Name of the queue.

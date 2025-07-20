@@ -350,6 +350,68 @@ class FrameTest {
         assertEquals(frame, decoded)
     }
 
+    @Test
+    fun testFrameMethodQueueBasicDeliver() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.Deliver(
+                consumerTag = "testConsumer",
+                deliveryTag = 1u,
+                redelivered = false,
+                exchange = "testExchange",
+                routingKey = "testRoutingKey",
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicGet() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.Get(
+                reserved1 = 0u,
+                queue = "testQueue",
+                noAck = true
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicGetOk() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.GetOk(
+                deliveryTag = 1u,
+                redelivered = false,
+                exchange = "testExchange",
+                routingKey = "testRoutingKey",
+                messageCount = 0u
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicGetEmpty() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.GetEmpty(
+                reserved1 = ""
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
 
     @Test
     fun testFrameHeartbeat() {

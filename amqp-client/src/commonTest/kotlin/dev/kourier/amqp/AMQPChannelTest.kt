@@ -61,6 +61,33 @@ class AMQPChannelTest {
     }
 
     @Test
+    fun testBasicGet() = withConnection { connection ->
+        val channel = connection.openChannel()
+
+        channel.queueDeclare("test", durable = true)
+
+        // TODO
+
+        channel.queueDelete("test")
+
+        channel.close()
+    }
+
+    @Test
+    fun testBasicGetEmpty() = withConnection { connection ->
+        val channel = connection.openChannel()
+
+        channel.queueDeclare("test", durable = true)
+
+        val result = channel.basicGet("test")
+        assertEquals(null, result.get)
+
+        channel.queueDelete("test")
+
+        channel.close()
+    }
+
+    @Test
     fun testBasicQos() = withConnection { connection ->
         val channel = connection.openChannel()
 

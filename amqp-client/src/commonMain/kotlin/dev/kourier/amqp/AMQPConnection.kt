@@ -256,7 +256,12 @@ class AMQPConnection private constructor(
 
             is Frame.Method.Basic.Publish -> error("Unexpected Publish frame received: $payload")
 
-            is Frame.Method.Basic.Return -> {
+            is Frame.Method.Basic.Get -> error("Unexpected Get frame received: $payload")
+            is Frame.Method.Basic.GetEmpty -> allResponses.emit(
+                AMQPResponse.Channel.Message.Get()
+            )
+
+            is Frame.Method.Basic.Deliver, is Frame.Method.Basic.GetOk, is Frame.Method.Basic.Return -> {
                 // TODO: `channel.nextMessage = PartialDelivery(method: basic)`
             }
 

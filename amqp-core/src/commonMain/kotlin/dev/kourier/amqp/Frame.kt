@@ -424,6 +424,10 @@ data class Frame(
                     is CancelOk -> Kind.CANCEL_OK
                     is Publish -> Kind.PUBLISH
                     is Return -> Kind.RETURN
+                    is Deliver -> Kind.DELIVER
+                    is Get -> Kind.GET
+                    is GetOk -> Kind.GET_OK
+                    is GetEmpty -> Kind.GET_EMPTY
                 }
 
             enum class Kind(val value: UShort) {
@@ -499,6 +503,36 @@ data class Frame(
                 val replyText: String,
                 val exchange: String,
                 val routingKey: String,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicDeliverSerializer::class)
+            data class Deliver(
+                val consumerTag: String,
+                val deliveryTag: ULong,
+                val redelivered: Boolean,
+                val exchange: String,
+                val routingKey: String,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicGetSerializer::class)
+            data class Get(
+                val reserved1: UShort,
+                val queue: String,
+                val noAck: Boolean,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicGetOkSerializer::class)
+            data class GetOk(
+                val deliveryTag: ULong,
+                val redelivered: Boolean,
+                val exchange: String,
+                val routingKey: String,
+                val messageCount: UInt,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicGetEmptySerializer::class)
+            data class GetEmpty(
+                val reserved1: String,
             ) : Basic()
 
             // TODO

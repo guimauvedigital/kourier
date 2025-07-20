@@ -32,6 +32,10 @@ object FrameMethodBasicSerializer : KSerializer<Frame.Method.Basic> {
             is Frame.Method.Basic.CancelOk -> encoder.encodeSerializableValue(FrameMethodBasicCancelOkSerializer, value)
             is Frame.Method.Basic.Publish -> encoder.encodeSerializableValue(FrameMethodBasicPublishSerializer, value)
             is Frame.Method.Basic.Return -> encoder.encodeSerializableValue(FrameMethodBasicReturnSerializer, value)
+            is Frame.Method.Basic.Deliver -> encoder.encodeSerializableValue(FrameMethodBasicDeliverSerializer, value)
+            is Frame.Method.Basic.Get -> encoder.encodeSerializableValue(FrameMethodBasicGetSerializer, value)
+            is Frame.Method.Basic.GetOk -> encoder.encodeSerializableValue(FrameMethodBasicGetOkSerializer, value)
+            is Frame.Method.Basic.GetEmpty -> encoder.encodeSerializableValue(FrameMethodBasicGetEmptySerializer, value)
         }
     }
 
@@ -50,10 +54,10 @@ object FrameMethodBasicSerializer : KSerializer<Frame.Method.Basic> {
             Frame.Method.Basic.Kind.CANCEL_OK -> decoder.decodeSerializableValue(FrameMethodBasicCancelOkSerializer)
             Frame.Method.Basic.Kind.PUBLISH -> decoder.decodeSerializableValue(FrameMethodBasicPublishSerializer)
             Frame.Method.Basic.Kind.RETURN -> decoder.decodeSerializableValue(FrameMethodBasicReturnSerializer)
-            Frame.Method.Basic.Kind.DELIVER -> TODO()
-            Frame.Method.Basic.Kind.GET -> TODO()
-            Frame.Method.Basic.Kind.GET_OK -> TODO()
-            Frame.Method.Basic.Kind.GET_EMPTY -> TODO()
+            Frame.Method.Basic.Kind.DELIVER -> decoder.decodeSerializableValue(FrameMethodBasicDeliverSerializer)
+            Frame.Method.Basic.Kind.GET -> decoder.decodeSerializableValue(FrameMethodBasicGetSerializer)
+            Frame.Method.Basic.Kind.GET_OK -> decoder.decodeSerializableValue(FrameMethodBasicGetOkSerializer)
+            Frame.Method.Basic.Kind.GET_EMPTY -> decoder.decodeSerializableValue(FrameMethodBasicGetEmptySerializer)
             Frame.Method.Basic.Kind.ACK -> TODO()
             Frame.Method.Basic.Kind.REJECT -> TODO()
             Frame.Method.Basic.Kind.RECOVER_ASYNC -> TODO()
