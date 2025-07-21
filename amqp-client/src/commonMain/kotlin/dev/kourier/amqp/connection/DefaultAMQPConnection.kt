@@ -325,7 +325,7 @@ open class DefaultAMQPConnection(
                     when (method) {
                         is Frame.Method.Basic.GetOk -> allResponses.emit(
                             AMQPResponse.Channel.Message.Get(
-                                message = AMQPResponse.Channel.Message.Delivery(
+                                message = AMQPMessage(
                                     exchange = method.exchange,
                                     routingKey = method.routingKey,
                                     deliveryTag = method.deliveryTag,
@@ -337,11 +337,9 @@ open class DefaultAMQPConnection(
                             )
                         )
 
-                        is Frame.Method.Basic.Deliver -> {
-                            // TODO: Handle it has a consumer tag
-                            method.consumerTag
-                            allResponses.emit(
-                                AMQPResponse.Channel.Message.Delivery(
+                        is Frame.Method.Basic.Deliver -> allResponses.emit(
+                            AMQPResponse.Channel.Message.Delivery(
+                                message = AMQPMessage(
                                     exchange = method.exchange,
                                     routingKey = method.routingKey,
                                     deliveryTag = method.deliveryTag,
@@ -349,8 +347,9 @@ open class DefaultAMQPConnection(
                                     redelivered = method.redelivered,
                                     body = completeBody
                                 ),
-                            )
-                        }
+                                consumerTag = method.consumerTag
+                            ),
+                        )
 
                         is Frame.Method.Basic.Return -> allResponses.emit(
                             AMQPResponse.Channel.Message.Return(

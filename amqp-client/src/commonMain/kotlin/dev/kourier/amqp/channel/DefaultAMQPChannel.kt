@@ -140,7 +140,7 @@ open class DefaultAMQPChannel(
         connection.messageListeningScope.launch {
             connection.allResponses
                 .mapNotNull { it as? AMQPResponse.Channel.Message.Delivery }
-                .filter { it.routingKey != deferredConsumerTag.await() } // TODO: Filter messages by consumerTag
+                .filter { it.consumerTag == deferredConsumerTag.await() }
                 .collect { response -> listener(response) }
         }
         val result = basicConsume(
@@ -207,7 +207,7 @@ open class DefaultAMQPChannel(
     }
 
     override suspend fun basicAck(
-        message: AMQPResponse.Channel.Message.Delivery,
+        message: AMQPMessage,
         multiple: Boolean,
     ) {
         return basicAck(message.deliveryTag, multiple)
@@ -230,7 +230,7 @@ open class DefaultAMQPChannel(
     }
 
     override suspend fun basicNack(
-        message: AMQPResponse.Channel.Message.Delivery,
+        message: AMQPMessage,
         multiple: Boolean,
         requeue: Boolean,
     ) {
@@ -252,7 +252,7 @@ open class DefaultAMQPChannel(
     }
 
     override suspend fun basicReject(
-        message: AMQPResponse.Channel.Message.Delivery,
+        message: AMQPMessage,
         requeue: Boolean,
     ) {
         return basicReject(message.deliveryTag, requeue)

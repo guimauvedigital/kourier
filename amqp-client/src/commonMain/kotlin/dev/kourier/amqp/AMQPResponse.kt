@@ -10,16 +10,12 @@ sealed class AMQPResponse {
         sealed class Message : Channel() {
 
             data class Delivery(
-                val exchange: String,
-                val routingKey: String,
-                val deliveryTag: ULong,
-                val properties: Properties,
-                val redelivered: Boolean,
-                val body: ByteArray,
+                val message: AMQPMessage,
+                val consumerTag: String,
             ) : Message()
 
             data class Get(
-                val message: Delivery? = null,
+                val message: AMQPMessage? = null,
                 val messageCount: UInt = 0u,
             ) : Message()
 

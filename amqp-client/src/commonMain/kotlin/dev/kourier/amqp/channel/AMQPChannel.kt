@@ -1,9 +1,6 @@
 package dev.kourier.amqp.channel
 
-import dev.kourier.amqp.AMQPResponse
-import dev.kourier.amqp.ChannelId
-import dev.kourier.amqp.Properties
-import dev.kourier.amqp.Table
+import dev.kourier.amqp.*
 import kotlinx.coroutines.channels.ReceiveChannel
 
 interface AMQPChannel {
@@ -159,7 +156,7 @@ interface AMQPChannel {
      * @param multiple Controls whether only this message is acked (`false`) or additionally all others up to it (`true`).
      */
     suspend fun basicAck(
-        message: AMQPResponse.Channel.Message.Delivery,
+        message: AMQPMessage,
         multiple: Boolean = false,
     )
 
@@ -184,7 +181,7 @@ interface AMQPChannel {
      * @param requeue Controls whether to requeue message after reject.
      */
     suspend fun basicNack(
-        message: AMQPResponse.Channel.Message.Delivery,
+        message: AMQPMessage,
         multiple: Boolean = false,
         requeue: Boolean = false,
     )
@@ -207,7 +204,7 @@ interface AMQPChannel {
      * @param requeue Controls whether to requeue message after reject.
      */
     suspend fun basicReject(
-        message: AMQPResponse.Channel.Message.Delivery,
+        message: AMQPMessage,
         requeue: Boolean = false,
     )
 
