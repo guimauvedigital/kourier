@@ -80,7 +80,8 @@ class AMQPChannelTest {
         channel.queueDeclare("test", durable = true)
 
         val result = channel.basicGet("test")
-        assertEquals(null, result.get)
+        assertEquals(null, result.message)
+        assertEquals(0u, result.messageCount)
 
         channel.queueDelete("test")
 

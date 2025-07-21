@@ -428,6 +428,10 @@ data class Frame(
                     is Get -> Kind.GET
                     is GetOk -> Kind.GET_OK
                     is GetEmpty -> Kind.GET_EMPTY
+                    is Ack -> Kind.ACK
+                    is Reject -> Kind.REJECT
+
+                    is Nack -> Kind.NACK
                 }
 
             enum class Kind(val value: UShort) {
@@ -535,7 +539,26 @@ data class Frame(
                 val reserved1: String,
             ) : Basic()
 
+            @Serializable(with = FrameMethodBasicAckSerializer::class)
+            data class Ack(
+                val deliveryTag: ULong,
+                val multiple: Boolean,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicRejectSerializer::class)
+            data class Reject(
+                val deliveryTag: ULong,
+                val requeue: Boolean,
+            ) : Basic()
+
             // TODO
+
+            @Serializable(with = FrameMethodBasicNackSerializer::class)
+            data class Nack(
+                val deliveryTag: ULong,
+                val multiple: Boolean,
+                val requeue: Boolean,
+            ) : Basic()
 
         }
 

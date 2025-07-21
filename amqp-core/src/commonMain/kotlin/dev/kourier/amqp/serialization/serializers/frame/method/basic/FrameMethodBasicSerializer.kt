@@ -36,6 +36,10 @@ object FrameMethodBasicSerializer : KSerializer<Frame.Method.Basic> {
             is Frame.Method.Basic.Get -> encoder.encodeSerializableValue(FrameMethodBasicGetSerializer, value)
             is Frame.Method.Basic.GetOk -> encoder.encodeSerializableValue(FrameMethodBasicGetOkSerializer, value)
             is Frame.Method.Basic.GetEmpty -> encoder.encodeSerializableValue(FrameMethodBasicGetEmptySerializer, value)
+            is Frame.Method.Basic.Ack -> encoder.encodeSerializableValue(FrameMethodBasicAckSerializer, value)
+            is Frame.Method.Basic.Reject -> encoder.encodeSerializableValue(FrameMethodBasicRejectSerializer, value)
+
+            is Frame.Method.Basic.Nack -> encoder.encodeSerializableValue(FrameMethodBasicNackSerializer, value)
         }
     }
 
@@ -58,12 +62,12 @@ object FrameMethodBasicSerializer : KSerializer<Frame.Method.Basic> {
             Frame.Method.Basic.Kind.GET -> decoder.decodeSerializableValue(FrameMethodBasicGetSerializer)
             Frame.Method.Basic.Kind.GET_OK -> decoder.decodeSerializableValue(FrameMethodBasicGetOkSerializer)
             Frame.Method.Basic.Kind.GET_EMPTY -> decoder.decodeSerializableValue(FrameMethodBasicGetEmptySerializer)
-            Frame.Method.Basic.Kind.ACK -> TODO()
-            Frame.Method.Basic.Kind.REJECT -> TODO()
+            Frame.Method.Basic.Kind.ACK -> decoder.decodeSerializableValue(FrameMethodBasicAckSerializer)
+            Frame.Method.Basic.Kind.REJECT -> decoder.decodeSerializableValue(FrameMethodBasicRejectSerializer)
             Frame.Method.Basic.Kind.RECOVER_ASYNC -> TODO()
             Frame.Method.Basic.Kind.RECOVER -> TODO()
             Frame.Method.Basic.Kind.RECOVER_OK -> TODO()
-            Frame.Method.Basic.Kind.NACK -> TODO()
+            Frame.Method.Basic.Kind.NACK -> decoder.decodeSerializableValue(FrameMethodBasicNackSerializer)
         }
     }
 

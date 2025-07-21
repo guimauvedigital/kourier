@@ -179,6 +179,110 @@ class AMQPChannel(
     }
 
     /**
+     * Acknowledge a message.
+     *
+     * @param deliveryTag Number (identifier) of the message.
+     * @param multiple Controls whether only this message is acked (`false`) or additionally all others up to it (`true`).
+     */
+    suspend fun basicAck(
+        deliveryTag: ULong,
+        multiple: Boolean = false,
+    ) {
+        val ack = Frame(
+            channelId = id,
+            payload = Frame.Method.Basic.Ack(
+                deliveryTag = deliveryTag,
+                multiple = multiple
+            )
+        )
+        return connection.write(ack)
+    }
+
+    /**
+     * Acknowledge a message.
+     *
+     * @param message Received message.
+     * @param multiple Controls whether only this message is acked (`false`) or additionally all others up to it (`true`).
+     */
+    suspend fun basicAck(
+        message: AMQPResponse.Channel.Message.Delivery,
+        multiple: Boolean = false,
+    ) {
+        return basicAck(message.deliveryTag, multiple)
+    }
+
+    /**
+     * Reject a message.
+     *
+     * @param deliveryTag Number (identifier) of the message.
+     * @param multiple Controls whether only this message is rejected (`false`) or additionally all others up to it (`true`).
+     * @param requeue Controls whether to requeue message after reject.
+     */
+    suspend fun basicNack(
+        deliveryTag: ULong,
+        multiple: Boolean = false,
+        requeue: Boolean = false,
+    ) {
+        val nack = Frame(
+            channelId = id,
+            payload = Frame.Method.Basic.Nack(
+                deliveryTag = deliveryTag,
+                multiple = multiple,
+                requeue = requeue
+            )
+        )
+        return connection.write(nack)
+    }
+
+    /**
+     * Reject a message.
+     *
+     * @param message Received message.
+     * @param multiple Controls whether only this message is rejected (`false`) or additionally all others up to it (`true`).
+     * @param requeue Controls whether to requeue message after reject.
+     */
+    suspend fun basicNack(
+        message: AMQPResponse.Channel.Message.Delivery,
+        multiple: Boolean = false,
+        requeue: Boolean = false,
+    ) {
+        return basicNack(message.deliveryTag, multiple, requeue)
+    }
+
+    /**
+     * Reject a message.
+     *
+     * @param deliveryTag Number (identifier) of the message.
+     * @param requeue Controls whether to requeue message after reject.
+     */
+    suspend fun basicReject(
+        deliveryTag: ULong,
+        requeue: Boolean = false,
+    ) {
+        val reject = Frame(
+            channelId = id,
+            payload = Frame.Method.Basic.Reject(
+                deliveryTag = deliveryTag,
+                requeue = requeue
+            )
+        )
+        return connection.write(reject)
+    }
+
+    /**
+     * Reject a message.
+     *
+     * @param message Received Message.
+     * @param requeue Controls whether to requeue message after reject.
+     */
+    suspend fun basicReject(
+        message: AMQPResponse.Channel.Message.Delivery,
+        requeue: Boolean = false,
+    ) {
+        return basicReject(message.deliveryTag, requeue)
+    }
+
+    /**
      * Sets a prefetch limit when consuming messages.
      * No more messages will be delivered to the consumer until one or more messages have been acknowledged or rejected.
      *

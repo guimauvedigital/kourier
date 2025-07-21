@@ -9,32 +9,29 @@ sealed class AMQPResponse {
 
         sealed class Message : Channel() {
 
-            data class Delivery(val delivery: MessageDelivery) : Message()
-            data class Get(val get: MessageGet? = null) : Message()
-            data class Return(val returnValue: MessageReturn) : Message()
-
-            data class MessageDelivery(
+            data class Delivery(
                 val exchange: String,
                 val routingKey: String,
                 val deliveryTag: ULong,
                 val properties: Properties,
                 val redelivered: Boolean,
                 val body: ByteArray,
-            )
+            ) : Message()
 
-            data class MessageGet(
-                val message: MessageDelivery,
-                val messageCount: UInt,
-            )
+            data class Get(
+                val message: Delivery? = null,
+                val messageCount: UInt = 0u,
+            ) : Message()
 
-            data class MessageReturn(
+            data class Return(
                 val replyCode: UShort,
                 val replyText: String,
                 val exchange: String,
                 val routingKey: String,
                 val properties: Properties,
                 val body: ByteArray,
-            )
+            ) : Message()
+
         }
 
         sealed class Queue : Channel() {

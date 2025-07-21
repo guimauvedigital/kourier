@@ -265,6 +265,16 @@ class AMQPConnection private constructor(
                 // TODO: `channel.nextMessage = PartialDelivery(method: basic)`
             }
 
+            is Frame.Method.Basic.Ack -> {
+                // TODO: `receivePublishConfirm(.ack(deliveryTag: deliveryTag, multiple: multiple))`
+            }
+
+            is Frame.Method.Basic.Nack -> {
+                // TODO: `receivePublishConfirm(.nack(deliveryTag: deliveryTag, multiple: multiple))`
+            }
+
+            is Frame.Method.Basic.Reject -> error("Unexpected Reject frame received: $payload")
+
             is Frame.Method.Exchange.Declare -> error("Unexpected Declare frame received: $payload")
             is Frame.Method.Exchange.DeclareOk -> allResponses.emit(
                 AMQPResponse.Channel.Exchange.Declared
