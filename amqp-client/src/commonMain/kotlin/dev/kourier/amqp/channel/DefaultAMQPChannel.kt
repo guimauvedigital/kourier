@@ -9,7 +9,9 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.produce
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -26,7 +28,22 @@ open class DefaultAMQPChannel(
     private val deliveryTagMutex = Mutex()
     private var deliveryTag: ULong = 0u
 
+    private val writeMutex = Mutex()
+
+    @InternalAmqpApi
     var nextMessage: PartialDelivery? = null
+
+    @InternalAmqpApi
+    val channelResponses = MutableSharedFlow<AMQPResponse>(extraBufferCapacity = Channel.UNLIMITED)
+
+    @InternalAmqpApi
+    @Suppress("Unchecked_Cast")
+    override suspend fun <T : AMQPResponse> writeAndWaitForResponse(vararg frames: Frame): T {
+        writeMutex.withLock { // Ensure the response is synchronized with the write operation
+            connection.write(*frames)
+            return channelResponses.mapNotNull { it as? T }.first()
+        }
+    }
 
     override fun close(
         reason: String,
@@ -97,7 +114,7 @@ open class DefaultAMQPChannel(
                 noAck = noAck
             )
         )
-        return connection.writeAndWaitForResponse(get)
+        return writeAndWaitForResponse(get)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -138,7 +155,7 @@ open class DefaultAMQPChannel(
         require(connection is DefaultAMQPConnection)
         val deferredConsumerTag = CompletableDeferred<String>()
         connection.messageListeningScope.launch {
-            connection.allResponses
+            channelResponses
                 .mapNotNull { it as? AMQPResponse.Channel.Message.Delivery }
                 .filter { it.consumerTag == deferredConsumerTag.await() }
                 .collect { response -> listener(response) }
@@ -174,7 +191,7 @@ open class DefaultAMQPChannel(
                 arguments = arguments
             )
         )
-        return connection.writeAndWaitForResponse(consume)
+        return writeAndWaitForResponse(consume)
     }
 
     override suspend fun basicCancel(
@@ -189,7 +206,7 @@ open class DefaultAMQPChannel(
                 noWait = false
             )
         )
-        return connection.writeAndWaitForResponse(cancel)
+        return writeAndWaitForResponse(cancel)
     }
 
     override suspend fun basicAck(
@@ -267,7 +284,7 @@ open class DefaultAMQPChannel(
                 requeue = requeue
             )
         )
-        return connection.writeAndWaitForResponse(recover)
+        return writeAndWaitForResponse(recover)
     }
 
     override suspend fun basicQos(
@@ -282,7 +299,7 @@ open class DefaultAMQPChannel(
                 global = global
             )
         )
-        return connection.writeAndWaitForResponse(qos)
+        return writeAndWaitForResponse(qos)
     }
 
     override suspend fun queueDeclare(
@@ -306,7 +323,7 @@ open class DefaultAMQPChannel(
                 arguments = arguments
             )
         )
-        return connection.writeAndWaitForResponse(declare)
+        return writeAndWaitForResponse(declare)
     }
 
     override suspend fun queueDelete(
@@ -324,7 +341,7 @@ open class DefaultAMQPChannel(
                 noWait = false
             )
         )
-        return connection.writeAndWaitForResponse(delete)
+        return writeAndWaitForResponse(delete)
     }
 
     override suspend fun queuePurge(
@@ -338,7 +355,7 @@ open class DefaultAMQPChannel(
                 noWait = false
             )
         )
-        return connection.writeAndWaitForResponse(purge)
+        return writeAndWaitForResponse(purge)
     }
 
     override suspend fun queueBind(
@@ -358,7 +375,7 @@ open class DefaultAMQPChannel(
                 arguments = arguments
             )
         )
-        return connection.writeAndWaitForResponse(bind)
+        return writeAndWaitForResponse(bind)
     }
 
     override suspend fun queueUnbind(
@@ -377,7 +394,7 @@ open class DefaultAMQPChannel(
                 arguments = arguments
             )
         )
-        return connection.writeAndWaitForResponse(unbind)
+        return writeAndWaitForResponse(unbind)
     }
 
     override suspend fun exchangeDeclare(
@@ -403,7 +420,7 @@ open class DefaultAMQPChannel(
                 arguments = arguments
             )
         )
-        return connection.writeAndWaitForResponse(declare)
+        return writeAndWaitForResponse(declare)
     }
 
     override suspend fun exchangeDelete(
@@ -419,7 +436,7 @@ open class DefaultAMQPChannel(
                 noWait = false
             )
         )
-        return connection.writeAndWaitForResponse(delete)
+        return writeAndWaitForResponse(delete)
     }
 
     override suspend fun exchangeBind(
@@ -439,7 +456,7 @@ open class DefaultAMQPChannel(
                 arguments = arguments
             )
         )
-        return connection.writeAndWaitForResponse(bind)
+        return writeAndWaitForResponse(bind)
     }
 
     override suspend fun exchangeUnbind(
@@ -459,7 +476,7 @@ open class DefaultAMQPChannel(
                 arguments = arguments
             )
         )
-        return connection.writeAndWaitForResponse(unbind)
+        return writeAndWaitForResponse(unbind)
     }
 
 }

@@ -63,7 +63,7 @@ open class DefaultAMQPConnection(
     private var frameMax: UInt = 0u
 
     @InternalAmqpApi
-    val allResponses = MutableSharedFlow<AMQPResponse>(extraBufferCapacity = Channel.UNLIMITED)
+    val connectionResponses = MutableSharedFlow<AMQPResponse>(extraBufferCapacity = Channel.UNLIMITED)
 
     @InternalAmqpApi
     val channels = AMQPChannels()
@@ -93,7 +93,7 @@ open class DefaultAMQPConnection(
 
         write(Protocol.PROTOCOL_START_0_9_1)
         val response = withTimeout(10_000) {
-            allResponses
+            connectionResponses
                 .mapNotNull { (it as? AMQPResponse.Connection.Connected) }
                 .first()
         }
@@ -185,7 +185,7 @@ open class DefaultAMQPConnection(
             is Frame.Method.Connection.TuneOk -> error("Unexpected TuneOk frame received: $payload")
 
             is Frame.Method.Connection.Open -> error("Unexpected Open frame received: $payload")
-            is Frame.Method.Connection.OpenOk -> allResponses.emit(
+            is Frame.Method.Connection.OpenOk -> connectionResponses.emit(
                 AMQPResponse.Connection.Connected(
                     channelMax = channelMax,
                     frameMax = frameMax,
@@ -200,7 +200,7 @@ open class DefaultAMQPConnection(
             is Frame.Method.Connection.Unblocked -> TODO()
 
             is Frame.Method.Channel.Open -> error("Unexpected Open frame received: $payload")
-            is Frame.Method.Channel.OpenOk -> allResponses.emit(
+            is Frame.Method.Channel.OpenOk -> connectionResponses.emit(
                 AMQPResponse.Channel.Opened(
                     channelId = frame.channelId,
                 )
@@ -212,7 +212,7 @@ open class DefaultAMQPConnection(
             is Frame.Method.Channel.FlowOk -> TODO()
 
             is Frame.Method.Queue.Declare -> error("Unexpected Declare frame received: $payload")
-            is Frame.Method.Queue.DeclareOk -> allResponses.emit(
+            is Frame.Method.Queue.DeclareOk -> channel?.channelResponses?.emit(
                 AMQPResponse.Channel.Queue.Declared(
                     queueName = payload.queueName,
                     messageCount = payload.messageCount,
@@ -221,31 +221,31 @@ open class DefaultAMQPConnection(
             )
 
             is Frame.Method.Queue.Bind -> error("Unexpected Bind frame received: $payload")
-            is Frame.Method.Queue.BindOk -> allResponses.emit(
+            is Frame.Method.Queue.BindOk -> channel?.channelResponses?.emit(
                 AMQPResponse.Channel.Queue.Bound
             )
 
             is Frame.Method.Queue.Purge -> error("Unexpected Purge frame received: $payload")
-            is Frame.Method.Queue.PurgeOk -> allResponses.emit(
+            is Frame.Method.Queue.PurgeOk -> channel?.channelResponses?.emit(
                 AMQPResponse.Channel.Queue.Purged(
                     messageCount = payload.messageCount
                 )
             )
 
             is Frame.Method.Queue.Delete -> error("Unexpected Delete frame received: $payload")
-            is Frame.Method.Queue.DeleteOk -> allResponses.emit(
+            is Frame.Method.Queue.DeleteOk -> channel?.channelResponses?.emit(
                 AMQPResponse.Channel.Queue.Deleted(
                     messageCount = payload.messageCount,
                 )
             )
 
             is Frame.Method.Queue.Unbind -> error("Unexpected Unbind frame received: $payload")
-            is Frame.Method.Queue.UnbindOk -> allResponses.emit(
+            is Frame.Method.Queue.UnbindOk -> channel?.channelResponses?.emit(
                 AMQPResponse.Channel.Queue.Unbound
             )
 
             is Frame.Method.Basic.Get -> error("Unexpected Get frame received: $payload")
-            is Frame.Method.Basic.GetEmpty -> allResponses.emit(
+            is Frame.Method.Basic.GetEmpty -> channel?.channelResponses?.emit(
                 AMQPResponse.Channel.Message.Get()
             )
 
@@ -255,26 +255,26 @@ open class DefaultAMQPConnection(
 
             is Frame.Method.Basic.RecoverAsync -> error("Unexpected RecoverAsync frame received: $payload")
             is Frame.Method.Basic.Recover -> error("Unexpected Recover frame received: $payload")
-            is Frame.Method.Basic.RecoverOk -> allResponses.emit(
+            is Frame.Method.Basic.RecoverOk -> channel?.channelResponses?.emit(
                 AMQPResponse.Channel.Basic.Recovered
             )
 
             is Frame.Method.Basic.Consume -> error("Unexpected Consume frame received: $payload")
-            is Frame.Method.Basic.ConsumeOk -> allResponses.emit(
+            is Frame.Method.Basic.ConsumeOk -> channel?.channelResponses?.emit(
                 AMQPResponse.Channel.Basic.ConsumeOk(
                     consumerTag = payload.consumerTag,
                 )
             )
 
             is Frame.Method.Basic.Cancel -> error("Unexpected Cancel frame received: $payload")
-            is Frame.Method.Basic.CancelOk -> allResponses.emit(
+            is Frame.Method.Basic.CancelOk -> channel?.channelResponses?.emit(
                 AMQPResponse.Channel.Basic.Canceled(
                     consumerTag = payload.consumerTag,
                 ) // TODO: Handle cancellation (for example kotlin flows)
             )
 
             is Frame.Method.Basic.Qos -> error("Unexpected Qos frame received: $payload")
-            is Frame.Method.Basic.QosOk -> allResponses.emit(
+            is Frame.Method.Basic.QosOk -> channel?.channelResponses?.emit(
                 AMQPResponse.Channel.Basic.QosOk
             )
 
@@ -291,22 +291,22 @@ open class DefaultAMQPConnection(
             is Frame.Method.Basic.Reject -> error("Unexpected Reject frame received: $payload")
 
             is Frame.Method.Exchange.Declare -> error("Unexpected Declare frame received: $payload")
-            is Frame.Method.Exchange.DeclareOk -> allResponses.emit(
+            is Frame.Method.Exchange.DeclareOk -> channel?.channelResponses?.emit(
                 AMQPResponse.Channel.Exchange.Declared
             )
 
             is Frame.Method.Exchange.Delete -> error("Unexpected Delete frame received: $payload")
-            is Frame.Method.Exchange.DeleteOk -> allResponses.emit(
+            is Frame.Method.Exchange.DeleteOk -> channel?.channelResponses?.emit(
                 AMQPResponse.Channel.Exchange.Deleted
             )
 
             is Frame.Method.Exchange.Bind -> error("Unexpected Bind frame received: $payload")
-            is Frame.Method.Exchange.BindOk -> allResponses.emit(
+            is Frame.Method.Exchange.BindOk -> channel?.channelResponses?.emit(
                 AMQPResponse.Channel.Exchange.Bound
             )
 
             is Frame.Method.Exchange.Unbind -> error("Unexpected Unbind frame received: $payload")
-            is Frame.Method.Exchange.UnbindOk -> allResponses.emit(
+            is Frame.Method.Exchange.UnbindOk -> channel?.channelResponses?.emit(
                 AMQPResponse.Channel.Exchange.Unbound
             )
 
@@ -323,7 +323,7 @@ open class DefaultAMQPConnection(
                     channel.nextMessage = null
 
                     when (method) {
-                        is Frame.Method.Basic.GetOk -> allResponses.emit(
+                        is Frame.Method.Basic.GetOk -> channel.channelResponses.emit(
                             AMQPResponse.Channel.Message.Get(
                                 message = AMQPMessage(
                                     exchange = method.exchange,
@@ -337,7 +337,7 @@ open class DefaultAMQPConnection(
                             )
                         )
 
-                        is Frame.Method.Basic.Deliver -> allResponses.emit(
+                        is Frame.Method.Basic.Deliver -> channel.channelResponses.emit(
                             AMQPResponse.Channel.Message.Delivery(
                                 message = AMQPMessage(
                                     exchange = method.exchange,
@@ -351,7 +351,7 @@ open class DefaultAMQPConnection(
                             ),
                         )
 
-                        is Frame.Method.Basic.Return -> allResponses.emit(
+                        is Frame.Method.Basic.Return -> channel.channelResponses.emit(
                             AMQPResponse.Channel.Message.Return(
                                 replyCode = method.replyCode,
                                 replyText = method.replyText,
@@ -392,7 +392,7 @@ open class DefaultAMQPConnection(
     @Suppress("Unchecked_Cast")
     override suspend fun <T : AMQPResponse> writeAndWaitForResponse(vararg frames: Frame): T {
         write(*frames)
-        return allResponses.mapNotNull { it as? T }.first()
+        return connectionResponses.mapNotNull { it as? T }.first()
     }
 
     override suspend fun openChannel(): AMQPChannel {
