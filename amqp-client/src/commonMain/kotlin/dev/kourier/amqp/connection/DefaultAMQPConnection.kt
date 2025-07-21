@@ -12,6 +12,7 @@ import io.ktor.network.tls.*
 import io.ktor.util.logging.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapNotNull
@@ -21,9 +22,8 @@ import kotlinx.io.IOException
 import kotlinx.serialization.encodeToByteArray
 
 open class DefaultAMQPConnection(
-    private val config: AMQPConnectionConfiguration,
-    private val messageListeningScope: CoroutineScope,
-    private val eventsBufferSize: Int,
+    override val config: AMQPConnectionConfiguration,
+    val messageListeningScope: CoroutineScope,
 ) : AMQPConnection {
 
     companion object {
@@ -41,7 +41,7 @@ open class DefaultAMQPConnection(
             config: AMQPConnectionConfiguration,
         ): AMQPConnection {
             val amqpScope = CoroutineScope(coroutineScope.coroutineContext + SupervisorJob())
-            val instance = DefaultAMQPConnection(config, amqpScope, 64)
+            val instance = DefaultAMQPConnection(config, amqpScope)
             instance.connect()
             return instance
         }
@@ -62,9 +62,11 @@ open class DefaultAMQPConnection(
     private var channelMax: UShort = 0u
     private var frameMax: UInt = 0u
 
-    private val allResponses = MutableSharedFlow<AMQPResponse>(extraBufferCapacity = eventsBufferSize)
+    @InternalAmqpApi
+    val allResponses = MutableSharedFlow<AMQPResponse>(extraBufferCapacity = Channel.UNLIMITED)
 
-    private val channels = AMQPChannels()
+    @InternalAmqpApi
+    val channels = AMQPChannels()
 
     private suspend fun connect() {
         if (socket != null && socket?.isActive == true) return
@@ -72,11 +74,12 @@ open class DefaultAMQPConnection(
         val selector = SelectorManager(Dispatchers.IO)
         val tcpClient = aSocket(selector).tcp()
 
-        socket = when (config.connection) {
+        val connection = config.connection
+        socket = when (connection) {
             is AMQPConnectionConfiguration.Connection.Tls -> tcpClient
                 .connect(config.server.host, config.server.port)
                 .apply {
-                    config.connection.tlsConfiguration?.let { tls(coroutineContext, it) } ?: tls(coroutineContext)
+                    connection.tlsConfiguration?.let { tls(coroutineContext, it) } ?: tls(coroutineContext)
                 }
 
             is AMQPConnectionConfiguration.Connection.Plain -> tcpClient
@@ -336,7 +339,8 @@ open class DefaultAMQPConnection(
 
                         is Frame.Method.Basic.Deliver -> {
                             // TODO: Handle it has a consumer tag
-                            /*allResponses.emit(
+                            method.consumerTag
+                            allResponses.emit(
                                 AMQPResponse.Channel.Message.Delivery(
                                     exchange = method.exchange,
                                     routingKey = method.routingKey,
@@ -345,8 +349,7 @@ open class DefaultAMQPConnection(
                                     redelivered = method.redelivered,
                                     body = completeBody
                                 ),
-                                method.consumerTag
-                            )*/
+                            )
                         }
 
                         is Frame.Method.Basic.Return -> allResponses.emit(

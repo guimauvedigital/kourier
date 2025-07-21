@@ -7,6 +7,11 @@ import dev.kourier.amqp.channel.AMQPChannel
 
 interface AMQPConnection {
 
+    /**
+     * The configuration of the connection.
+     */
+    val config: AMQPConnectionConfiguration
+
     @InternalAmqpApi
     suspend fun write(bytes: ByteArray)
 

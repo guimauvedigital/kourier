@@ -126,4 +126,35 @@ class AMQPChannelTest {
         channel.close()
     }
 
+    @Test
+    fun testBasicConsumeManualCancel() = withConnection { connection ->
+        val channel = connection.openChannel()
+
+        channel.queueDeclare("test_consume", durable = true)
+
+        val body = "{}".toByteArray()
+
+        repeat(100) {
+            channel.basicPublish(body = body, exchange = "", routingKey = "test_consume")
+        }
+
+        val deliveryChannel = channel.basicConsumeAsChannel(
+            queue = "test_consume",
+            noAck = true
+        )
+
+        var count = 0
+        runCatching {
+            for (delivery in deliveryChannel) {
+                count++
+                if (count == 100) deliveryChannel.cancel()
+            }
+        }
+
+        assertEquals(100, count)
+
+        channel.queueDelete("test_consume")
+        channel.close()
+    }
+
 }

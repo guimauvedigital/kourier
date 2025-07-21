@@ -2,6 +2,16 @@ package dev.kourier.amqp.channel
 
 import dev.kourier.amqp.*
 import dev.kourier.amqp.connection.AMQPConnection
+import dev.kourier.amqp.connection.DefaultAMQPConnection
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.channels.produce
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -88,6 +98,60 @@ open class DefaultAMQPChannel(
             )
         )
         return connection.writeAndWaitForResponse(get)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override suspend fun basicConsumeAsChannel(
+        queue: String,
+        consumerTag: String,
+        noAck: Boolean,
+        exclusive: Boolean,
+        arguments: Table,
+    ): ReceiveChannel<AMQPResponse.Channel.Message.Delivery> {
+        require(connection is DefaultAMQPConnection)
+        return connection.messageListeningScope.produce(capacity = Channel.UNLIMITED) {
+            val consumeOk = basicConsume(
+                queue = queue,
+                consumerTag = consumerTag,
+                noAck = noAck,
+                exclusive = exclusive,
+                arguments = arguments,
+            ) { delivery ->
+                trySend(delivery)
+            }
+            awaitClose {
+                launch {
+                    basicCancel(consumeOk.consumerTag)
+                }
+            }
+        }
+    }
+
+    override suspend fun basicConsume(
+        queue: String,
+        consumerTag: String,
+        noAck: Boolean,
+        exclusive: Boolean,
+        arguments: Table,
+        listener: (AMQPResponse.Channel.Message.Delivery) -> Unit,
+    ): AMQPResponse.Channel.Basic.ConsumeOk {
+        require(connection is DefaultAMQPConnection)
+        val deferredConsumerTag = CompletableDeferred<String>()
+        connection.messageListeningScope.launch {
+            connection.allResponses
+                .mapNotNull { it as? AMQPResponse.Channel.Message.Delivery }
+                .filter { it.routingKey != deferredConsumerTag.await() } // TODO: Filter messages by consumerTag
+                .collect { response -> listener(response) }
+        }
+        val result = basicConsume(
+            queue = queue,
+            consumerTag = consumerTag,
+            noAck = noAck,
+            exclusive = exclusive,
+            arguments = arguments
+        )
+        deferredConsumerTag.complete(result.consumerTag)
+        return result
     }
 
     override suspend fun basicConsume(
