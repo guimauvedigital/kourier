@@ -10,6 +10,9 @@ interface AMQPChannel {
      */
     val id: ChannelId
 
+    @InternalAmqpApi
+    suspend fun <T : AMQPResponse> writeAndWaitForResponse(vararg frames: Frame): T
+
     /**
      * Closes the channel.
      *

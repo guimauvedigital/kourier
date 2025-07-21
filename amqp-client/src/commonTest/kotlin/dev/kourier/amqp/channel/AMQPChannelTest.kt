@@ -5,6 +5,9 @@ import dev.kourier.amqp.Properties
 import dev.kourier.amqp.Table
 import dev.kourier.amqp.withConnection
 import io.ktor.utils.io.core.*
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -198,6 +201,39 @@ class AMQPChannelTest {
 
         channel.queueDelete("test_consume")
         channel.close()
+    }
+
+    @Test
+    fun testOpenChannelsConcurrently() = runBlocking {
+        withConnection { connection ->
+            val first = async { connection.openChannel() }
+            val second = async { connection.openChannel() }
+
+            first.await().close()
+            second.await().close()
+        }
+    }
+
+    @Test
+    fun testConcurrentOperationsOnChannel() = runBlocking {
+        withConnection { connection ->
+            repeat(1001) { run ->
+                val queueName = "temp_queue_$run"
+                val channel = connection.openChannel()
+                channel.queueDeclare(name = queueName, durable = false, exclusive = true)
+
+                val o1 = async { channel.basicConsume(queue = queueName) }
+                val o2 =
+                    async { channel.basicPublish(body = "baz".toByteArray(), exchange = "", routingKey = queueName) }
+                val o3 = async { channel.basicConsume(queue = queueName) }
+                val o4 =
+                    async { channel.basicPublish(body = "baz".toByteArray(), exchange = "", routingKey = queueName) }
+                val tag = o1.await().consumerTag
+                val o5 = async { channel.basicCancel(consumerTag = tag) }
+
+                awaitAll(o2, o3, o4, o5)
+            }
+        }
     }
 
 }
