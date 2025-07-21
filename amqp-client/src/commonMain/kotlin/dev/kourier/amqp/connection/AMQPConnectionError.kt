@@ -1,4 +1,6 @@
-package dev.kourier.amqp
+package dev.kourier.amqp.connection
+
+import dev.kourier.amqp.AMQPResponse
 
 sealed class AMQPConnectionError : Exception() {
 

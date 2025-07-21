@@ -1,4 +1,4 @@
-package dev.kourier.amqp
+package dev.kourier.amqp.channel
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

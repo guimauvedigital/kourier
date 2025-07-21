@@ -1,18 +1,16 @@
-package dev.kourier.amqp
+package dev.kourier.amqp.channel
 
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import dev.kourier.amqp.AMQPResponse
+import dev.kourier.amqp.ChannelId
+import dev.kourier.amqp.Properties
+import dev.kourier.amqp.Table
 
-class AMQPChannel(
-    private val connection: AMQPConnection,
-    val id: ChannelId,
-    val frameMax: UInt,
-) {
+interface AMQPChannel {
 
-    private val isConfirmMode: Boolean = false
-
-    private val deliveryTagMutex = Mutex()
-    private var deliveryTag: ULong = 0u
+    /**
+     * Unique identifier of the channel.
+     */
+    val id: ChannelId
 
     /**
      * Closes the channel.
@@ -25,9 +23,7 @@ class AMQPChannel(
     fun close(
         reason: String = "",
         code: UShort = 200u,
-    ) {
-        // TODO
-    }
+    )
 
     /**
      * Publish a ByteArray message to exchange or queue.
@@ -56,48 +52,7 @@ class AMQPChannel(
         mandatory: Boolean = false,
         immediate: Boolean = false,
         properties: Properties = Properties(),
-    ): AMQPResponse.Channel.Basic.Published {
-        val publish = Frame.Method.Basic.Publish(
-            reserved1 = 0u,
-            exchange = exchange,
-            routingKey = routingKey,
-            mandatory = mandatory,
-            immediate = immediate
-        )
-        val classID = publish.kind.value
-        val header = Frame.Header(
-            classID = classID,
-            weight = 0u,
-            bodySize = body.size.toULong(),
-            properties = properties
-        )
-
-        val payloads = mutableListOf<Frame.Payload>()
-        if (body.size <= frameMax.toInt()) {
-            payloads.add(publish)
-            payloads.add(header)
-            payloads.add(Frame.Body(body))
-        } else {
-            payloads.add(publish)
-            payloads.add(header)
-            var offset = 0
-            while (offset < body.size) {
-                val length = minOf(frameMax.toInt(), body.size - offset)
-                val slice = body.copyOfRange(offset, offset + length)
-                payloads.add(Frame.Body(slice))
-                offset += length
-            }
-        }
-
-        connection.write(*payloads.map { Frame(channelId = id, payload = it) }.toTypedArray())
-
-        return if (isConfirmMode) {
-            val count = deliveryTagMutex.withLock { deliveryTag++ }
-            AMQPResponse.Channel.Basic.Published(deliveryTag = count)
-        } else {
-            AMQPResponse.Channel.Basic.Published(deliveryTag = 0u)
-        }
-    }
+    ): AMQPResponse.Channel.Basic.Published
 
     /**
      * Get a single message from a queue.
@@ -110,17 +65,7 @@ class AMQPChannel(
     suspend fun basicGet(
         queue: String,
         noAck: Boolean = false,
-    ): AMQPResponse.Channel.Message.Get {
-        val get = Frame(
-            channelId = id,
-            payload = Frame.Method.Basic.Get(
-                reserved1 = 0u,
-                queue = queue,
-                noAck = noAck
-            )
-        )
-        return connection.writeAndWaitForResponse(get)
-    }
+    ): AMQPResponse.Channel.Message.Get
 
     /**
      * Consume messages from a queue by sending them to registered consume listeners.
@@ -139,22 +84,7 @@ class AMQPChannel(
         noAck: Boolean = false,
         exclusive: Boolean = false,
         arguments: Table = Table(emptyMap()),
-    ): AMQPResponse.Channel.Basic.ConsumeOk {
-        val consume = Frame(
-            channelId = id,
-            payload = Frame.Method.Basic.Consume(
-                reserved1 = 0u,
-                queue = queue,
-                consumerTag = consumerTag,
-                noLocal = false,
-                noAck = noAck,
-                exclusive = exclusive,
-                noWait = false,
-                arguments = arguments
-            )
-        )
-        return connection.writeAndWaitForResponse(consume)
-    }
+    ): AMQPResponse.Channel.Basic.ConsumeOk
 
     /**
      * Cancel sending messages from server to consumer.
@@ -165,18 +95,7 @@ class AMQPChannel(
      */
     suspend fun basicCancel(
         consumerTag: String,
-    ): AMQPResponse.Channel.Basic.Canceled {
-        // TODO: Cancel consuming (for example kotlin flows)
-
-        val cancel = Frame(
-            channelId = id,
-            payload = Frame.Method.Basic.Cancel(
-                consumerTag = consumerTag,
-                noWait = false
-            )
-        )
-        return connection.writeAndWaitForResponse(cancel)
-    }
+    ): AMQPResponse.Channel.Basic.Canceled
 
     /**
      * Acknowledge a message.
@@ -187,16 +106,7 @@ class AMQPChannel(
     suspend fun basicAck(
         deliveryTag: ULong,
         multiple: Boolean = false,
-    ) {
-        val ack = Frame(
-            channelId = id,
-            payload = Frame.Method.Basic.Ack(
-                deliveryTag = deliveryTag,
-                multiple = multiple
-            )
-        )
-        return connection.write(ack)
-    }
+    )
 
     /**
      * Acknowledge a message.
@@ -207,9 +117,7 @@ class AMQPChannel(
     suspend fun basicAck(
         message: AMQPResponse.Channel.Message.Delivery,
         multiple: Boolean = false,
-    ) {
-        return basicAck(message.deliveryTag, multiple)
-    }
+    )
 
     /**
      * Reject a message.
@@ -222,17 +130,7 @@ class AMQPChannel(
         deliveryTag: ULong,
         multiple: Boolean = false,
         requeue: Boolean = false,
-    ) {
-        val nack = Frame(
-            channelId = id,
-            payload = Frame.Method.Basic.Nack(
-                deliveryTag = deliveryTag,
-                multiple = multiple,
-                requeue = requeue
-            )
-        )
-        return connection.write(nack)
-    }
+    )
 
     /**
      * Reject a message.
@@ -245,9 +143,7 @@ class AMQPChannel(
         message: AMQPResponse.Channel.Message.Delivery,
         multiple: Boolean = false,
         requeue: Boolean = false,
-    ) {
-        return basicNack(message.deliveryTag, multiple, requeue)
-    }
+    )
 
     /**
      * Reject a message.
@@ -258,16 +154,7 @@ class AMQPChannel(
     suspend fun basicReject(
         deliveryTag: ULong,
         requeue: Boolean = false,
-    ) {
-        val reject = Frame(
-            channelId = id,
-            payload = Frame.Method.Basic.Reject(
-                deliveryTag = deliveryTag,
-                requeue = requeue
-            )
-        )
-        return connection.write(reject)
-    }
+    )
 
     /**
      * Reject a message.
@@ -278,9 +165,7 @@ class AMQPChannel(
     suspend fun basicReject(
         message: AMQPResponse.Channel.Message.Delivery,
         requeue: Boolean = false,
-    ) {
-        return basicReject(message.deliveryTag, requeue)
-    }
+    )
 
     /**
      * Tell the broker what to do with all unacknowledged messages.
@@ -291,15 +176,7 @@ class AMQPChannel(
      */
     suspend fun basicRecover(
         requeue: Boolean = false,
-    ): AMQPResponse.Channel.Basic.Recovered {
-        val recover = Frame(
-            channelId = id,
-            payload = Frame.Method.Basic.Recover(
-                requeue = requeue
-            )
-        )
-        return connection.writeAndWaitForResponse(recover)
-    }
+    ): AMQPResponse.Channel.Basic.Recovered
 
     /**
      * Sets a prefetch limit when consuming messages.
@@ -313,17 +190,7 @@ class AMQPChannel(
     suspend fun basicQos(
         count: UShort,
         global: Boolean = false,
-    ): AMQPResponse.Channel.Basic.QosOk {
-        val qos = Frame(
-            channelId = id,
-            payload = Frame.Method.Basic.Qos(
-                prefetchSize = 0u,
-                prefetchCount = count,
-                global = global
-            )
-        )
-        return connection.writeAndWaitForResponse(qos)
-    }
+    ): AMQPResponse.Channel.Basic.QosOk
 
     /**
      * Declares a queue.
@@ -344,22 +211,7 @@ class AMQPChannel(
         exclusive: Boolean = false,
         autoDelete: Boolean = false,
         arguments: Table = Table(emptyMap()),
-    ): AMQPResponse.Channel.Queue.Declared {
-        val declare = Frame(
-            channelId = id,
-            payload = Frame.Method.Queue.Declare(
-                reserved1 = 0u,
-                queueName = name,
-                passive = passive,
-                durable = durable,
-                exclusive = exclusive,
-                autoDelete = autoDelete,
-                noWait = false,
-                arguments = arguments
-            )
-        )
-        return connection.writeAndWaitForResponse(declare)
-    }
+    ): AMQPResponse.Channel.Queue.Declared
 
     /**
      * Deletes a queue.
@@ -374,19 +226,7 @@ class AMQPChannel(
         name: String,
         ifUnused: Boolean = false,
         ifEmpty: Boolean = false,
-    ): AMQPResponse.Channel.Queue.Deleted {
-        val delete = Frame(
-            channelId = id,
-            payload = Frame.Method.Queue.Delete(
-                reserved1 = 0u,
-                queueName = name,
-                ifUnused = ifUnused,
-                ifEmpty = ifEmpty,
-                noWait = false
-            )
-        )
-        return connection.writeAndWaitForResponse(delete)
-    }
+    ): AMQPResponse.Channel.Queue.Deleted
 
     /**
      * Deletes all messages from a queue.
@@ -397,17 +237,7 @@ class AMQPChannel(
      */
     suspend fun queuePurge(
         name: String,
-    ): AMQPResponse.Channel.Queue.Purged {
-        val purge = Frame(
-            channelId = id,
-            payload = Frame.Method.Queue.Purge(
-                reserved1 = 0u,
-                queueName = name,
-                noWait = false
-            )
-        )
-        return connection.writeAndWaitForResponse(purge)
-    }
+    ): AMQPResponse.Channel.Queue.Purged
 
     /**
      * Binds a queue to an exchange.
@@ -424,20 +254,7 @@ class AMQPChannel(
         exchange: String,
         routingKey: String = "",
         arguments: Table = Table(emptyMap()),
-    ): AMQPResponse.Channel.Queue.Bound {
-        val bind = Frame(
-            channelId = id,
-            payload = Frame.Method.Queue.Bind(
-                reserved1 = 0u,
-                queueName = queue,
-                exchangeName = exchange,
-                routingKey = routingKey,
-                noWait = false,
-                arguments = arguments
-            )
-        )
-        return connection.writeAndWaitForResponse(bind)
-    }
+    ): AMQPResponse.Channel.Queue.Bound
 
     /**
      * Unbinds a queue from an exchange.
@@ -454,19 +271,7 @@ class AMQPChannel(
         exchange: String,
         routingKey: String = "",
         arguments: Table = Table(emptyMap()),
-    ): AMQPResponse.Channel.Queue.Unbound {
-        val unbind = Frame(
-            channelId = id,
-            payload = Frame.Method.Queue.Unbind(
-                reserved1 = 0u,
-                queueName = queue,
-                exchangeName = exchange,
-                routingKey = routingKey,
-                arguments = arguments
-            )
-        )
-        return connection.writeAndWaitForResponse(unbind)
-    }
+    ): AMQPResponse.Channel.Queue.Unbound
 
     /**
      * Declare an exchange.
@@ -489,23 +294,7 @@ class AMQPChannel(
         autoDelete: Boolean = false,
         internal: Boolean = false,
         arguments: Table = Table(emptyMap()),
-    ): AMQPResponse.Channel.Exchange.Declared {
-        val declare = Frame(
-            channelId = id,
-            payload = Frame.Method.Exchange.Declare(
-                reserved1 = 0u,
-                exchangeName = name,
-                exchangeType = type,
-                passive = passive,
-                durable = durable,
-                autoDelete = autoDelete,
-                internal = internal,
-                noWait = false,
-                arguments = arguments
-            )
-        )
-        return connection.writeAndWaitForResponse(declare)
-    }
+    ): AMQPResponse.Channel.Exchange.Declared
 
     /**
      * Delete an exchange.
@@ -518,18 +307,7 @@ class AMQPChannel(
     suspend fun exchangeDelete(
         name: String,
         ifUnused: Boolean = false,
-    ): AMQPResponse.Channel.Exchange.Deleted {
-        val delete = Frame(
-            channelId = id,
-            payload = Frame.Method.Exchange.Delete(
-                reserved1 = 0u,
-                exchangeName = name,
-                ifUnused = ifUnused,
-                noWait = false
-            )
-        )
-        return connection.writeAndWaitForResponse(delete)
-    }
+    ): AMQPResponse.Channel.Exchange.Deleted
 
     /**
      * Bind an exchange to another exchange.
@@ -546,20 +324,7 @@ class AMQPChannel(
         source: String,
         routingKey: String,
         arguments: Table = Table(emptyMap()),
-    ): AMQPResponse.Channel.Exchange.Bound {
-        val bind = Frame(
-            channelId = id,
-            payload = Frame.Method.Exchange.Bind(
-                reserved1 = 0u,
-                destination = destination,
-                source = source,
-                routingKey = routingKey,
-                noWait = false,
-                arguments = arguments
-            )
-        )
-        return connection.writeAndWaitForResponse(bind)
-    }
+    ): AMQPResponse.Channel.Exchange.Bound
 
     /**
      * Unbind an exchange from another exchange.
@@ -576,19 +341,6 @@ class AMQPChannel(
         source: String,
         routingKey: String,
         arguments: Table = Table(emptyMap()),
-    ): AMQPResponse.Channel.Exchange.Unbound {
-        val unbind = Frame(
-            channelId = id,
-            payload = Frame.Method.Exchange.Unbind(
-                reserved1 = 0u,
-                destination = destination,
-                source = source,
-                routingKey = routingKey,
-                noWait = false,
-                arguments = arguments
-            )
-        )
-        return connection.writeAndWaitForResponse(unbind)
-    }
+    ): AMQPResponse.Channel.Exchange.Unbound
 
 }

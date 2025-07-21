@@ -1,6 +1,5 @@
-package dev.kourier.amqp.dsl
+package dev.kourier.amqp.connection
 
-import dev.kourier.amqp.AMQPConnectionConfiguration
 import kotlin.time.Duration
 
 class AMQPConnectionConfigurationServerBuilder {

@@ -1,6 +1,4 @@
-package dev.kourier.amqp.dsl
-
-import dev.kourier.amqp.AMQPConnectionConfiguration
+package dev.kourier.amqp.connection
 
 class AMQPConnectionConfigurationBuilder {
 

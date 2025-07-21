@@ -1,5 +1,6 @@
-package dev.kourier.amqp
+package dev.kourier.amqp.connection
 
+import dev.kourier.amqp.withConnection
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
