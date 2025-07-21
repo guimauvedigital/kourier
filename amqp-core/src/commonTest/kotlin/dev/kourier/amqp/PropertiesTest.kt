@@ -18,14 +18,14 @@ class PropertiesTest {
             headers = Table(mapOf("userId" to Field.LongString("123"))),
             deliveryMode = 2u,
             priority = 1u,
-            correlationID = "correlationID",
+            correlationId = "correlationID",
             replyTo = "replyTo",
             expiration = null,
-            messageID = "1",
+            messageId = "1",
             timestamp = now.toEpochMilliseconds(),
             type = "type",
-            userID = "userID",
-            appID = "appID",
+            userId = "userID",
+            appId = "appID",
             reserved1 = "reserved1"
         )
 

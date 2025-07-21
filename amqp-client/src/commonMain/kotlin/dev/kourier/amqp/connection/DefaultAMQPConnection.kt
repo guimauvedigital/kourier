@@ -4,6 +4,7 @@ import dev.kourier.amqp.*
 import dev.kourier.amqp.channel.AMQPChannel
 import dev.kourier.amqp.channel.AMQPChannels
 import dev.kourier.amqp.channel.DefaultAMQPChannel
+import dev.kourier.amqp.channel.PartialDelivery
 import dev.kourier.amqp.serialization.ProtocolBinary
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
@@ -117,6 +118,8 @@ open class DefaultAMQPConnection(
     }
 
     private suspend fun read(frame: Frame) {
+        val channel = channels[frame.channelId] as? DefaultAMQPChannel
+
         when (val payload = frame.payload) {
             is Frame.Method.Connection.Start -> {
                 val clientProperties = Table(
@@ -244,7 +247,7 @@ open class DefaultAMQPConnection(
             )
 
             is Frame.Method.Basic.Deliver, is Frame.Method.Basic.GetOk, is Frame.Method.Basic.Return -> {
-                // TODO: `channel.nextMessage = PartialDelivery(method: basic)`
+                channel?.nextMessage = PartialDelivery(method = payload)
             }
 
             is Frame.Method.Basic.RecoverAsync -> error("Unexpected RecoverAsync frame received: $payload")
@@ -307,12 +310,59 @@ open class DefaultAMQPConnection(
             is Frame.Method.Confirm -> TODO()
             is Frame.Method.Tx -> TODO()
 
-            is Frame.Header -> {
-
-            }
+            is Frame.Header -> channel?.nextMessage?.setHeader(payload)
 
             is Frame.Body -> {
+                channel?.nextMessage?.addBody(payload.body)
 
+                if (channel?.nextMessage?.isComplete == true) {
+                    val (method, properties, completeBody) = channel.nextMessage!!.asCompletedMessage()
+                    channel.nextMessage = null
+
+                    when (method) {
+                        is Frame.Method.Basic.GetOk -> allResponses.emit(
+                            AMQPResponse.Channel.Message.Get(
+                                message = AMQPResponse.Channel.Message.Delivery(
+                                    exchange = method.exchange,
+                                    routingKey = method.routingKey,
+                                    deliveryTag = method.deliveryTag,
+                                    properties = properties,
+                                    redelivered = method.redelivered,
+                                    body = completeBody
+                                ),
+                                messageCount = method.messageCount
+                            )
+                        )
+
+                        is Frame.Method.Basic.Deliver -> {
+                            // TODO: Handle it has a consumer tag
+                            /*allResponses.emit(
+                                AMQPResponse.Channel.Message.Delivery(
+                                    exchange = method.exchange,
+                                    routingKey = method.routingKey,
+                                    deliveryTag = method.deliveryTag,
+                                    properties = properties,
+                                    redelivered = method.redelivered,
+                                    body = completeBody
+                                ),
+                                method.consumerTag
+                            )*/
+                        }
+
+                        is Frame.Method.Basic.Return -> allResponses.emit(
+                            AMQPResponse.Channel.Message.Return(
+                                replyCode = method.replyCode,
+                                replyText = method.replyText,
+                                exchange = method.exchange,
+                                routingKey = method.routingKey,
+                                properties = properties,
+                                body = completeBody
+                            )
+                        )
+
+                        else -> error("Unexpected frame: $frame")
+                    }
+                }
             }
 
             is Frame.Heartbeat -> write(Frame(channelId = frame.channelId, payload = Frame.Heartbeat))

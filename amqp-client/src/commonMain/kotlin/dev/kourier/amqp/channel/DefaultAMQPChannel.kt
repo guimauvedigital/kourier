@@ -16,6 +16,8 @@ open class DefaultAMQPChannel(
     private val deliveryTagMutex = Mutex()
     private var deliveryTag: ULong = 0u
 
+    var nextMessage: PartialDelivery? = null
+
     override fun close(
         reason: String,
         code: UShort,

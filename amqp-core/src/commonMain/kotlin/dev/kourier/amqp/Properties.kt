@@ -10,14 +10,14 @@ data class Properties(
     val headers: Table? = null,
     val deliveryMode: UByte? = null,
     val priority: UByte? = null,
-    val correlationID: String? = null,
+    val correlationId: String? = null,
     val replyTo: String? = null,
     val expiration: String? = null,
-    val messageID: String? = null,
+    val messageId: String? = null,
     val timestamp: Long? = null,
     val type: String? = null,
-    val userID: String? = null,
-    val appID: String? = null,
+    val userId: String? = null,
+    val appId: String? = null,
     val reserved1: String? = null,
 ) {
 
