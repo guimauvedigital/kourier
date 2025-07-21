@@ -231,4 +231,288 @@ class FrameTest {
         assertEquals(frame, decoded)
     }
 
+    @Test
+    fun testFrameMethodQueueBasicQos() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.Qos(
+                prefetchSize = 0u,
+                prefetchCount = 1u,
+                global = false
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicQosOk() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.QosOk
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicConsume() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.Consume(
+                reserved1 = 0u,
+                queue = "testQueue",
+                consumerTag = "testConsumer",
+                noLocal = false,
+                noAck = true,
+                exclusive = false,
+                noWait = false,
+                arguments = Table(emptyMap())
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicConsumeOk() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.ConsumeOk(
+                consumerTag = "testConsumer",
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicCancel() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.Cancel(
+                consumerTag = "testConsumer",
+                noWait = false,
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicCancelOk() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.CancelOk(
+                consumerTag = "testConsumer",
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicPublish() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.Publish(
+                reserved1 = 0u,
+                exchange = "testExchange",
+                routingKey = "testRoutingKey",
+                mandatory = false,
+                immediate = true,
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicReturn() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.Return(
+                replyCode = 200u,
+                replyText = "OK",
+                exchange = "testExchange",
+                routingKey = "testRoutingKey",
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicDeliver() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.Deliver(
+                consumerTag = "testConsumer",
+                deliveryTag = 1u,
+                redelivered = false,
+                exchange = "testExchange",
+                routingKey = "testRoutingKey",
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicGet() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.Get(
+                reserved1 = 0u,
+                queue = "testQueue",
+                noAck = true
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicGetOk() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.GetOk(
+                deliveryTag = 1u,
+                redelivered = false,
+                exchange = "testExchange",
+                routingKey = "testRoutingKey",
+                messageCount = 0u
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicGetEmpty() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.GetEmpty(
+                reserved1 = ""
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicAck() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.Ack(
+                deliveryTag = 1u,
+                multiple = false
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicReject() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.Reject(
+                deliveryTag = 1u,
+                requeue = false
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicRecoverAsync() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.RecoverAsync(
+                requeue = false
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicRecover() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.Recover(
+                requeue = false
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicRecoverOk() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.RecoverOk
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicNack() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.Nack(
+                deliveryTag = 1u,
+                multiple = false,
+                requeue = false
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+
+    @Test
+    fun testFrameHeartbeat() {
+        val frame = Frame(
+            channelId = 0u,
+            payload = Frame.Heartbeat
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameBody() {
+        val frame = Frame(
+            channelId = 0u,
+            payload = Frame.Body(byteArrayOf(1, 2, 3, 4, 5))
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
 }

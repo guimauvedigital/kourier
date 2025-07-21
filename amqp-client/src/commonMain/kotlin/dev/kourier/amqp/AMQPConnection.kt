@@ -11,6 +11,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.io.IOException
 import kotlinx.serialization.encodeToByteArray
 
@@ -50,6 +52,8 @@ class AMQPConnection private constructor(
 
     private var socketSubscription: Job? = null
     private var heartbeatSubscription: Job? = null
+
+    private val writeMutex = Mutex()
 
     private var channelMax: UShort = 0u
     private var frameMax: UInt = 0u
@@ -231,7 +235,51 @@ class AMQPConnection private constructor(
                 AMQPResponse.Channel.Queue.Unbound
             )
 
-            is Frame.Method.Basic -> TODO()
+            is Frame.Method.Basic.Get -> error("Unexpected Get frame received: $payload")
+            is Frame.Method.Basic.GetEmpty -> allResponses.emit(
+                AMQPResponse.Channel.Message.Get()
+            )
+
+            is Frame.Method.Basic.Deliver, is Frame.Method.Basic.GetOk, is Frame.Method.Basic.Return -> {
+                // TODO: `channel.nextMessage = PartialDelivery(method: basic)`
+            }
+
+            is Frame.Method.Basic.RecoverAsync -> error("Unexpected RecoverAsync frame received: $payload")
+            is Frame.Method.Basic.Recover -> error("Unexpected Recover frame received: $payload")
+            is Frame.Method.Basic.RecoverOk -> allResponses.emit(
+                AMQPResponse.Channel.Basic.Recovered
+            )
+
+            is Frame.Method.Basic.Consume -> error("Unexpected Consume frame received: $payload")
+            is Frame.Method.Basic.ConsumeOk -> allResponses.emit(
+                AMQPResponse.Channel.Basic.ConsumeOk(
+                    consumerTag = payload.consumerTag,
+                )
+            )
+
+            is Frame.Method.Basic.Cancel -> error("Unexpected Cancel frame received: $payload")
+            is Frame.Method.Basic.CancelOk -> allResponses.emit(
+                AMQPResponse.Channel.Basic.Canceled(
+                    consumerTag = payload.consumerTag,
+                ) // TODO: Handle cancellation (for example kotlin flows)
+            )
+
+            is Frame.Method.Basic.Qos -> error("Unexpected Qos frame received: $payload")
+            is Frame.Method.Basic.QosOk -> allResponses.emit(
+                AMQPResponse.Channel.Basic.QosOk
+            )
+
+            is Frame.Method.Basic.Publish -> error("Unexpected Publish frame received: $payload")
+
+            is Frame.Method.Basic.Ack -> {
+                // TODO: `receivePublishConfirm(.ack(deliveryTag: deliveryTag, multiple: multiple))`
+            }
+
+            is Frame.Method.Basic.Nack -> {
+                // TODO: `receivePublishConfirm(.nack(deliveryTag: deliveryTag, multiple: multiple))`
+            }
+
+            is Frame.Method.Basic.Reject -> error("Unexpected Reject frame received: $payload")
 
             is Frame.Method.Exchange.Declare -> error("Unexpected Declare frame received: $payload")
             is Frame.Method.Exchange.DeclareOk -> allResponses.emit(
@@ -276,15 +324,19 @@ class AMQPConnection private constructor(
     }
 
     @InternalAmqpApi
-    suspend fun write(frame: Frame) {
-        logger.debug("Sent frame: $frame")
-        write(ProtocolBinary.encodeToByteArray(frame))
+    suspend fun write(vararg frames: Frame) {
+        writeMutex.withLock { // Ensure that all frames are sent in order, without any other writes in between
+            frames.forEach { frame ->
+                logger.debug("Sent frame: $frame")
+                write(ProtocolBinary.encodeToByteArray(frame))
+            }
+        }
     }
 
     @InternalAmqpApi
     @Suppress("Unchecked_Cast")
-    suspend fun <T : AMQPResponse> writeAndWaitForResponse(frame: Frame): T {
-        write(frame)
+    suspend fun <T : AMQPResponse> writeAndWaitForResponse(vararg frames: Frame): T {
+        write(*frames)
         return allResponses.mapNotNull { it as? T }.first()
     }
 

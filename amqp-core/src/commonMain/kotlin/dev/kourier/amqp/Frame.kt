@@ -3,7 +3,7 @@ package dev.kourier.amqp
 import dev.kourier.amqp.serialization.serializers.frame.FrameHeaderSerializer
 import dev.kourier.amqp.serialization.serializers.frame.FrameSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.FrameMethodSerializer
-import dev.kourier.amqp.serialization.serializers.frame.method.basic.FrameMethodBasicSerializer
+import dev.kourier.amqp.serialization.serializers.frame.method.basic.*
 import dev.kourier.amqp.serialization.serializers.frame.method.channel.FrameMethodChannelCloseSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.channel.FrameMethodChannelSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.confirm.FrameMethodConfirmSerializer
@@ -414,7 +414,163 @@ data class Frame(
         @Serializable(with = FrameMethodBasicSerializer::class)
         sealed class Basic : Method() {
 
-            // TODO
+            val basicKind: Kind
+                get() = when (this) {
+                    is Qos -> Kind.QOS
+                    is QosOk -> Kind.QOS_OK
+                    is Consume -> Kind.CONSUME
+                    is ConsumeOk -> Kind.CONSUME_OK
+                    is Cancel -> Kind.CANCEL
+                    is CancelOk -> Kind.CANCEL_OK
+                    is Publish -> Kind.PUBLISH
+                    is Return -> Kind.RETURN
+                    is Deliver -> Kind.DELIVER
+                    is Get -> Kind.GET
+                    is GetOk -> Kind.GET_OK
+                    is GetEmpty -> Kind.GET_EMPTY
+                    is Ack -> Kind.ACK
+                    is Reject -> Kind.REJECT
+                    is RecoverAsync -> Kind.RECOVER_ASYNC
+                    is Recover -> Kind.RECOVER
+                    is RecoverOk -> Kind.RECOVER_OK
+                    is Nack -> Kind.NACK
+                }
+
+            enum class Kind(val value: UShort) {
+                QOS(10u),
+                QOS_OK(11u),
+                CONSUME(20u),
+                CONSUME_OK(21u),
+                CANCEL(30u),
+                CANCEL_OK(31u),
+                PUBLISH(40u),
+                RETURN(50u),
+                DELIVER(60u),
+                GET(70u),
+                GET_OK(71u),
+                GET_EMPTY(72u),
+                ACK(80u),
+                REJECT(90u),
+                RECOVER_ASYNC(100u),
+                RECOVER(110u),
+                RECOVER_OK(111u),
+                NACK(120u)
+            }
+
+            @Serializable(with = FrameMethodBasicQosSerializer::class)
+            data class Qos(
+                val prefetchSize: UInt,
+                val prefetchCount: UShort,
+                val global: Boolean,
+            ) : Basic()
+
+            data object QosOk : Basic()
+
+            @Serializable(with = FrameMethodBasicConsumeSerializer::class)
+            data class Consume(
+                val reserved1: UShort,
+                val queue: String,
+                val consumerTag: String,
+                val noLocal: Boolean,
+                val noAck: Boolean,
+                val exclusive: Boolean,
+                val noWait: Boolean,
+                val arguments: Table,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicConsumeOkSerializer::class)
+            data class ConsumeOk(
+                val consumerTag: String,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicCancelSerializer::class)
+            data class Cancel(
+                val consumerTag: String,
+                val noWait: Boolean,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicCancelOkSerializer::class)
+            data class CancelOk(
+                val consumerTag: String,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicPublishSerializer::class)
+            data class Publish(
+                val reserved1: UShort,
+                val exchange: String,
+                val routingKey: String,
+                val mandatory: Boolean,
+                val immediate: Boolean,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicReturnSerializer::class)
+            data class Return(
+                val replyCode: UShort,
+                val replyText: String,
+                val exchange: String,
+                val routingKey: String,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicDeliverSerializer::class)
+            data class Deliver(
+                val consumerTag: String,
+                val deliveryTag: ULong,
+                val redelivered: Boolean,
+                val exchange: String,
+                val routingKey: String,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicGetSerializer::class)
+            data class Get(
+                val reserved1: UShort,
+                val queue: String,
+                val noAck: Boolean,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicGetOkSerializer::class)
+            data class GetOk(
+                val deliveryTag: ULong,
+                val redelivered: Boolean,
+                val exchange: String,
+                val routingKey: String,
+                val messageCount: UInt,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicGetEmptySerializer::class)
+            data class GetEmpty(
+                val reserved1: String,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicAckSerializer::class)
+            data class Ack(
+                val deliveryTag: ULong,
+                val multiple: Boolean,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicRejectSerializer::class)
+            data class Reject(
+                val deliveryTag: ULong,
+                val requeue: Boolean,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicRecoverAsyncSerializer::class)
+            data class RecoverAsync(
+                val requeue: Boolean,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicRecoverSerializer::class)
+            data class Recover(
+                val requeue: Boolean,
+            ) : Basic()
+
+            data object RecoverOk : Basic()
+
+            @Serializable(with = FrameMethodBasicNackSerializer::class)
+            data class Nack(
+                val deliveryTag: ULong,
+                val multiple: Boolean,
+                val requeue: Boolean,
+            ) : Basic()
 
         }
 
@@ -436,7 +592,18 @@ data class Frame(
 
     data class Body(
         val body: ByteArray,
-    ) : Payload()
+    ) : Payload() {
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other == null || this::class != other::class) return false
+            other as Body
+            return body.contentEquals(other.body)
+        }
+
+        override fun hashCode(): Int = body.contentHashCode()
+
+    }
 
     object Heartbeat : Payload()
 
