@@ -235,9 +235,19 @@ class AMQPConnection private constructor(
                 AMQPResponse.Channel.Queue.Unbound
             )
 
-            is Frame.Method.Basic.Qos -> error("Unexpected Qos frame received: $payload")
-            is Frame.Method.Basic.QosOk -> allResponses.emit(
-                AMQPResponse.Channel.Basic.QosOk
+            is Frame.Method.Basic.Get -> error("Unexpected Get frame received: $payload")
+            is Frame.Method.Basic.GetEmpty -> allResponses.emit(
+                AMQPResponse.Channel.Message.Get()
+            )
+
+            is Frame.Method.Basic.Deliver, is Frame.Method.Basic.GetOk, is Frame.Method.Basic.Return -> {
+                // TODO: `channel.nextMessage = PartialDelivery(method: basic)`
+            }
+
+            is Frame.Method.Basic.RecoverAsync -> error("Unexpected RecoverAsync frame received: $payload")
+            is Frame.Method.Basic.Recover -> error("Unexpected Recover frame received: $payload")
+            is Frame.Method.Basic.RecoverOk -> allResponses.emit(
+                AMQPResponse.Channel.Basic.Recovered
             )
 
             is Frame.Method.Basic.Consume -> error("Unexpected Consume frame received: $payload")
@@ -254,16 +264,12 @@ class AMQPConnection private constructor(
                 ) // TODO: Handle cancellation (for example kotlin flows)
             )
 
-            is Frame.Method.Basic.Publish -> error("Unexpected Publish frame received: $payload")
-
-            is Frame.Method.Basic.Get -> error("Unexpected Get frame received: $payload")
-            is Frame.Method.Basic.GetEmpty -> allResponses.emit(
-                AMQPResponse.Channel.Message.Get()
+            is Frame.Method.Basic.Qos -> error("Unexpected Qos frame received: $payload")
+            is Frame.Method.Basic.QosOk -> allResponses.emit(
+                AMQPResponse.Channel.Basic.QosOk
             )
 
-            is Frame.Method.Basic.Deliver, is Frame.Method.Basic.GetOk, is Frame.Method.Basic.Return -> {
-                // TODO: `channel.nextMessage = PartialDelivery(method: basic)`
-            }
+            is Frame.Method.Basic.Publish -> error("Unexpected Publish frame received: $payload")
 
             is Frame.Method.Basic.Ack -> {
                 // TODO: `receivePublishConfirm(.ack(deliveryTag: deliveryTag, multiple: multiple))`

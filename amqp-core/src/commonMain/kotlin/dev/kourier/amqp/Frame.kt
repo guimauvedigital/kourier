@@ -430,7 +430,9 @@ data class Frame(
                     is GetEmpty -> Kind.GET_EMPTY
                     is Ack -> Kind.ACK
                     is Reject -> Kind.REJECT
-
+                    is RecoverAsync -> Kind.RECOVER_ASYNC
+                    is Recover -> Kind.RECOVER
+                    is RecoverOk -> Kind.RECOVER_OK
                     is Nack -> Kind.NACK
                 }
 
@@ -551,7 +553,17 @@ data class Frame(
                 val requeue: Boolean,
             ) : Basic()
 
-            // TODO
+            @Serializable(with = FrameMethodBasicRecoverAsyncSerializer::class)
+            data class RecoverAsync(
+                val requeue: Boolean,
+            ) : Basic()
+
+            @Serializable(with = FrameMethodBasicRecoverSerializer::class)
+            data class Recover(
+                val requeue: Boolean,
+            ) : Basic()
+
+            data object RecoverOk : Basic()
 
             @Serializable(with = FrameMethodBasicNackSerializer::class)
             data class Nack(

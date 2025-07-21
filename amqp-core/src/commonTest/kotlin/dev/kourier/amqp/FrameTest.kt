@@ -440,6 +440,42 @@ class FrameTest {
         assertEquals(frame, decoded)
     }
 
+    @Test
+    fun testFrameMethodQueueBasicRecoverAsync() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.RecoverAsync(
+                requeue = false
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicRecover() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.Recover(
+                requeue = false
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodQueueBasicRecoverOk() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Basic.RecoverOk
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
 
     @Test
     fun testFrameMethodQueueBasicNack() {
@@ -455,7 +491,7 @@ class FrameTest {
         val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
         assertEquals(frame, decoded)
     }
-    
+
 
     @Test
     fun testFrameHeartbeat() {

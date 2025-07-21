@@ -283,6 +283,25 @@ class AMQPChannel(
     }
 
     /**
+     * Tell the broker what to do with all unacknowledged messages.
+     * Unacknowledged messages retrieved by `basicGet` are requeued regardless.
+     *
+     * @param requeue Controls whether to requeue all messages after rejecting them.
+     * @return AMQPResponse.Channel.Basic.Recovered confirming that broker has accepted the recover request.
+     */
+    suspend fun basicRecover(
+        requeue: Boolean = false,
+    ): AMQPResponse.Channel.Basic.Recovered {
+        val recover = Frame(
+            channelId = id,
+            payload = Frame.Method.Basic.Recover(
+                requeue = requeue
+            )
+        )
+        return connection.writeAndWaitForResponse(recover)
+    }
+
+    /**
      * Sets a prefetch limit when consuming messages.
      * No more messages will be delivered to the consumer until one or more messages have been acknowledged or rejected.
      *
