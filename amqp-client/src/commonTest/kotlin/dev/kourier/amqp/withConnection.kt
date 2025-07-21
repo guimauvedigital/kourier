@@ -1,10 +1,12 @@
 package dev.kourier.amqp
 
-import dev.kourier.amqp.dsl.amqpConnectionConfiguration
+import dev.kourier.amqp.connection.AMQPConnection
+import dev.kourier.amqp.connection.amqpConnectionConfiguration
+import dev.kourier.amqp.connection.createAMQPConnection
 import kotlinx.coroutines.runBlocking
 
 fun withConnection(block: suspend (AMQPConnection) -> Unit) = runBlocking {
-    val connection = AMQPConnection.connect(this, amqpConnectionConfiguration {})
+    val connection = createAMQPConnection(this, amqpConnectionConfiguration {})
     try {
         block(connection)
     } finally {

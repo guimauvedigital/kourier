@@ -1,6 +1,9 @@
-package dev.kourier.amqp
+package dev.kourier.amqp.connection
 
-import dev.kourier.amqp.handlers.FrameDecoder
+import dev.kourier.amqp.*
+import dev.kourier.amqp.channel.AMQPChannel
+import dev.kourier.amqp.channel.AMQPChannels
+import dev.kourier.amqp.channel.DefaultAMQPChannel
 import dev.kourier.amqp.serialization.ProtocolBinary
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
@@ -16,11 +19,11 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.io.IOException
 import kotlinx.serialization.encodeToByteArray
 
-class AMQPConnection private constructor(
+open class DefaultAMQPConnection(
     private val config: AMQPConnectionConfiguration,
     private val messageListeningScope: CoroutineScope,
     private val eventsBufferSize: Int,
-) {
+) : AMQPConnection {
 
     companion object {
 
@@ -32,12 +35,12 @@ class AMQPConnection private constructor(
          *
          * @return AMQPConnection instance.
          */
-        suspend fun connect(
+        suspend fun create(
             coroutineScope: CoroutineScope,
             config: AMQPConnectionConfiguration,
         ): AMQPConnection {
             val amqpScope = CoroutineScope(coroutineScope.coroutineContext + SupervisorJob())
-            val instance = AMQPConnection(config, amqpScope, 64)
+            val instance = DefaultAMQPConnection(config, amqpScope, 64)
             instance.connect()
             return instance
         }
@@ -99,7 +102,7 @@ class AMQPConnection private constructor(
         socketSubscription?.cancel()
         heartbeatSubscription?.cancel()
         socketSubscription = messageListeningScope.launch {
-            val readChannel = this@AMQPConnection.readChannel ?: return@launch
+            val readChannel = this@DefaultAMQPConnection.readChannel ?: return@launch
             FrameDecoder.decodeStreaming(readChannel) { frame ->
                 logger.debug("Received frame: $frame")
                 read(frame)
@@ -152,9 +155,9 @@ class AMQPConnection private constructor(
             is Frame.Method.Connection.StartOk -> error("Unexpected StartOk frame received: $payload")
 
             is Frame.Method.Connection.Tune -> {
-                this@AMQPConnection.channelMax = payload.channelMax
-                this@AMQPConnection.frameMax = payload.frameMax
-                this@AMQPConnection.channels.channelMax = payload.channelMax
+                this@DefaultAMQPConnection.channelMax = payload.channelMax
+                this@DefaultAMQPConnection.frameMax = payload.frameMax
+                this@DefaultAMQPConnection.channels.channelMax = payload.channelMax
                 val tuneOk = Frame(
                     channelId = frame.channelId,
                     payload = Frame.Method.Connection.TuneOk(
@@ -317,14 +320,14 @@ class AMQPConnection private constructor(
     }
 
     @InternalAmqpApi
-    suspend fun write(bytes: ByteArray) {
+    override suspend fun write(bytes: ByteArray) {
         val writeChannel = this.writeChannel ?: return
         writeChannel.writeByteArray(bytes)
         writeChannel.flush() // Maybe not needed since autoFlush is true?
     }
 
     @InternalAmqpApi
-    suspend fun write(vararg frames: Frame) {
+    override suspend fun write(vararg frames: Frame) {
         writeMutex.withLock { // Ensure that all frames are sent in order, without any other writes in between
             frames.forEach { frame ->
                 logger.debug("Sent frame: $frame")
@@ -335,20 +338,12 @@ class AMQPConnection private constructor(
 
     @InternalAmqpApi
     @Suppress("Unchecked_Cast")
-    suspend fun <T : AMQPResponse> writeAndWaitForResponse(vararg frames: Frame): T {
+    override suspend fun <T : AMQPResponse> writeAndWaitForResponse(vararg frames: Frame): T {
         write(*frames)
         return allResponses.mapNotNull { it as? T }.first()
     }
 
-    /**
-     * Opens a new channel.
-     *
-     * Can be used only when the connection is connected.
-     * The channel ID is automatically assigned (next free one).
-     *
-     * @return the opened [AMQPChannel]
-     */
-    suspend fun openChannel(): AMQPChannel {
+    override suspend fun openChannel(): AMQPChannel {
         val channelId = channels.reserveNext() ?: throw AMQPConnectionError.TooManyOpenedChannels
 
         val channelOpen = Frame(
@@ -358,31 +353,20 @@ class AMQPConnection private constructor(
             )
         )
         val response = writeAndWaitForResponse<AMQPResponse.Channel.Opened>(channelOpen)
-        return AMQPChannel(
+        return DefaultAMQPChannel(
             connection = this,
             id = response.channelId,
             frameMax = frameMax
         ).also { channels.add(it) }
     }
 
-    /**
-     * Sends a heartbeat frame.
-     */
-    suspend fun sendHeartbeat() {
+    override suspend fun sendHeartbeat() {
         write(Frame(channelId = 0u, payload = Frame.Heartbeat))
     }
 
-    /**
-     * Closes the connection.
-     *
-     * @param reason Reason that can be logged by the broker.
-     * @param code Code that can be logged by the broker.
-     *
-     * @return Nothing. The connection is closed synchronously.
-     */
-    fun close(
-        reason: String = "",
-        code: UShort = 200u,
+    override fun close(
+        reason: String,
+        code: UShort,
     ) {
         // TODO: Send close frame
 

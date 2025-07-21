@@ -1,4 +1,4 @@
-package dev.kourier.amqp.handlers
+package dev.kourier.amqp.connection
 
 import dev.kourier.amqp.Frame
 import dev.kourier.amqp.ProtocolError

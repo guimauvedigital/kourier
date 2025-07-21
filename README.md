@@ -68,7 +68,7 @@ fun main() = runBlocking {
             password = "guest"
         }
     }
-    val connection = AMQPConnection.connect(this, config)
+    val connection = createAMQPConnection(this, config)
 
     val channel = connection.openChannel()
     channel.exchangeDeclare("my-exchange", "topic")

@@ -1,4 +1,4 @@
-package dev.kourier.amqp
+package dev.kourier.amqp.channel
 
 class AMQPChannels(
     var channelMax: UShort = 0u,
