@@ -27,14 +27,14 @@ object PropertiesSerializer : KSerializer<Properties> {
         if (value.headers != null) flags = flags or Properties.Flag.HEADERS
         if (value.deliveryMode != null) flags = flags or Properties.Flag.DELIVERY_MODE
         if (value.priority != null) flags = flags or Properties.Flag.PRIORITY
-        if (value.correlationID != null) flags = flags or Properties.Flag.CORRELATION_ID
+        if (value.correlationId != null) flags = flags or Properties.Flag.CORRELATION_ID
         if (value.replyTo != null) flags = flags or Properties.Flag.REPLY_TO
         if (value.expiration != null) flags = flags or Properties.Flag.EXPIRATION
-        if (value.messageID != null) flags = flags or Properties.Flag.MESSAGE_ID
+        if (value.messageId != null) flags = flags or Properties.Flag.MESSAGE_ID
         if (value.timestamp != null) flags = flags or Properties.Flag.TIMESTAMP
         if (value.type != null) flags = flags or Properties.Flag.TYPE
-        if (value.userID != null) flags = flags or Properties.Flag.USER_ID
-        if (value.appID != null) flags = flags or Properties.Flag.APP_ID
+        if (value.userId != null) flags = flags or Properties.Flag.USER_ID
+        if (value.appId != null) flags = flags or Properties.Flag.APP_ID
         if (value.reserved1 != null) flags = flags or Properties.Flag.RESERVED1
 
         encoder.encodeShort(flags.toShort())
@@ -44,14 +44,14 @@ object PropertiesSerializer : KSerializer<Properties> {
         value.headers?.let { encoder.encodeSerializableValue(TableSerializer, it) }
         value.deliveryMode?.let { encoder.encodeByte(it.toByte()) }
         value.priority?.let { encoder.encodeByte(it.toByte()) }
-        value.correlationID?.let { encoder.encodeShortString(it) }
+        value.correlationId?.let { encoder.encodeShortString(it) }
         value.replyTo?.let { encoder.encodeShortString(it) }
         value.expiration?.let { encoder.encodeShortString(it) }
-        value.messageID?.let { encoder.encodeShortString(it) }
+        value.messageId?.let { encoder.encodeShortString(it) }
         value.timestamp?.let { encoder.encodeLong(it) }
         value.type?.let { encoder.encodeShortString(it) }
-        value.userID?.let { encoder.encodeShortString(it) }
-        value.appID?.let { encoder.encodeShortString(it) }
+        value.userId?.let { encoder.encodeShortString(it) }
+        value.appId?.let { encoder.encodeShortString(it) }
         value.reserved1?.let { encoder.encodeShortString(it) }
     }
 
@@ -89,14 +89,14 @@ object PropertiesSerializer : KSerializer<Properties> {
             headers = headers,
             deliveryMode = deliveryMode,
             priority = priority,
-            correlationID = correlationID,
+            correlationId = correlationID,
             replyTo = replyTo,
             expiration = expiration,
-            messageID = messageID,
+            messageId = messageID,
             timestamp = timestamp,
             type = type,
-            userID = userID,
-            appID = appID,
+            userId = userID,
+            appId = appID,
             reserved1 = reserved1
         )
     }

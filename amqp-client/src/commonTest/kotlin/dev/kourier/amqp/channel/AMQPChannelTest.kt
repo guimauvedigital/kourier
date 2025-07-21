@@ -1,9 +1,13 @@
 package dev.kourier.amqp.channel
 
+import dev.kourier.amqp.Field
+import dev.kourier.amqp.Properties
+import dev.kourier.amqp.Table
 import dev.kourier.amqp.withConnection
 import io.ktor.utils.io.core.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class AMQPChannelTest {
 
@@ -67,7 +71,30 @@ class AMQPChannelTest {
 
         channel.queueDeclare("test", durable = true)
 
-        // TODO
+        val body = "{}".toByteArray()
+        val properties = Properties(
+            contentType = "application/json",
+            contentEncoding = "UTF-8",
+            headers = Table(mapOf("test" to Field.LongString("test"))),
+            deliveryMode = 1u,
+            priority = 1u,
+            correlationId = "correlationID",
+            replyTo = "replyTo",
+            expiration = "60000",
+            messageId = "messageID",
+            timestamp = 100,
+            type = "type",
+            userId = "guest",
+            appId = "appID"
+        )
+        channel.basicPublish(body = body, exchange = "", routingKey = "test", properties = properties)
+
+        val msg = channel.basicGet("test")
+        assertNotNull(msg.message)
+
+        assertEquals(0u, msg.messageCount)
+        assertEquals("{}", msg.message.body.decodeToString())
+        assertEquals(properties, msg.message.properties)
 
         channel.queueDelete("test")
 
@@ -96,6 +123,80 @@ class AMQPChannelTest {
         channel.basicQos(count = 100u, global = true)
         channel.basicQos(count = 100u, global = false)
 
+        channel.close()
+    }
+
+    @Test
+    fun testConsumeConfirms() = withConnection { connection ->
+        val channel = connection.openChannel()
+
+        channel.queueDeclare("test", durable = true)
+
+        val body = "{}".toByteArray()
+
+        repeat(6) {
+            channel.basicPublish(body = body, exchange = "", routingKey = "test", properties = Properties())
+        }
+
+        run {
+            val msg = channel.basicGet("test").message ?: kotlin.test.fail()
+            channel.basicAck(msg.deliveryTag)
+
+            val msg2 = channel.basicGet("test").message ?: kotlin.test.fail()
+            channel.basicAck(msg2)
+        }
+
+        run {
+            val msg = channel.basicGet("test").message ?: kotlin.test.fail()
+            channel.basicNack(msg.deliveryTag)
+
+            val msg2 = channel.basicGet("test").message ?: kotlin.test.fail()
+            channel.basicNack(msg2)
+        }
+
+        run {
+            val msg = channel.basicGet("test").message ?: kotlin.test.fail()
+            channel.basicReject(msg.deliveryTag)
+
+            val msg2 = channel.basicGet("test").message ?: kotlin.test.fail()
+            channel.basicReject(msg2)
+        }
+
+        channel.basicRecover(requeue = true)
+
+        channel.queueDelete("test")
+
+        channel.close()
+    }
+
+    @Test
+    fun testBasicConsumeManualCancel() = withConnection { connection ->
+        val channel = connection.openChannel()
+
+        channel.queueDeclare("test_consume", durable = true)
+
+        val body = "{}".toByteArray()
+
+        repeat(100) {
+            channel.basicPublish(body = body, exchange = "", routingKey = "test_consume")
+        }
+
+        val deliveryChannel = channel.basicConsumeAsChannel(
+            queue = "test_consume",
+            noAck = true
+        )
+
+        var count = 0
+        runCatching {
+            for (delivery in deliveryChannel) {
+                count++
+                if (count == 100) deliveryChannel.cancel()
+            }
+        }
+
+        assertEquals(100, count)
+
+        channel.queueDelete("test_consume")
         channel.close()
     }
 

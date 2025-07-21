@@ -4,6 +4,7 @@ import dev.kourier.amqp.*
 import dev.kourier.amqp.channel.AMQPChannel
 import dev.kourier.amqp.channel.AMQPChannels
 import dev.kourier.amqp.channel.DefaultAMQPChannel
+import dev.kourier.amqp.channel.PartialDelivery
 import dev.kourier.amqp.serialization.ProtocolBinary
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
@@ -11,6 +12,7 @@ import io.ktor.network.tls.*
 import io.ktor.util.logging.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapNotNull
@@ -20,9 +22,8 @@ import kotlinx.io.IOException
 import kotlinx.serialization.encodeToByteArray
 
 open class DefaultAMQPConnection(
-    private val config: AMQPConnectionConfiguration,
-    private val messageListeningScope: CoroutineScope,
-    private val eventsBufferSize: Int,
+    override val config: AMQPConnectionConfiguration,
+    val messageListeningScope: CoroutineScope,
 ) : AMQPConnection {
 
     companion object {
@@ -40,7 +41,7 @@ open class DefaultAMQPConnection(
             config: AMQPConnectionConfiguration,
         ): AMQPConnection {
             val amqpScope = CoroutineScope(coroutineScope.coroutineContext + SupervisorJob())
-            val instance = DefaultAMQPConnection(config, amqpScope, 64)
+            val instance = DefaultAMQPConnection(config, amqpScope)
             instance.connect()
             return instance
         }
@@ -61,9 +62,11 @@ open class DefaultAMQPConnection(
     private var channelMax: UShort = 0u
     private var frameMax: UInt = 0u
 
-    private val allResponses = MutableSharedFlow<AMQPResponse>(extraBufferCapacity = eventsBufferSize)
+    @InternalAmqpApi
+    val allResponses = MutableSharedFlow<AMQPResponse>(extraBufferCapacity = Channel.UNLIMITED)
 
-    private val channels = AMQPChannels()
+    @InternalAmqpApi
+    val channels = AMQPChannels()
 
     private suspend fun connect() {
         if (socket != null && socket?.isActive == true) return
@@ -71,11 +74,12 @@ open class DefaultAMQPConnection(
         val selector = SelectorManager(Dispatchers.IO)
         val tcpClient = aSocket(selector).tcp()
 
-        socket = when (config.connection) {
+        val connection = config.connection
+        socket = when (connection) {
             is AMQPConnectionConfiguration.Connection.Tls -> tcpClient
                 .connect(config.server.host, config.server.port)
                 .apply {
-                    config.connection.tlsConfiguration?.let { tls(coroutineContext, it) } ?: tls(coroutineContext)
+                    connection.tlsConfiguration?.let { tls(coroutineContext, it) } ?: tls(coroutineContext)
                 }
 
             is AMQPConnectionConfiguration.Connection.Plain -> tcpClient
@@ -117,6 +121,8 @@ open class DefaultAMQPConnection(
     }
 
     private suspend fun read(frame: Frame) {
+        val channel = channels[frame.channelId] as? DefaultAMQPChannel
+
         when (val payload = frame.payload) {
             is Frame.Method.Connection.Start -> {
                 val clientProperties = Table(
@@ -244,7 +250,7 @@ open class DefaultAMQPConnection(
             )
 
             is Frame.Method.Basic.Deliver, is Frame.Method.Basic.GetOk, is Frame.Method.Basic.Return -> {
-                // TODO: `channel.nextMessage = PartialDelivery(method: basic)`
+                channel?.nextMessage = PartialDelivery(method = payload)
             }
 
             is Frame.Method.Basic.RecoverAsync -> error("Unexpected RecoverAsync frame received: $payload")
@@ -307,12 +313,58 @@ open class DefaultAMQPConnection(
             is Frame.Method.Confirm -> TODO()
             is Frame.Method.Tx -> TODO()
 
-            is Frame.Header -> {
-
-            }
+            is Frame.Header -> channel?.nextMessage?.setHeader(payload)
 
             is Frame.Body -> {
+                channel?.nextMessage?.addBody(payload.body)
 
+                if (channel?.nextMessage?.isComplete == true) {
+                    val (method, properties, completeBody) = channel.nextMessage!!.asCompletedMessage()
+                    channel.nextMessage = null
+
+                    when (method) {
+                        is Frame.Method.Basic.GetOk -> allResponses.emit(
+                            AMQPResponse.Channel.Message.Get(
+                                message = AMQPMessage(
+                                    exchange = method.exchange,
+                                    routingKey = method.routingKey,
+                                    deliveryTag = method.deliveryTag,
+                                    properties = properties,
+                                    redelivered = method.redelivered,
+                                    body = completeBody
+                                ),
+                                messageCount = method.messageCount
+                            )
+                        )
+
+                        is Frame.Method.Basic.Deliver -> allResponses.emit(
+                            AMQPResponse.Channel.Message.Delivery(
+                                message = AMQPMessage(
+                                    exchange = method.exchange,
+                                    routingKey = method.routingKey,
+                                    deliveryTag = method.deliveryTag,
+                                    properties = properties,
+                                    redelivered = method.redelivered,
+                                    body = completeBody
+                                ),
+                                consumerTag = method.consumerTag
+                            ),
+                        )
+
+                        is Frame.Method.Basic.Return -> allResponses.emit(
+                            AMQPResponse.Channel.Message.Return(
+                                replyCode = method.replyCode,
+                                replyText = method.replyText,
+                                exchange = method.exchange,
+                                routingKey = method.routingKey,
+                                properties = properties,
+                                body = completeBody
+                            )
+                        )
+
+                        else -> error("Unexpected frame: $frame")
+                    }
+                }
             }
 
             is Frame.Heartbeat -> write(Frame(channelId = frame.channelId, payload = Frame.Heartbeat))
