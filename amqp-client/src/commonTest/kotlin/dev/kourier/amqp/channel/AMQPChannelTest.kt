@@ -127,6 +127,49 @@ class AMQPChannelTest {
     }
 
     @Test
+    fun testConsumeConfirms() = withConnection { connection ->
+        val channel = connection.openChannel()
+
+        channel.queueDeclare("test", durable = true)
+
+        val body = "{}".toByteArray()
+
+        repeat(6) {
+            channel.basicPublish(body = body, exchange = "", routingKey = "test", properties = Properties())
+        }
+
+        run {
+            val msg = channel.basicGet("test").message ?: kotlin.test.fail()
+            channel.basicAck(msg.deliveryTag)
+
+            val msg2 = channel.basicGet("test").message ?: kotlin.test.fail()
+            channel.basicAck(msg2)
+        }
+
+        run {
+            val msg = channel.basicGet("test").message ?: kotlin.test.fail()
+            channel.basicNack(msg.deliveryTag)
+
+            val msg2 = channel.basicGet("test").message ?: kotlin.test.fail()
+            channel.basicNack(msg2)
+        }
+
+        run {
+            val msg = channel.basicGet("test").message ?: kotlin.test.fail()
+            channel.basicReject(msg.deliveryTag)
+
+            val msg2 = channel.basicGet("test").message ?: kotlin.test.fail()
+            channel.basicReject(msg2)
+        }
+
+        channel.basicRecover(requeue = true)
+
+        channel.queueDelete("test")
+
+        channel.close()
+    }
+
+    @Test
     fun testBasicConsumeManualCancel() = withConnection { connection ->
         val channel = connection.openChannel()
 
