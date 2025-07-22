@@ -193,8 +193,14 @@ open class DefaultAMQPConnection(
             )
 
             is Frame.Method.Connection.Blocked -> TODO()
-            is Frame.Method.Connection.Close -> TODO()
-            is Frame.Method.Connection.CloseOk -> TODO()
+            is Frame.Method.Connection.Close -> {
+                println("Received Close frame: $payload")
+            }
+
+            is Frame.Method.Connection.CloseOk -> {
+                println("Received CloseOk frame: $payload")
+            }
+
             is Frame.Method.Connection.Secure -> TODO()
             is Frame.Method.Connection.SecureOk -> TODO()
             is Frame.Method.Connection.Unblocked -> TODO()
@@ -206,8 +212,20 @@ open class DefaultAMQPConnection(
                 )
             )
 
-            is Frame.Method.Channel.Close -> TODO()
-            is Frame.Method.Channel.CloseOk -> TODO()
+            is Frame.Method.Channel.Close -> channel?.let { channel ->
+                channels.remove(channel.id)
+                val closeOk = Frame(
+                    channelId = frame.channelId,
+                    payload = Frame.Method.Channel.CloseOk
+                )
+                write(closeOk)
+            }
+
+            is Frame.Method.Channel.CloseOk -> channel?.let { channel ->
+                channel.channelResponses.emit(AMQPResponse.Channel.Closed(channelId = frame.channelId))
+                channels.remove(channel.id)
+            }
+
             is Frame.Method.Channel.Flow -> TODO()
             is Frame.Method.Channel.FlowOk -> TODO()
 
@@ -266,7 +284,19 @@ open class DefaultAMQPConnection(
                 )
             )
 
-            is Frame.Method.Basic.Cancel -> error("Unexpected Cancel frame received: $payload")
+            is Frame.Method.Basic.Cancel -> {
+                // TODO: Handle cancellation (for example kotlin flows)
+                if (!payload.noWait) {
+                    val cancelOk = Frame(
+                        channelId = frame.channelId,
+                        payload = Frame.Method.Basic.CancelOk(
+                            consumerTag = payload.consumerTag,
+                        )
+                    )
+                    write(cancelOk)
+                }
+            }
+
             is Frame.Method.Basic.CancelOk -> channel?.channelResponses?.emit(
                 AMQPResponse.Channel.Basic.Canceled(
                     consumerTag = payload.consumerTag,

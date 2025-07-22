@@ -21,10 +21,10 @@ interface AMQPChannel {
      *
      * @return Nothing. The channel is closed synchronously.
      */
-    fun close(
+    suspend fun close(
         reason: String = "",
         code: UShort = 200u,
-    )
+    ): AMQPResponse.Channel.Closed
 
     /**
      * Publish a ByteArray message to exchange or queue.

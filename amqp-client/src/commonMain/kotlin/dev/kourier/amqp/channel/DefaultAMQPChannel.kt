@@ -45,11 +45,20 @@ open class DefaultAMQPChannel(
         }
     }
 
-    override fun close(
+    override suspend fun close(
         reason: String,
         code: UShort,
-    ) {
-        // TODO
+    ): AMQPResponse.Channel.Closed {
+        val get = Frame(
+            channelId = id,
+            payload = Frame.Method.Channel.Close(
+                replyCode = code,
+                replyText = reason,
+                classId = 0u,
+                methodId = 0u,
+            )
+        )
+        return writeAndWaitForResponse(get)
     }
 
     override suspend fun basicPublish(

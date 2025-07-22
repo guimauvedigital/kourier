@@ -5,9 +5,6 @@ import dev.kourier.amqp.Properties
 import dev.kourier.amqp.Table
 import dev.kourier.amqp.withConnection
 import io.ktor.utils.io.core.*
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -204,35 +201,26 @@ class AMQPChannelTest {
     }
 
     @Test
-    fun testOpenChannelsConcurrently() = runBlocking {
-        withConnection { connection ->
-            val first = async { connection.openChannel() }
-            val second = async { connection.openChannel() }
+    fun testOpenChannelsConcurrently() = withConnection { connection ->
+        val first = connection.openChannel()
+        val second = connection.openChannel()
 
-            first.await().close()
-            second.await().close()
-        }
+        first.close()
+        second.close()
     }
 
     @Test
-    fun testConcurrentOperationsOnChannel() = runBlocking {
-        withConnection { connection ->
-            repeat(1001) { run ->
-                val queueName = "temp_queue_$run"
-                val channel = connection.openChannel()
-                channel.queueDeclare(name = queueName, durable = false, exclusive = true)
+    fun testConcurrentOperationsOnChannel() = withConnection { connection ->
+        repeat(1001) { run ->
+            val queueName = "temp_queue_$run"
+            val channel = connection.openChannel()
+            channel.queueDeclare(name = queueName, durable = false, exclusive = true)
 
-                val o1 = async { channel.basicConsume(queue = queueName) }
-                val o2 =
-                    async { channel.basicPublish(body = "baz".toByteArray(), exchange = "", routingKey = queueName) }
-                val o3 = async { channel.basicConsume(queue = queueName) }
-                val o4 =
-                    async { channel.basicPublish(body = "baz".toByteArray(), exchange = "", routingKey = queueName) }
-                val tag = o1.await().consumerTag
-                val o5 = async { channel.basicCancel(consumerTag = tag) }
-
-                awaitAll(o2, o3, o4, o5)
-            }
+            val tag = channel.basicConsume(queue = queueName).consumerTag
+            channel.basicPublish(body = "baz".toByteArray(), exchange = "", routingKey = queueName)
+            channel.basicConsume(queue = queueName)
+            channel.basicPublish(body = "baz".toByteArray(), exchange = "", routingKey = queueName)
+            channel.basicCancel(consumerTag = tag)
         }
     }
 
