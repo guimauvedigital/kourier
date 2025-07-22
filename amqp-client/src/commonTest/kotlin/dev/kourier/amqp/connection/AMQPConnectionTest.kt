@@ -3,6 +3,8 @@ package dev.kourier.amqp.connection
 import dev.kourier.amqp.withConnection
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class AMQPConnectionTest {
 
@@ -23,8 +25,11 @@ class AMQPConnectionTest {
 
     @Test
     fun testCloseMultipleTimes() = withConnection { connection ->
+        assertFalse(connection.connectionClosed.isCompleted)
         connection.close()
+        assertTrue(connection.connectionClosed.isCompleted)
         connection.close()
+        assertTrue(connection.connectionClosed.isCompleted)
     }
 
     @Test

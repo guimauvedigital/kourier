@@ -4,6 +4,7 @@ import dev.kourier.amqp.AMQPResponse
 import dev.kourier.amqp.Frame
 import dev.kourier.amqp.InternalAmqpApi
 import dev.kourier.amqp.channel.AMQPChannel
+import kotlinx.coroutines.Deferred
 
 interface AMQPConnection {
 
@@ -12,14 +13,16 @@ interface AMQPConnection {
      */
     val config: AMQPConnectionConfiguration
 
+    /**
+     * A deferred that completes when the connection is closed.
+     */
+    val connectionClosed: Deferred<Unit>
+
     @InternalAmqpApi
     suspend fun write(bytes: ByteArray)
 
     @InternalAmqpApi
     suspend fun write(vararg frames: Frame)
-
-    @InternalAmqpApi
-    suspend fun <T : AMQPResponse> writeAndWaitForResponse(vararg frames: Frame): T
 
     /**
      * Opens a new channel.
@@ -44,9 +47,9 @@ interface AMQPConnection {
      *
      * @return Nothing. The connection is closed synchronously.
      */
-    fun close(
+    suspend fun close(
         reason: String = "",
         code: UShort = 200u,
-    )
+    ): AMQPResponse.Connection.Closed
 
 }

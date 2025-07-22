@@ -14,6 +14,7 @@ import io.ktor.utils.io.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.sync.Mutex
@@ -48,7 +49,11 @@ open class DefaultAMQPConnection(
 
     }
 
+    override val connectionClosed = CompletableDeferred<Unit>()
+
     private val logger = KtorSimpleLogger("AMQPConnection")
+
+    private var state = ConnectionState.CLOSED
 
     private var socket: Socket? = null
     private var readChannel: ByteReadChannel? = null
@@ -100,6 +105,8 @@ open class DefaultAMQPConnection(
 
         this.channelMax = response.channelMax
         this.frameMax = response.frameMax
+
+        this.state = ConnectionState.OPEN
     }
 
     private fun startListening() {
@@ -193,8 +200,15 @@ open class DefaultAMQPConnection(
             )
 
             is Frame.Method.Connection.Blocked -> TODO()
-            is Frame.Method.Connection.Close -> TODO()
-            is Frame.Method.Connection.CloseOk -> TODO()
+            is Frame.Method.Connection.Close -> {
+                this.state = ConnectionState.SHUTTING_DOWN
+                cancelAll()
+            }
+
+            is Frame.Method.Connection.CloseOk -> connectionResponses.emit(
+                AMQPResponse.Connection.Closed
+            )
+
             is Frame.Method.Connection.Secure -> TODO()
             is Frame.Method.Connection.SecureOk -> TODO()
             is Frame.Method.Connection.Unblocked -> TODO()
@@ -206,8 +220,20 @@ open class DefaultAMQPConnection(
                 )
             )
 
-            is Frame.Method.Channel.Close -> TODO()
-            is Frame.Method.Channel.CloseOk -> TODO()
+            is Frame.Method.Channel.Close -> channel?.let { channel ->
+                channels.remove(channel.id)
+                val closeOk = Frame(
+                    channelId = frame.channelId,
+                    payload = Frame.Method.Channel.CloseOk
+                )
+                write(closeOk)
+            }
+
+            is Frame.Method.Channel.CloseOk -> channel?.let { channel ->
+                channel.channelResponses.emit(AMQPResponse.Channel.Closed(channelId = frame.channelId))
+                channels.remove(channel.id)
+            }
+
             is Frame.Method.Channel.Flow -> TODO()
             is Frame.Method.Channel.FlowOk -> TODO()
 
@@ -266,11 +292,27 @@ open class DefaultAMQPConnection(
                 )
             )
 
-            is Frame.Method.Basic.Cancel -> error("Unexpected Cancel frame received: $payload")
+            is Frame.Method.Basic.Cancel -> {
+                channel?.channelResponses?.emit(
+                    AMQPResponse.Channel.Basic.Canceled(
+                        consumerTag = payload.consumerTag,
+                    )
+                )
+                if (!payload.noWait) {
+                    val cancelOk = Frame(
+                        channelId = frame.channelId,
+                        payload = Frame.Method.Basic.CancelOk(
+                            consumerTag = payload.consumerTag,
+                        )
+                    )
+                    write(cancelOk)
+                }
+            }
+
             is Frame.Method.Basic.CancelOk -> channel?.channelResponses?.emit(
                 AMQPResponse.Channel.Basic.Canceled(
                     consumerTag = payload.consumerTag,
-                ) // TODO: Handle cancellation (for example kotlin flows)
+                )
             )
 
             is Frame.Method.Basic.Qos -> error("Unexpected Qos frame received: $payload")
@@ -389,10 +431,9 @@ open class DefaultAMQPConnection(
     }
 
     @InternalAmqpApi
-    @Suppress("Unchecked_Cast")
-    override suspend fun <T : AMQPResponse> writeAndWaitForResponse(vararg frames: Frame): T {
+    suspend inline fun <reified T : AMQPResponse> writeAndWaitForResponse(vararg frames: Frame): T {
         write(*frames)
-        return connectionResponses.mapNotNull { it as? T }.first()
+        return connectionResponses.filterIsInstance<T>().first()
     }
 
     override suspend fun openChannel(): AMQPChannel {
@@ -416,11 +457,28 @@ open class DefaultAMQPConnection(
         write(Frame(channelId = 0u, payload = Frame.Heartbeat))
     }
 
-    override fun close(
+    override suspend fun close(
         reason: String,
         code: UShort,
-    ) {
-        // TODO: Send close frame
+    ): AMQPResponse.Connection.Closed {
+        if (state != ConnectionState.OPEN) return AMQPResponse.Connection.Closed
+        this.state = ConnectionState.SHUTTING_DOWN
+        val close = Frame(
+            channelId = 0u,
+            payload = Frame.Method.Connection.Close(
+                replyCode = code,
+                replyText = reason,
+                failingClassId = 0u,
+                failingMethodId = 0u,
+            )
+        )
+        val result = writeAndWaitForResponse<AMQPResponse.Connection.Closed>(close)
+        cancelAll()
+        return result
+    }
+
+    private fun cancelAll() {
+        if (state != ConnectionState.SHUTTING_DOWN) return
 
         socketSubscription?.cancel()
         heartbeatSubscription?.cancel()
@@ -433,6 +491,9 @@ open class DefaultAMQPConnection(
         socket = null
         readChannel = null
         writeChannel = null
+
+        this.state = ConnectionState.CLOSED
+        connectionClosed.complete(Unit)
     }
 
 }
