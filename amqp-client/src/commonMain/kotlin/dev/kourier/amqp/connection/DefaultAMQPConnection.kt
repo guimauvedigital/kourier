@@ -49,6 +49,8 @@ open class DefaultAMQPConnection(
 
     }
 
+    override val connectionClosed = CompletableDeferred<Unit>()
+
     private val logger = KtorSimpleLogger("AMQPConnection")
 
     private var state = ConnectionState.CLOSED
@@ -477,7 +479,6 @@ open class DefaultAMQPConnection(
 
     private fun cancelAll() {
         if (state != ConnectionState.SHUTTING_DOWN) return
-        this.state = ConnectionState.CLOSED
 
         socketSubscription?.cancel()
         heartbeatSubscription?.cancel()
@@ -490,6 +491,9 @@ open class DefaultAMQPConnection(
         socket = null
         readChannel = null
         writeChannel = null
+
+        this.state = ConnectionState.CLOSED
+        connectionClosed.complete(Unit)
     }
 
 }
