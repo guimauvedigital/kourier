@@ -172,16 +172,42 @@ class AMQPChannelTest {
     @Test
     fun testBasicConsumeManualCancel() = withConnection { connection ->
         val channel = connection.openChannel()
-
         channel.queueDeclare("test_consume", durable = true)
 
         val body = "{}".toByteArray()
-
         repeat(100) {
             channel.basicPublish(body = body, exchange = "", routingKey = "test_consume")
         }
 
-        val deliveryChannel = channel.basicConsumeAsChannel(
+        val deliveryChannel = channel.basicConsume(
+            queue = "test_consume",
+            noAck = true
+        )
+
+        var count = 0
+        runCatching {
+            for (delivery in deliveryChannel) {
+                count++
+                if (count == 100) channel.basicCancel(deliveryChannel.consumeOk.consumerTag)
+            }
+        }
+        assertEquals(100, count)
+
+        channel.queueDelete("test_consume")
+        channel.close()
+    }
+
+    @Test
+    fun testBasicConsumeManualCancelFromReceiveChannel() = withConnection { connection ->
+        val channel = connection.openChannel()
+        channel.queueDeclare("test_consume", durable = true)
+
+        val body = "{}".toByteArray()
+        repeat(100) {
+            channel.basicPublish(body = body, exchange = "", routingKey = "test_consume")
+        }
+
+        val deliveryChannel = channel.basicConsume(
             queue = "test_consume",
             noAck = true
         )
@@ -193,7 +219,6 @@ class AMQPChannelTest {
                 if (count == 100) deliveryChannel.cancel()
             }
         }
-
         assertEquals(100, count)
 
         channel.queueDelete("test_consume")
@@ -216,11 +241,11 @@ class AMQPChannelTest {
             val channel = connection.openChannel()
             channel.queueDeclare(name = queueName, durable = false, exclusive = true)
 
-            val tag = channel.basicConsume(queue = queueName).consumerTag
+            val receiveChannel = channel.basicConsume(queue = queueName)
             channel.basicPublish(body = "baz".toByteArray(), exchange = "", routingKey = queueName)
             channel.basicConsume(queue = queueName)
             channel.basicPublish(body = "baz".toByteArray(), exchange = "", routingKey = queueName)
-            channel.basicCancel(consumerTag = tag)
+            channel.basicCancel(receiveChannel.consumeOk.consumerTag)
         }
     }
 

@@ -1,6 +1,5 @@
 package dev.kourier.amqp.connection
 
-import dev.kourier.amqp.AMQPResponse
 import dev.kourier.amqp.Frame
 import dev.kourier.amqp.InternalAmqpApi
 import dev.kourier.amqp.channel.AMQPChannel
@@ -17,9 +16,6 @@ interface AMQPConnection {
 
     @InternalAmqpApi
     suspend fun write(vararg frames: Frame)
-
-    @InternalAmqpApi
-    suspend fun <T : AMQPResponse> writeAndWaitForResponse(vararg frames: Frame): T
 
     /**
      * Opens a new channel.

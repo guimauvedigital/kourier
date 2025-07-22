@@ -14,6 +14,7 @@ import io.ktor.utils.io.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.sync.Mutex
@@ -285,7 +286,11 @@ open class DefaultAMQPConnection(
             )
 
             is Frame.Method.Basic.Cancel -> {
-                // TODO: Handle cancellation (for example kotlin flows)
+                channel?.channelResponses?.emit(
+                    AMQPResponse.Channel.Basic.Canceled(
+                        consumerTag = payload.consumerTag,
+                    )
+                )
                 if (!payload.noWait) {
                     val cancelOk = Frame(
                         channelId = frame.channelId,
@@ -300,7 +305,7 @@ open class DefaultAMQPConnection(
             is Frame.Method.Basic.CancelOk -> channel?.channelResponses?.emit(
                 AMQPResponse.Channel.Basic.Canceled(
                     consumerTag = payload.consumerTag,
-                ) // TODO: Handle cancellation (for example kotlin flows)
+                )
             )
 
             is Frame.Method.Basic.Qos -> error("Unexpected Qos frame received: $payload")
@@ -419,10 +424,9 @@ open class DefaultAMQPConnection(
     }
 
     @InternalAmqpApi
-    @Suppress("Unchecked_Cast")
-    override suspend fun <T : AMQPResponse> writeAndWaitForResponse(vararg frames: Frame): T {
+    suspend inline fun <reified T : AMQPResponse> writeAndWaitForResponse(vararg frames: Frame): T {
         write(*frames)
-        return connectionResponses.mapNotNull { it as? T }.first()
+        return connectionResponses.filterIsInstance<T>().first()
     }
 
     override suspend fun openChannel(): AMQPChannel {
