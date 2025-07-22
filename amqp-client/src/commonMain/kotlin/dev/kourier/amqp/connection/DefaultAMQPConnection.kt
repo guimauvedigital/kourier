@@ -51,6 +51,8 @@ open class DefaultAMQPConnection(
 
     private val logger = KtorSimpleLogger("AMQPConnection")
 
+    private var state = ConnectionState.CLOSED
+
     private var socket: Socket? = null
     private var readChannel: ByteReadChannel? = null
     private var writeChannel: ByteWriteChannel? = null
@@ -101,6 +103,8 @@ open class DefaultAMQPConnection(
 
         this.channelMax = response.channelMax
         this.frameMax = response.frameMax
+
+        this.state = ConnectionState.OPEN
     }
 
     private fun startListening() {
@@ -195,12 +199,13 @@ open class DefaultAMQPConnection(
 
             is Frame.Method.Connection.Blocked -> TODO()
             is Frame.Method.Connection.Close -> {
-                println("Received Close frame: $payload")
+                this.state = ConnectionState.SHUTTING_DOWN
+                cancelAll()
             }
 
-            is Frame.Method.Connection.CloseOk -> {
-                println("Received CloseOk frame: $payload")
-            }
+            is Frame.Method.Connection.CloseOk -> connectionResponses.emit(
+                AMQPResponse.Connection.Closed
+            )
 
             is Frame.Method.Connection.Secure -> TODO()
             is Frame.Method.Connection.SecureOk -> TODO()
@@ -450,11 +455,29 @@ open class DefaultAMQPConnection(
         write(Frame(channelId = 0u, payload = Frame.Heartbeat))
     }
 
-    override fun close(
+    override suspend fun close(
         reason: String,
         code: UShort,
-    ) {
-        // TODO: Send close frame
+    ): AMQPResponse.Connection.Closed {
+        if (state != ConnectionState.OPEN) return AMQPResponse.Connection.Closed
+        this.state = ConnectionState.SHUTTING_DOWN
+        val close = Frame(
+            channelId = 0u,
+            payload = Frame.Method.Connection.Close(
+                replyCode = code,
+                replyText = reason,
+                failingClassId = 0u,
+                failingMethodId = 0u,
+            )
+        )
+        val result = writeAndWaitForResponse<AMQPResponse.Connection.Closed>(close)
+        cancelAll()
+        return result
+    }
+
+    private fun cancelAll() {
+        if (state != ConnectionState.SHUTTING_DOWN) return
+        this.state = ConnectionState.CLOSED
 
         socketSubscription?.cancel()
         heartbeatSubscription?.cancel()

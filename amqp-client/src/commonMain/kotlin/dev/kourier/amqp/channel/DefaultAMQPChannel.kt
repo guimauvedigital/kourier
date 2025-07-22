@@ -45,7 +45,7 @@ open class DefaultAMQPChannel(
         reason: String,
         code: UShort,
     ): AMQPResponse.Channel.Closed {
-        val get = Frame(
+        val close = Frame(
             channelId = id,
             payload = Frame.Method.Channel.Close(
                 replyCode = code,
@@ -54,7 +54,7 @@ open class DefaultAMQPChannel(
                 methodId = 0u,
             )
         )
-        return writeAndWaitForResponse(get)
+        return writeAndWaitForResponse(close)
     }
 
     override suspend fun basicPublish(
@@ -213,8 +213,6 @@ open class DefaultAMQPChannel(
     override suspend fun basicCancel(
         consumerTag: String,
     ): AMQPResponse.Channel.Basic.Canceled {
-        // TODO: Cancel consuming (for example kotlin flows)
-
         val cancel = Frame(
             channelId = id,
             payload = Frame.Method.Basic.Cancel(

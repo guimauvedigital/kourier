@@ -1,5 +1,6 @@
 package dev.kourier.amqp.connection
 
+import dev.kourier.amqp.AMQPResponse
 import dev.kourier.amqp.Frame
 import dev.kourier.amqp.InternalAmqpApi
 import dev.kourier.amqp.channel.AMQPChannel
@@ -40,9 +41,9 @@ interface AMQPConnection {
      *
      * @return Nothing. The connection is closed synchronously.
      */
-    fun close(
+    suspend fun close(
         reason: String = "",
         code: UShort = 200u,
-    )
+    ): AMQPResponse.Connection.Closed
 
 }
