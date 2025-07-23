@@ -24,3 +24,19 @@ suspend fun createAMQPConnection(
     coroutineScope = coroutineScope,
     config = config,
 )
+
+/**
+ * Connect to broker.
+ *
+ * @param coroutineScope CoroutineScope on which to connect.
+ * @param block The configuration block to apply to the AMQPConfigBuilder.
+ *
+ * @return AMQPConnection instance.
+ */
+suspend fun createAMQPConnection(
+    coroutineScope: CoroutineScope,
+    block: AMQPConfigBuilder.() -> Unit,
+): AMQPConnection = DefaultAMQPConnection.create(
+    coroutineScope = coroutineScope,
+    config = amqpConfig(block),
+)
