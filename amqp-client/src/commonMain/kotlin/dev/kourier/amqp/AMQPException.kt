@@ -1,6 +1,8 @@
 package dev.kourier.amqp
 
-sealed class AMQPException : Exception() {
+import kotlinx.io.IOException
+
+sealed class AMQPException : IOException() {
 
     data object InvalidUrl : AMQPException()
 
