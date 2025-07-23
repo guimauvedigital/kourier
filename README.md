@@ -78,3 +78,10 @@ fun main() = runBlocking {
     connection.close()
 }
 ```
+
+## Libraries using kourier
+
+- [dev.kaccelero:messaging-amqp](https://github.com/guimauvedigital/kaccelero/tree/main/messaging-amqp): AMQP/RabbitMQ
+  implementation of a messaging queue service.
+
+If you are using kourier in your library, please let us know by opening a pull request to add it to this list!
