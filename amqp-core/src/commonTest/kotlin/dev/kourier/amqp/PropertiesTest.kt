@@ -15,7 +15,7 @@ class PropertiesTest {
         val properties = Properties(
             contentType = "application/json",
             contentEncoding = "utf8",
-            headers = Table(mapOf("userId" to Field.LongString("123"))),
+            headers = mapOf("userId" to Field.LongString("123")),
             deliveryMode = 2u,
             priority = 1u,
             correlationId = "correlationID",

@@ -81,7 +81,7 @@ interface AMQPChannel {
         consumerTag: String = "",
         noAck: Boolean = false,
         exclusive: Boolean = false,
-        arguments: Table = Table(emptyMap()),
+        arguments: Table = emptyMap(),
     ): AMQPReceiveChannel
 
     /**
@@ -103,7 +103,7 @@ interface AMQPChannel {
         consumerTag: String = "",
         noAck: Boolean = false,
         exclusive: Boolean = false,
-        arguments: Table = Table(emptyMap()),
+        arguments: Table = emptyMap(),
         onDelivery: (AMQPResponse.Channel.Message.Delivery) -> Unit,
         onCanceled: (AMQPResponse.Channel.Basic.Canceled) -> Unit = {},
     ): AMQPResponse.Channel.Basic.ConsumeOk
@@ -232,7 +232,7 @@ interface AMQPChannel {
         durable: Boolean = false,
         exclusive: Boolean = false,
         autoDelete: Boolean = false,
-        arguments: Table = Table(emptyMap()),
+        arguments: Table = emptyMap(),
     ): AMQPResponse.Channel.Queue.Declared
 
     /**
@@ -275,7 +275,7 @@ interface AMQPChannel {
         queue: String,
         exchange: String,
         routingKey: String = "",
-        arguments: Table = Table(emptyMap()),
+        arguments: Table = emptyMap(),
     ): AMQPResponse.Channel.Queue.Bound
 
     /**
@@ -292,7 +292,7 @@ interface AMQPChannel {
         queue: String,
         exchange: String,
         routingKey: String = "",
-        arguments: Table = Table(emptyMap()),
+        arguments: Table = emptyMap(),
     ): AMQPResponse.Channel.Queue.Unbound
 
     /**
@@ -315,7 +315,7 @@ interface AMQPChannel {
         durable: Boolean = false,
         autoDelete: Boolean = false,
         internal: Boolean = false,
-        arguments: Table = Table(emptyMap()),
+        arguments: Table = emptyMap(),
     ): AMQPResponse.Channel.Exchange.Declared
 
     /**
@@ -345,7 +345,7 @@ interface AMQPChannel {
         destination: String,
         source: String,
         routingKey: String,
-        arguments: Table = Table(emptyMap()),
+        arguments: Table = emptyMap(),
     ): AMQPResponse.Channel.Exchange.Bound
 
     /**
@@ -362,7 +362,7 @@ interface AMQPChannel {
         destination: String,
         source: String,
         routingKey: String,
-        arguments: Table = Table(emptyMap()),
+        arguments: Table = emptyMap(),
     ): AMQPResponse.Channel.Exchange.Unbound
 
 }

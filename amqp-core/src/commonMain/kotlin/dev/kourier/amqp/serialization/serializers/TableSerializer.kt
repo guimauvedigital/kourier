@@ -27,7 +27,7 @@ object TableSerializer : KSerializer<Table> {
         require(encoder is ProtocolBinaryEncoder)
 
         val innerEncoder = ProtocolBinaryEncoder(Buffer())
-        for ((key, field) in value.values) {
+        for ((key, field) in value) {
             try {
                 innerEncoder.encodeShortString(key)
             } catch (e: Exception) {
@@ -61,13 +61,13 @@ object TableSerializer : KSerializer<Table> {
         encoder.encodeByte(field.kind.value.toByte())
         when (field) {
             is Field.Boolean -> encoder.encodeByte(if (field.value) 1 else 0)
-            is Field.Int8 -> encoder.encodeByte(field.value)
-            is Field.UInt8 -> encoder.encodeByte(field.value.toByte())
-            is Field.Int16 -> encoder.encodeShort(field.value)
-            is Field.UInt16 -> encoder.encodeShort(field.value.toShort())
-            is Field.Int32 -> encoder.encodeInt(field.value)
-            is Field.UInt32 -> encoder.encodeInt(field.value.toInt())
-            is Field.Int64 -> encoder.encodeLong(field.value)
+            is Field.Byte -> encoder.encodeByte(field.value)
+            is Field.UByte -> encoder.encodeByte(field.value.toByte())
+            is Field.Short -> encoder.encodeShort(field.value)
+            is Field.UShort -> encoder.encodeShort(field.value.toShort())
+            is Field.Int -> encoder.encodeInt(field.value)
+            is Field.UInt -> encoder.encodeInt(field.value.toInt())
+            is Field.Long -> encoder.encodeLong(field.value)
             is Field.Float -> encoder.encodeFloat(field.value)
             is Field.Double -> encoder.encodeDouble(field.value)
             is Field.LongString -> encoder.encodeLongString(field.value)
@@ -106,7 +106,7 @@ object TableSerializer : KSerializer<Table> {
 
             result[key] = value
         }
-        return Pair(Table(result), 4 + bytesRead)
+        return Pair(result, 4 + bytesRead)
     }
 
     private fun readArray(decoder: ProtocolBinaryDecoder): Pair<List<Field>, Int> {
@@ -133,39 +133,39 @@ object TableSerializer : KSerializer<Table> {
                 Pair(Field.Boolean(value), 1 + 1)
             }
 
-            Field.Kind.INT8 -> {
+            Field.Kind.BYTE -> {
                 val value = decoder.decodeByte()
-                Pair(Field.Int8(value), 1 + 1)
+                Pair(Field.Byte(value), 1 + 1)
             }
 
-            Field.Kind.UINT8 -> {
+            Field.Kind.UBYTE -> {
                 val value = decoder.decodeByte().toUByte()
-                Pair(Field.UInt8(value), 1 + 1)
+                Pair(Field.UByte(value), 1 + 1)
             }
 
-            Field.Kind.INT16 -> {
+            Field.Kind.SHORT -> {
                 val value = decoder.decodeShort()
-                Pair(Field.Int16(value), 1 + 2)
+                Pair(Field.Short(value), 1 + 2)
             }
 
-            Field.Kind.UINT16 -> {
+            Field.Kind.USHORT -> {
                 val value = decoder.decodeShort().toUShort()
-                Pair(Field.UInt16(value), 1 + 2)
+                Pair(Field.UShort(value), 1 + 2)
             }
 
-            Field.Kind.INT32 -> {
+            Field.Kind.INT -> {
                 val value = decoder.decodeInt()
-                Pair(Field.Int32(value), 1 + 4)
+                Pair(Field.Int(value), 1 + 4)
             }
 
-            Field.Kind.UINT32 -> {
+            Field.Kind.UINT -> {
                 val value = decoder.decodeInt().toUInt()
-                Pair(Field.UInt32(value), 1 + 4)
+                Pair(Field.UInt(value), 1 + 4)
             }
 
-            Field.Kind.INT64 -> {
+            Field.Kind.LONG -> {
                 val value = decoder.decodeLong()
-                Pair(Field.Int64(value), 1 + 8)
+                Pair(Field.Long(value), 1 + 8)
             }
 
             Field.Kind.FLOAT -> {

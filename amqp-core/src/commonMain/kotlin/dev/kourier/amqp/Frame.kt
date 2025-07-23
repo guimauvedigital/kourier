@@ -106,20 +106,16 @@ data class Frame(
             data class Start(
                 val versionMajor: UByte = 0u,
                 val versionMinor: UByte = 9u,
-                val serverProperties: Table = Table(
-                    mapOf(
-                        "capabilities" to Field.Table(
-                            Table(
-                                mapOf(
-                                    "publisher_confirms" to Field.Boolean(true),
-                                    "exchange_exchange_bindings" to Field.Boolean(true),
-                                    "basic.nack" to Field.Boolean(true),
-                                    "per_consumer_qos" to Field.Boolean(true),
-                                    "authentication_failure_close" to Field.Boolean(true),
-                                    "consumer_cancel_notify" to Field.Boolean(true),
-                                    "connection.blocked" to Field.Boolean(true),
-                                )
-                            )
+                val serverProperties: Table = mapOf(
+                    "capabilities" to Field.Table(
+                        mapOf(
+                            "publisher_confirms" to Field.Boolean(true),
+                            "exchange_exchange_bindings" to Field.Boolean(true),
+                            "basic.nack" to Field.Boolean(true),
+                            "per_consumer_qos" to Field.Boolean(true),
+                            "authentication_failure_close" to Field.Boolean(true),
+                            "consumer_cancel_notify" to Field.Boolean(true),
+                            "connection.blocked" to Field.Boolean(true),
                         )
                     )
                 ),

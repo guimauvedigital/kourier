@@ -1,6 +1,9 @@
 package dev.kourier.amqp.channel
 
-import dev.kourier.amqp.*
+import dev.kourier.amqp.BuiltinExchangeType
+import dev.kourier.amqp.Field
+import dev.kourier.amqp.Properties
+import dev.kourier.amqp.withConnection
 import io.ktor.utils.io.core.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -72,7 +75,7 @@ class AMQPChannelTest {
         val properties = Properties(
             contentType = "application/json",
             contentEncoding = "UTF-8",
-            headers = Table(mapOf("test" to Field.LongString("test"))),
+            headers = mapOf("test" to Field.LongString("test")),
             deliveryMode = 1u,
             priority = 1u,
             correlationId = "correlationID",

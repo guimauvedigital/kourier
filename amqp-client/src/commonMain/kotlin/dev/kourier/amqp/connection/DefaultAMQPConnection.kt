@@ -132,24 +132,20 @@ open class DefaultAMQPConnection(
 
         when (val payload = frame.payload) {
             is Frame.Method.Connection.Start -> {
-                val clientProperties = Table(
-                    mapOf(
-                        "connection_name" to Field.LongString(config.server.connectionName),
-                        "product" to Field.LongString("kourier-amqp-client"),
-                        "platform" to Field.LongString("Kotlin"),
-                        "version" to Field.LongString("0.1"),
-                        "capabilities" to Field.Table(
-                            Table(
-                                mapOf(
-                                    "publisher_confirms" to Field.Boolean(true),
-                                    "exchange_exchange_bindings" to Field.Boolean(true),
-                                    "basic.nack" to Field.Boolean(true),
-                                    "per_consumer_qos" to Field.Boolean(true),
-                                    "authentication_failure_close" to Field.Boolean(true),
-                                    "consumer_cancel_notify" to Field.Boolean(true),
-                                    "connection.blocked" to Field.Boolean(true),
-                                )
-                            )
+                val clientProperties = mapOf(
+                    "connection_name" to Field.LongString(config.server.connectionName),
+                    "product" to Field.LongString("kourier-amqp-client"),
+                    "platform" to Field.LongString("Kotlin"),
+                    "version" to Field.LongString("0.1"),
+                    "capabilities" to Field.Table(
+                        mapOf(
+                            "publisher_confirms" to Field.Boolean(true),
+                            "exchange_exchange_bindings" to Field.Boolean(true),
+                            "basic.nack" to Field.Boolean(true),
+                            "per_consumer_qos" to Field.Boolean(true),
+                            "authentication_failure_close" to Field.Boolean(true),
+                            "consumer_cancel_notify" to Field.Boolean(true),
+                            "connection.blocked" to Field.Boolean(true),
                         )
                     )
                 )
