@@ -15,13 +15,13 @@ class FrameTest {
             payload = Frame.Method.Exchange.Declare(
                 reserved1 = 0u,
                 exchangeName = "testExchange",
-                exchangeType = "direct",
+                exchangeType = BuiltinExchangeType.DIRECT,
                 passive = false,
                 durable = true,
                 autoDelete = false,
                 internal = false,
                 noWait = false,
-                arguments = Table(emptyMap())
+                arguments = emptyMap()
             )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
@@ -55,7 +55,7 @@ class FrameTest {
                 source = "testExchangeSource",
                 routingKey = "testRoutingKey",
                 noWait = false,
-                arguments = Table(emptyMap())
+                arguments = emptyMap()
             )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
@@ -73,7 +73,7 @@ class FrameTest {
                 source = "testExchangeSource",
                 routingKey = "testRoutingKey",
                 noWait = false,
-                arguments = Table(emptyMap())
+                arguments = emptyMap()
             )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
@@ -93,7 +93,7 @@ class FrameTest {
                 exclusive = false,
                 autoDelete = false,
                 noWait = false,
-                arguments = Table(emptyMap())
+                arguments = emptyMap()
             )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
@@ -126,7 +126,7 @@ class FrameTest {
                 exchangeName = "testExchange",
                 routingKey = "testRoutingKey",
                 noWait = false,
-                arguments = Table(emptyMap())
+                arguments = emptyMap()
             )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
@@ -212,7 +212,7 @@ class FrameTest {
                 queueName = "testQueue",
                 exchangeName = "testExchange",
                 routingKey = "testRoutingKey",
-                arguments = Table(emptyMap())
+                arguments = emptyMap()
             )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
@@ -269,7 +269,7 @@ class FrameTest {
                 noAck = true,
                 exclusive = false,
                 noWait = false,
-                arguments = Table(emptyMap())
+                arguments = emptyMap()
             )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)

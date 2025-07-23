@@ -5,13 +5,13 @@ import kotlinx.datetime.Instant
 sealed class Field {
 
     data class Boolean(val value: kotlin.Boolean) : Field()
-    data class Int8(val value: Byte) : Field()
-    data class UInt8(val value: UByte) : Field()
-    data class Int16(val value: Short) : Field()
-    data class UInt16(val value: UShort) : Field()
-    data class Int32(val value: Int) : Field()
-    data class UInt32(val value: UInt) : Field()
-    data class Int64(val value: Long) : Field()
+    data class Byte(val value: kotlin.Byte) : Field()
+    data class UByte(val value: kotlin.UByte) : Field()
+    data class Short(val value: kotlin.Short) : Field()
+    data class UShort(val value: kotlin.UShort) : Field()
+    data class Int(val value: kotlin.Int) : Field()
+    data class UInt(val value: kotlin.UInt) : Field()
+    data class Long(val value: kotlin.Long) : Field()
     data class Float(val value: kotlin.Float) : Field()
     data class Double(val value: kotlin.Double) : Field()
     data class LongString(val value: String) : Field()
@@ -19,19 +19,19 @@ sealed class Field {
     data class Array(val value: List<Field>) : Field()
     data class Timestamp(val value: Instant) : Field()
     data class Table(val value: dev.kourier.amqp.Table) : Field()
-    data class Decimal(val scale: UByte, val value: UInt) : Field()
+    data class Decimal(val scale: kotlin.UByte, val value: kotlin.UInt) : Field()
     object Null : Field()
 
     val kind: Kind
         get() = when (this) {
             is Boolean -> Kind.BOOLEAN
-            is Int8 -> Kind.INT8
-            is UInt8 -> Kind.UINT8
-            is Int16 -> Kind.INT16
-            is UInt16 -> Kind.UINT16
-            is Int32 -> Kind.INT32
-            is UInt32 -> Kind.UINT32
-            is Int64 -> Kind.INT64
+            is Byte -> Kind.BYTE
+            is UByte -> Kind.UBYTE
+            is Short -> Kind.SHORT
+            is UShort -> Kind.USHORT
+            is Int -> Kind.INT
+            is UInt -> Kind.UINT
+            is Long -> Kind.LONG
             is Float -> Kind.FLOAT
             is Double -> Kind.DOUBLE
             is LongString -> Kind.LONG_STRING
@@ -43,15 +43,15 @@ sealed class Field {
             is Null -> Kind.NULL
         }
 
-    enum class Kind(val value: UByte) {
+    enum class Kind(val value: kotlin.UByte) {
         BOOLEAN(116u),      // t
-        INT8(98u),          // b
-        UINT8(66u),         // B
-        INT16(115u),        // s
-        UINT16(117u),       // u
-        INT32(73u),         // I
-        UINT32(105u),       // i
-        INT64(108u),        // l
+        BYTE(98u),          // b
+        UBYTE(66u),         // B
+        SHORT(115u),        // s
+        USHORT(117u),       // u
+        INT(73u),           // I
+        UINT(105u),         // i
+        LONG(108u),         // l
         FLOAT(102u),        // f
         DOUBLE(100u),       // d
         LONG_STRING(83u),   // S

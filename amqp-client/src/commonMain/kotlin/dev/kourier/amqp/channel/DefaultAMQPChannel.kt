@@ -8,7 +8,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -37,7 +37,13 @@ open class DefaultAMQPChannel(
     suspend inline fun <reified T : AMQPResponse> writeAndWaitForResponse(vararg frames: Frame): T {
         writeMutex.withLock { // Ensure the response is synchronized with the write operation
             connection.write(*frames)
-            return channelResponses.filterIsInstance<T>().first()
+            val firstResponse = channelResponses.filter { it is T || it is AMQPResponse.Channel.Closed }.first()
+            if (firstResponse is T) return firstResponse
+            if (firstResponse is AMQPResponse.Channel.Closed) throw AMQPException.ChannelClosed(
+                replyCode = firstResponse.replyCode,
+                replyText = firstResponse.replyText
+            )
+            error("Expected response of type ${T::class}, but got ${firstResponse::class}")
         }
     }
 
@@ -318,7 +324,6 @@ open class DefaultAMQPChannel(
 
     override suspend fun queueDeclare(
         name: String,
-        passive: Boolean,
         durable: Boolean,
         exclusive: Boolean,
         autoDelete: Boolean,
@@ -329,7 +334,7 @@ open class DefaultAMQPChannel(
             payload = Frame.Method.Queue.Declare(
                 reserved1 = 0u,
                 queueName = name,
-                passive = passive,
+                passive = false,
                 durable = durable,
                 exclusive = exclusive,
                 autoDelete = autoDelete,
@@ -338,6 +343,32 @@ open class DefaultAMQPChannel(
             )
         )
         return writeAndWaitForResponse(declare)
+    }
+
+    override suspend fun queueDeclarePassive(name: String): AMQPResponse.Channel.Queue.Declared {
+        val declare = Frame(
+            channelId = id,
+            payload = Frame.Method.Queue.Declare(
+                reserved1 = 0u,
+                queueName = name,
+                passive = true,
+                durable = false,
+                exclusive = true,
+                autoDelete = true,
+                noWait = false,
+                arguments = emptyMap()
+            )
+        )
+        return writeAndWaitForResponse(declare)
+    }
+
+    override suspend fun queueDeclare(): AMQPResponse.Channel.Queue.Declared {
+        return queueDeclare(
+            name = "",
+            durable = false,
+            exclusive = true,
+            autoDelete = true,
+        )
     }
 
     override suspend fun queueDelete(
@@ -414,7 +445,6 @@ open class DefaultAMQPChannel(
     override suspend fun exchangeDeclare(
         name: String,
         type: String,
-        passive: Boolean,
         durable: Boolean,
         autoDelete: Boolean,
         internal: Boolean,
@@ -426,12 +456,30 @@ open class DefaultAMQPChannel(
                 reserved1 = 0u,
                 exchangeName = name,
                 exchangeType = type,
-                passive = passive,
+                passive = false,
                 durable = durable,
                 autoDelete = autoDelete,
                 internal = internal,
                 noWait = false,
                 arguments = arguments
+            )
+        )
+        return writeAndWaitForResponse(declare)
+    }
+
+    override suspend fun exchangeDeclarePassive(name: String): AMQPResponse.Channel.Exchange.Declared {
+        val declare = Frame(
+            channelId = id,
+            payload = Frame.Method.Exchange.Declare(
+                reserved1 = 0u,
+                exchangeName = name,
+                exchangeType = "",
+                passive = true,
+                durable = false,
+                autoDelete = false,
+                internal = false,
+                noWait = false,
+                arguments = emptyMap()
             )
         )
         return writeAndWaitForResponse(declare)

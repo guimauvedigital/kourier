@@ -1,12 +1,10 @@
 package dev.kourier.amqp.channel
 
-import dev.kourier.amqp.Field
-import dev.kourier.amqp.Properties
-import dev.kourier.amqp.Table
-import dev.kourier.amqp.withConnection
+import dev.kourier.amqp.*
 import io.ktor.utils.io.core.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 
 class AMQPChannelTest {
@@ -34,17 +32,51 @@ class AMQPChannelTest {
     }
 
     @Test
+    fun testQueueDeclarePassive() = withConnection { connection ->
+        val passiveChannel = connection.openChannel()
+        val exception = assertFailsWith<AMQPException.ChannelClosed> {
+            passiveChannel.queueDeclarePassive("test")
+        }
+        assertEquals(404u, exception.replyCode)
+
+        val channel = connection.openChannel()
+        channel.queueDeclare("test")
+        channel.queueDeclarePassive("test")
+
+        channel.queueDelete("test")
+
+        channel.close()
+    }
+
+    @Test
     fun testExchange() = withConnection { connection ->
         val channel = connection.openChannel()
 
-        channel.exchangeDeclare("test1", "topic")
-        channel.exchangeDeclare("test2", "topic")
+        channel.exchangeDeclare("test1", BuiltinExchangeType.TOPIC)
+        channel.exchangeDeclare("test2", BuiltinExchangeType.TOPIC)
 
         channel.exchangeBind("test1", "test2", "test")
         channel.exchangeUnbind("test1", "test2", "test")
 
         channel.exchangeDelete("test1")
         channel.exchangeDelete("test2")
+
+        channel.close()
+    }
+
+    @Test
+    fun testExchangeDeclarePassive() = withConnection { connection ->
+        val passiveChannel = connection.openChannel()
+        val exception = assertFailsWith<AMQPException.ChannelClosed> {
+            passiveChannel.exchangeDeclarePassive("test")
+        }
+        assertEquals(404u, exception.replyCode)
+
+        val channel = connection.openChannel()
+        channel.exchangeDeclare("test", BuiltinExchangeType.TOPIC)
+        channel.exchangeDeclarePassive("test")
+
+        channel.exchangeDelete("test")
 
         channel.close()
     }
@@ -75,7 +107,7 @@ class AMQPChannelTest {
         val properties = Properties(
             contentType = "application/json",
             contentEncoding = "UTF-8",
-            headers = Table(mapOf("test" to Field.LongString("test"))),
+            headers = mapOf("test" to Field.LongString("test")),
             deliveryMode = 1u,
             priority = 1u,
             correlationId = "correlationID",

@@ -1,5 +1,6 @@
 package dev.kourier.amqp.connection
 
+import dev.kourier.amqp.AMQPException
 import dev.kourier.amqp.AMQPResponse
 import dev.kourier.amqp.Frame
 import dev.kourier.amqp.InternalAmqpApi
@@ -11,12 +12,17 @@ interface AMQPConnection {
     /**
      * The configuration of the connection.
      */
-    val config: AMQPConnectionConfiguration
+    val config: AMQPConfig
+
+    /**
+     * The connection state.
+     */
+    val state: ConnectionState
 
     /**
      * A deferred that completes when the connection is closed.
      */
-    val connectionClosed: Deferred<Unit>
+    val connectionClosed: Deferred<AMQPException.ConnectionClosed>
 
     @InternalAmqpApi
     suspend fun write(bytes: ByteArray)

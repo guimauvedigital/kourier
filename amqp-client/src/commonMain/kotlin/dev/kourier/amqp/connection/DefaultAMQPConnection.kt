@@ -23,7 +23,7 @@ import kotlinx.io.IOException
 import kotlinx.serialization.encodeToByteArray
 
 open class DefaultAMQPConnection(
-    override val config: AMQPConnectionConfiguration,
+    override val config: AMQPConfig,
     val messageListeningScope: CoroutineScope,
 ) : AMQPConnection {
 
@@ -39,7 +39,7 @@ open class DefaultAMQPConnection(
          */
         suspend fun create(
             coroutineScope: CoroutineScope,
-            config: AMQPConnectionConfiguration,
+            config: AMQPConfig,
         ): AMQPConnection {
             val amqpScope = CoroutineScope(coroutineScope.coroutineContext + SupervisorJob())
             val instance = DefaultAMQPConnection(config, amqpScope)
@@ -49,11 +49,11 @@ open class DefaultAMQPConnection(
 
     }
 
-    override val connectionClosed = CompletableDeferred<Unit>()
+    override val connectionClosed = CompletableDeferred<AMQPException.ConnectionClosed>()
 
     private val logger = KtorSimpleLogger("AMQPConnection")
 
-    private var state = ConnectionState.CLOSED
+    override var state = ConnectionState.CLOSED
 
     private var socket: Socket? = null
     private var readChannel: ByteReadChannel? = null
@@ -81,13 +81,13 @@ open class DefaultAMQPConnection(
 
         val connection = config.connection
         socket = when (connection) {
-            is AMQPConnectionConfiguration.Connection.Tls -> tcpClient
+            is AMQPConfig.Connection.Tls -> tcpClient
                 .connect(config.server.host, config.server.port)
                 .apply {
                     connection.tlsConfiguration?.let { tls(coroutineContext, it) } ?: tls(coroutineContext)
                 }
 
-            is AMQPConnectionConfiguration.Connection.Plain -> tcpClient
+            is AMQPConfig.Connection.Plain -> tcpClient
                 .connect(config.server.host, config.server.port)
         }
 
@@ -132,24 +132,20 @@ open class DefaultAMQPConnection(
 
         when (val payload = frame.payload) {
             is Frame.Method.Connection.Start -> {
-                val clientProperties = Table(
-                    mapOf(
-                        "connection_name" to Field.LongString(config.server.connectionName),
-                        "product" to Field.LongString("kourier-amqp-client"),
-                        "platform" to Field.LongString("Kotlin"),
-                        "version" to Field.LongString("0.1"),
-                        "capabilities" to Field.Table(
-                            Table(
-                                mapOf(
-                                    "publisher_confirms" to Field.Boolean(true),
-                                    "exchange_exchange_bindings" to Field.Boolean(true),
-                                    "basic.nack" to Field.Boolean(true),
-                                    "per_consumer_qos" to Field.Boolean(true),
-                                    "authentication_failure_close" to Field.Boolean(true),
-                                    "consumer_cancel_notify" to Field.Boolean(true),
-                                    "connection.blocked" to Field.Boolean(true),
-                                )
-                            )
+                val clientProperties = mapOf(
+                    "connection_name" to Field.LongString(config.server.connectionName),
+                    "product" to Field.LongString("kourier-amqp-client"),
+                    "platform" to Field.LongString("Kotlin"),
+                    "version" to Field.LongString("0.1"),
+                    "capabilities" to Field.Table(
+                        mapOf(
+                            "publisher_confirms" to Field.Boolean(true),
+                            "exchange_exchange_bindings" to Field.Boolean(true),
+                            "basic.nack" to Field.Boolean(true),
+                            "per_consumer_qos" to Field.Boolean(true),
+                            "authentication_failure_close" to Field.Boolean(true),
+                            "consumer_cancel_notify" to Field.Boolean(true),
+                            "connection.blocked" to Field.Boolean(true),
                         )
                     )
                 )
@@ -202,7 +198,12 @@ open class DefaultAMQPConnection(
             is Frame.Method.Connection.Blocked -> TODO()
             is Frame.Method.Connection.Close -> {
                 this.state = ConnectionState.SHUTTING_DOWN
-                cancelAll()
+                cancelAll(
+                    AMQPException.ConnectionClosed(
+                        replyCode = payload.replyCode,
+                        replyText = payload.replyText,
+                    )
+                )
             }
 
             is Frame.Method.Connection.CloseOk -> connectionResponses.emit(
@@ -221,6 +222,13 @@ open class DefaultAMQPConnection(
             )
 
             is Frame.Method.Channel.Close -> channel?.let { channel ->
+                channel.channelResponses.emit(
+                    AMQPResponse.Channel.Closed(
+                        channelId = frame.channelId,
+                        replyCode = payload.replyCode,
+                        replyText = payload.replyText,
+                    )
+                )
                 channels.remove(channel.id)
                 val closeOk = Frame(
                     channelId = frame.channelId,
@@ -437,7 +445,7 @@ open class DefaultAMQPConnection(
     }
 
     override suspend fun openChannel(): AMQPChannel {
-        val channelId = channels.reserveNext() ?: throw AMQPConnectionError.TooManyOpenedChannels
+        val channelId = channels.reserveNext() ?: throw AMQPException.TooManyOpenedChannels
 
         val channelOpen = Frame(
             channelId = channelId,
@@ -473,11 +481,17 @@ open class DefaultAMQPConnection(
             )
         )
         val result = writeAndWaitForResponse<AMQPResponse.Connection.Closed>(close)
-        cancelAll()
+        cancelAll(
+            AMQPException.ConnectionClosed(
+                replyCode = code,
+                replyText = reason,
+                isInitiatedByApplication = true,
+            )
+        )
         return result
     }
 
-    private fun cancelAll() {
+    private fun cancelAll(connectionClose: AMQPException.ConnectionClosed) {
         if (state != ConnectionState.SHUTTING_DOWN) return
 
         socketSubscription?.cancel()
@@ -493,7 +507,7 @@ open class DefaultAMQPConnection(
         writeChannel = null
 
         this.state = ConnectionState.CLOSED
-        connectionClosed.complete(Unit)
+        connectionClosed.complete(connectionClose)
     }
 
 }

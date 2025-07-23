@@ -3,10 +3,10 @@ package dev.kourier.amqp.connection
 import kotlinx.coroutines.CoroutineScope
 
 /**
- * Creates an [AMQPConnectionConfiguration] using a DSL builder.
+ * Creates an [AMQPConfig] using a DSL builder.
  */
-fun amqpConnectionConfiguration(block: AMQPConnectionConfigurationBuilder.() -> Unit): AMQPConnectionConfiguration {
-    return AMQPConnectionConfigurationBuilder().apply(block).build()
+fun amqpConfig(block: AMQPConfigBuilder.() -> Unit): AMQPConfig {
+    return AMQPConfigBuilder().apply(block).build()
 }
 
 /**
@@ -19,7 +19,7 @@ fun amqpConnectionConfiguration(block: AMQPConnectionConfigurationBuilder.() -> 
  */
 suspend fun createAMQPConnection(
     coroutineScope: CoroutineScope,
-    config: AMQPConnectionConfiguration,
+    config: AMQPConfig,
 ): AMQPConnection = DefaultAMQPConnection.create(
     coroutineScope = coroutineScope,
     config = config,

@@ -5,7 +5,12 @@ sealed class AMQPResponse {
     sealed class Channel : AMQPResponse() {
 
         data class Opened(val channelId: ChannelId) : Channel()
-        data class Closed(val channelId: ChannelId) : Channel()
+
+        data class Closed(
+            val channelId: ChannelId,
+            val replyCode: UShort? = null,
+            val replyText: String? = null,
+        ) : Channel()
 
         sealed class Message : Channel() {
 
