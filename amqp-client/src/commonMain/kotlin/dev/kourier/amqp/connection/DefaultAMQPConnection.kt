@@ -217,6 +217,13 @@ open class DefaultAMQPConnection(
             )
 
             is Frame.Method.Channel.Close -> channel?.let { channel ->
+                channel.channelResponses.emit(
+                    AMQPResponse.Channel.Closed(
+                        channelId = frame.channelId,
+                        replyCode = payload.replyCode,
+                        replyText = payload.replyText,
+                    )
+                )
                 channels.remove(channel.id)
                 val closeOk = Frame(
                     channelId = frame.channelId,
@@ -433,7 +440,7 @@ open class DefaultAMQPConnection(
     }
 
     override suspend fun openChannel(): AMQPChannel {
-        val channelId = channels.reserveNext() ?: throw AMQPConnectionError.TooManyOpenedChannels
+        val channelId = channels.reserveNext() ?: throw AMQPException.TooManyOpenedChannels
 
         val channelOpen = Frame(
             channelId = channelId,

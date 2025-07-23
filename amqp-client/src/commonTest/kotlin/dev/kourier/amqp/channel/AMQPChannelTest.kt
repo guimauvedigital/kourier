@@ -3,10 +3,12 @@ package dev.kourier.amqp.channel
 import dev.kourier.amqp.BuiltinExchangeType
 import dev.kourier.amqp.Field
 import dev.kourier.amqp.Properties
+import dev.kourier.amqp.connection.AMQPException
 import dev.kourier.amqp.withConnection
 import io.ktor.utils.io.core.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 
 class AMQPChannelTest {
@@ -34,6 +36,23 @@ class AMQPChannelTest {
     }
 
     @Test
+    fun testQueueDeclarePassive() = withConnection { connection ->
+        val passiveChannel = connection.openChannel()
+        val exception = assertFailsWith<AMQPException.ChannelClosed> {
+            passiveChannel.queueDeclarePassive("test")
+        }
+        assertEquals(404u, exception.replyCode)
+
+        val channel = connection.openChannel()
+        channel.queueDeclare("test")
+        channel.queueDeclarePassive("test")
+
+        channel.queueDelete("test")
+
+        channel.close()
+    }
+
+    @Test
     fun testExchange() = withConnection { connection ->
         val channel = connection.openChannel()
 
@@ -45,6 +64,23 @@ class AMQPChannelTest {
 
         channel.exchangeDelete("test1")
         channel.exchangeDelete("test2")
+
+        channel.close()
+    }
+
+    @Test
+    fun testExchangeDeclarePassive() = withConnection { connection ->
+        val passiveChannel = connection.openChannel()
+        val exception = assertFailsWith<AMQPException.ChannelClosed> {
+            passiveChannel.exchangeDeclarePassive("test")
+        }
+        assertEquals(404u, exception.replyCode)
+
+        val channel = connection.openChannel()
+        channel.exchangeDeclare("test", BuiltinExchangeType.TOPIC)
+        channel.exchangeDeclarePassive("test")
+
+        channel.exchangeDelete("test")
 
         channel.close()
     }

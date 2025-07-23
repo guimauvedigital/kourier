@@ -218,7 +218,6 @@ interface AMQPChannel {
      * Declares a queue.
      *
      * @param name Name of the queue.
-     * @param passive If enabled, broker will raise exception if queue already exists.
      * @param durable If enabled, creates a queue stored on disk; otherwise, transient.
      * @param exclusive If enabled, queue will be deleted when the channel is closed.
      * @param autoDelete If enabled, queue will be deleted when the last consumer has stopped consuming.
@@ -228,12 +227,27 @@ interface AMQPChannel {
      */
     suspend fun queueDeclare(
         name: String,
-        passive: Boolean = false,
         durable: Boolean = false,
         exclusive: Boolean = false,
         autoDelete: Boolean = false,
         arguments: Table = emptyMap(),
     ): AMQPResponse.Channel.Queue.Declared
+
+    /**
+     * Passively declares a queue.
+     *
+     * @param name Name of the queue.
+     *
+     * @return AMQPResponse.Channel.Queue.Declared confirming that broker has accepted the request.
+     */
+    suspend fun queueDeclarePassive(name: String): AMQPResponse.Channel.Queue.Declared
+
+    /**
+     * Declare a server-named exclusive, autodelete, non-durable queue.
+     *
+     * @return AMQPResponse.Channel.Queue.Declared confirming that broker has accepted the request.
+     */
+    suspend fun queueDeclare(): AMQPResponse.Channel.Queue.Declared
 
     /**
      * Deletes a queue.
@@ -300,7 +314,6 @@ interface AMQPChannel {
      *
      * @param name Name of the exchange.
      * @param type Type of the exchange.
-     * @param passive If enabled, broker will raise exception if exchange already exists.
      * @param durable If enabled, creates an exchange stored on disk; otherwise, transient.
      * @param autoDelete If enabled, exchange will be deleted when the last consumer has stopped consuming.
      * @param internal Whether the exchange cannot be directly published to by client.
@@ -311,12 +324,20 @@ interface AMQPChannel {
     suspend fun exchangeDeclare(
         name: String,
         type: String,
-        passive: Boolean = false,
         durable: Boolean = false,
         autoDelete: Boolean = false,
         internal: Boolean = false,
         arguments: Table = emptyMap(),
     ): AMQPResponse.Channel.Exchange.Declared
+
+    /**
+     * Passively declare an exchange.
+     *
+     * @param name Name of the exchange.
+     *
+     * @return AMQPResponse.Channel.Exchange.Declared
+     */
+    suspend fun exchangeDeclarePassive(name: String): AMQPResponse.Channel.Exchange.Declared
 
     /**
      * Delete an exchange.
