@@ -36,7 +36,4 @@ suspend fun createAMQPConnection(
 suspend fun createAMQPConnection(
     coroutineScope: CoroutineScope,
     block: AMQPConfigBuilder.() -> Unit,
-): AMQPConnection = DefaultAMQPConnection.create(
-    coroutineScope = coroutineScope,
-    config = amqpConfig(block),
-)
+): AMQPConnection = createAMQPConnection(coroutineScope, amqpConfig(block))
