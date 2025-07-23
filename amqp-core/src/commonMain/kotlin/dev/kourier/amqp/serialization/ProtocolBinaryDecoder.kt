@@ -60,7 +60,7 @@ class ProtocolBinaryDecoder(
     }
 
     override fun decodeString(): String {
-        throw NotImplementedError("decodeString is not implemented. Use decodeShortString or decodeLongString instead.")
+        throw UnsupportedOperationException("decodeString is not implemented. Use decodeShortString or decodeLongString instead.")
     }
 
     fun decodeShortString(): Pair<String, Int> {
@@ -76,15 +76,15 @@ class ProtocolBinaryDecoder(
     }
 
     override fun decodeEnum(enumDescriptor: SerialDescriptor): Int {
-        TODO("Not yet implemented")
+        throw UnsupportedOperationException()
     }
 
     override fun decodeInline(descriptor: SerialDescriptor): Decoder {
-        TODO("Not yet implemented")
+        throw UnsupportedOperationException()
     }
 
     override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
-        TODO("Not yet implemented")
+        throw UnsupportedOperationException()
     }
 
 }

@@ -163,6 +163,9 @@ open class DefaultAMQPConnection(
 
             is Frame.Method.Connection.StartOk -> error("Unexpected StartOk frame received: $payload")
 
+            is Frame.Method.Connection.Secure -> TODO()
+            is Frame.Method.Connection.SecureOk -> TODO()
+
             is Frame.Method.Connection.Tune -> {
                 this@DefaultAMQPConnection.channelMax = payload.channelMax
                 this@DefaultAMQPConnection.frameMax = payload.frameMax
@@ -195,7 +198,6 @@ open class DefaultAMQPConnection(
                 )
             )
 
-            is Frame.Method.Connection.Blocked -> TODO()
             is Frame.Method.Connection.Close -> {
                 this.state = ConnectionState.SHUTTING_DOWN
                 cancelAll(
@@ -210,8 +212,7 @@ open class DefaultAMQPConnection(
                 AMQPResponse.Connection.Closed
             )
 
-            is Frame.Method.Connection.Secure -> TODO()
-            is Frame.Method.Connection.SecureOk -> TODO()
+            is Frame.Method.Connection.Blocked -> TODO()
             is Frame.Method.Connection.Unblocked -> TODO()
 
             is Frame.Method.Channel.Open -> error("Unexpected Open frame received: $payload")

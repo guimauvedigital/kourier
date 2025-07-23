@@ -56,7 +56,7 @@ class ProtocolBinaryEncoder(
     }
 
     override fun encodeString(value: String) {
-        throw NotImplementedError("encodeString is not implemented. Use encodeShortString or encodeLongString instead.")
+        throw UnsupportedOperationException("encodeString is not implemented. Use encodeShortString or encodeLongString instead.")
     }
 
     fun encodeShortString(shortString: String) {
@@ -74,15 +74,15 @@ class ProtocolBinaryEncoder(
     }
 
     override fun encodeEnum(enumDescriptor: SerialDescriptor, index: Int) {
-        TODO("Not yet implemented")
+        throw UnsupportedOperationException()
     }
 
     override fun encodeInline(descriptor: SerialDescriptor): Encoder {
-        TODO("Not yet implemented")
+        throw UnsupportedOperationException()
     }
 
     override fun beginStructure(descriptor: SerialDescriptor): CompositeEncoder {
-        TODO("Not yet implemented")
+        throw UnsupportedOperationException()
     }
 
 }
