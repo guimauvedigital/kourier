@@ -1,10 +1,6 @@
 package dev.kourier.amqp.channel
 
-import dev.kourier.amqp.BuiltinExchangeType
-import dev.kourier.amqp.Field
-import dev.kourier.amqp.Properties
-import dev.kourier.amqp.connection.AMQPException
-import dev.kourier.amqp.withConnection
+import dev.kourier.amqp.*
 import io.ktor.utils.io.core.*
 import kotlin.test.Test
 import kotlin.test.assertEquals

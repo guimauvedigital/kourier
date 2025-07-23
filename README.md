@@ -60,7 +60,7 @@ Here is a simple example of how to connect to an AMQP server, open a channel and
 
 ```kotlin
 fun main() = runBlocking {
-    val config = amqpConnectionConfiguration {
+    val config = amqpConfig {
         server {
             host = "127.0.0.1"
             port = 5672

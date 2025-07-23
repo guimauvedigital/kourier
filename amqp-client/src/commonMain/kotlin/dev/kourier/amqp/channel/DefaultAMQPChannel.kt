@@ -2,7 +2,6 @@ package dev.kourier.amqp.channel
 
 import dev.kourier.amqp.*
 import dev.kourier.amqp.connection.AMQPConnection
-import dev.kourier.amqp.connection.AMQPException
 import dev.kourier.amqp.connection.DefaultAMQPConnection
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel

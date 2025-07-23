@@ -4,7 +4,7 @@ import io.ktor.network.tls.*
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-data class AMQPConnectionConfiguration(
+data class AMQPConfig(
     val connection: Connection,
     val server: Server,
 ) {
