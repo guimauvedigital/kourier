@@ -15,7 +15,7 @@ class FrameTest {
             payload = Frame.Method.Exchange.Declare(
                 reserved1 = 0u,
                 exchangeName = "testExchange",
-                exchangeType = "direct",
+                exchangeType = BuiltinExchangeType.DIRECT,
                 passive = false,
                 durable = true,
                 autoDelete = false,

@@ -1,9 +1,6 @@
 package dev.kourier.amqp.channel
 
-import dev.kourier.amqp.Field
-import dev.kourier.amqp.Properties
-import dev.kourier.amqp.Table
-import dev.kourier.amqp.withConnection
+import dev.kourier.amqp.*
 import io.ktor.utils.io.core.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -37,8 +34,8 @@ class AMQPChannelTest {
     fun testExchange() = withConnection { connection ->
         val channel = connection.openChannel()
 
-        channel.exchangeDeclare("test1", "topic")
-        channel.exchangeDeclare("test2", "topic")
+        channel.exchangeDeclare("test1", BuiltinExchangeType.TOPIC)
+        channel.exchangeDeclare("test2", BuiltinExchangeType.TOPIC)
 
         channel.exchangeBind("test1", "test2", "test")
         channel.exchangeUnbind("test1", "test2", "test")
