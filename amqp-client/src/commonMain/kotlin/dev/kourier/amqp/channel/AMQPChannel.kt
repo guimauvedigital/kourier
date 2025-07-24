@@ -104,8 +104,8 @@ interface AMQPChannel {
         noAck: Boolean = false,
         exclusive: Boolean = false,
         arguments: Table = emptyMap(),
-        onDelivery: (AMQPResponse.Channel.Message.Delivery) -> Unit,
-        onCanceled: (AMQPResponse.Channel.Basic.Canceled) -> Unit = {},
+        onDelivery: suspend (AMQPResponse.Channel.Message.Delivery) -> Unit,
+        onCanceled: suspend (AMQPResponse.Channel.Basic.Canceled) -> Unit = {},
     ): AMQPResponse.Channel.Basic.ConsumeOk
 
     /**

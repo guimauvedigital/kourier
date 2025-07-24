@@ -174,26 +174,28 @@ open class DefaultAMQPChannel(
         noAck: Boolean,
         exclusive: Boolean,
         arguments: Table,
-        onDelivery: (AMQPResponse.Channel.Message.Delivery) -> Unit,
-        onCanceled: (AMQPResponse.Channel.Basic.Canceled) -> Unit,
+        onDelivery: suspend (AMQPResponse.Channel.Message.Delivery) -> Unit,
+        onCanceled: suspend (AMQPResponse.Channel.Basic.Canceled) -> Unit,
     ): AMQPResponse.Channel.Basic.ConsumeOk {
         require(connection is DefaultAMQPConnection)
         val deferredConsumerTag = CompletableDeferred<String>()
         val deferredListeningJob = CompletableDeferred<Job>()
         val listeningJob = connection.messageListeningScope.launch {
             channelResponses.collect { response ->
-                val consumerTag = deferredConsumerTag.await()
-                when (response) {
-                    is AMQPResponse.Channel.Basic.Canceled -> if (response.consumerTag == consumerTag) {
-                        deferredListeningJob.await().cancel()
-                        onCanceled(response)
-                    }
+                runCatching { // Catch to avoid cancelling messageListeningScope
+                    val consumerTag = deferredConsumerTag.await()
+                    when (response) {
+                        is AMQPResponse.Channel.Basic.Canceled -> if (response.consumerTag == consumerTag) {
+                            deferredListeningJob.await().cancel()
+                            onCanceled(response)
+                        }
 
-                    is AMQPResponse.Channel.Message.Delivery -> if (response.consumerTag == consumerTag) {
-                        onDelivery(response)
-                    }
+                        is AMQPResponse.Channel.Message.Delivery -> if (response.consumerTag == consumerTag) {
+                            onDelivery(response)
+                        }
 
-                    else -> {} // Ignore other responses
+                        else -> {} // Ignore other responses
+                    }
                 }
             }
         }
