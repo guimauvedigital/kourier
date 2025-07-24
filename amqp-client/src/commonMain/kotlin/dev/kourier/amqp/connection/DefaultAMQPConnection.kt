@@ -364,58 +364,14 @@ open class DefaultAMQPConnection(
             is Frame.Method.Confirm -> TODO()
             is Frame.Method.Tx -> TODO()
 
-            is Frame.Header -> channel?.nextMessage?.setHeader(payload)
+            is Frame.Header -> {
+                channel?.nextMessage?.setHeader(payload)
+                if (channel?.nextMessage?.isComplete == true) channel.nextMessage!!.emitOnChannel(channel)
+            }
 
             is Frame.Body -> {
                 channel?.nextMessage?.addBody(payload.body)
-
-                if (channel?.nextMessage?.isComplete == true) {
-                    val (method, properties, completeBody) = channel.nextMessage!!.asCompletedMessage()
-                    channel.nextMessage = null
-
-                    when (method) {
-                        is Frame.Method.Basic.GetOk -> channel.channelResponses.emit(
-                            AMQPResponse.Channel.Message.Get(
-                                message = AMQPMessage(
-                                    exchange = method.exchange,
-                                    routingKey = method.routingKey,
-                                    deliveryTag = method.deliveryTag,
-                                    properties = properties,
-                                    redelivered = method.redelivered,
-                                    body = completeBody
-                                ),
-                                messageCount = method.messageCount
-                            )
-                        )
-
-                        is Frame.Method.Basic.Deliver -> channel.channelResponses.emit(
-                            AMQPResponse.Channel.Message.Delivery(
-                                message = AMQPMessage(
-                                    exchange = method.exchange,
-                                    routingKey = method.routingKey,
-                                    deliveryTag = method.deliveryTag,
-                                    properties = properties,
-                                    redelivered = method.redelivered,
-                                    body = completeBody
-                                ),
-                                consumerTag = method.consumerTag
-                            ),
-                        )
-
-                        is Frame.Method.Basic.Return -> channel.channelResponses.emit(
-                            AMQPResponse.Channel.Message.Return(
-                                replyCode = method.replyCode,
-                                replyText = method.replyText,
-                                exchange = method.exchange,
-                                routingKey = method.routingKey,
-                                properties = properties,
-                                body = completeBody
-                            )
-                        )
-
-                        else -> error("Unexpected frame: $frame")
-                    }
-                }
+                if (channel?.nextMessage?.isComplete == true) channel.nextMessage!!.emitOnChannel(channel)
             }
 
             is Frame.Heartbeat -> write(Frame(channelId = frame.channelId, payload = Frame.Heartbeat))

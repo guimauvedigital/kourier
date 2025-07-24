@@ -1,5 +1,7 @@
 package dev.kourier.amqp.channel
 
+import dev.kourier.amqp.AMQPMessage
+import dev.kourier.amqp.AMQPResponse
 import dev.kourier.amqp.Frame
 import dev.kourier.amqp.Properties
 
@@ -44,7 +46,55 @@ data class PartialDelivery(
         check(isComplete)
 
         // header and payloads are guaranteed to be non-null after isComplete
-        return Triple(method, header!!.properties, payload!!)
+        return Triple(method, header!!.properties, payload ?: ByteArray(0))
+    }
+
+    suspend fun emitOnChannel(channel: DefaultAMQPChannel) {
+        val (method, properties, completeBody) = asCompletedMessage()
+        channel.nextMessage = null
+
+        when (method) {
+            is Frame.Method.Basic.GetOk -> channel.channelResponses.emit(
+                AMQPResponse.Channel.Message.Get(
+                    message = AMQPMessage(
+                        exchange = method.exchange,
+                        routingKey = method.routingKey,
+                        deliveryTag = method.deliveryTag,
+                        properties = properties,
+                        redelivered = method.redelivered,
+                        body = completeBody
+                    ),
+                    messageCount = method.messageCount
+                )
+            )
+
+            is Frame.Method.Basic.Deliver -> channel.channelResponses.emit(
+                AMQPResponse.Channel.Message.Delivery(
+                    message = AMQPMessage(
+                        exchange = method.exchange,
+                        routingKey = method.routingKey,
+                        deliveryTag = method.deliveryTag,
+                        properties = properties,
+                        redelivered = method.redelivered,
+                        body = completeBody
+                    ),
+                    consumerTag = method.consumerTag
+                ),
+            )
+
+            is Frame.Method.Basic.Return -> channel.channelResponses.emit(
+                AMQPResponse.Channel.Message.Return(
+                    replyCode = method.replyCode,
+                    replyText = method.replyText,
+                    exchange = method.exchange,
+                    routingKey = method.routingKey,
+                    properties = properties,
+                    body = completeBody
+                )
+            )
+
+            else -> error("Unexpected frame: $method")
+        }
     }
 
 }
