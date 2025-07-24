@@ -2,6 +2,7 @@ package dev.kourier.amqp.channel
 
 import dev.kourier.amqp.*
 import dev.kourier.amqp.connection.AMQPConnection
+import dev.kourier.amqp.connection.ConnectionState
 import dev.kourier.amqp.connection.DefaultAMQPConnection
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -24,6 +25,10 @@ open class DefaultAMQPChannel(
     private val deliveryTagMutex = Mutex()
     private var deliveryTag: ULong = 0u
 
+    override var state = ConnectionState.OPEN
+
+    override val channelClosed = CompletableDeferred<AMQPException.ChannelClosed>()
+
     @InternalAmqpApi
     val writeMutex = Mutex()
 
@@ -34,17 +39,29 @@ open class DefaultAMQPChannel(
     val channelResponses = MutableSharedFlow<AMQPResponse>(extraBufferCapacity = Channel.UNLIMITED)
 
     @InternalAmqpApi
+    override suspend fun write(vararg frames: Frame) {
+        if (channelClosed.isCompleted) throw channelClosed.await()
+        connection.write(*frames)
+    }
+
+    @InternalAmqpApi
     suspend inline fun <reified T : AMQPResponse> writeAndWaitForResponse(vararg frames: Frame): T {
         writeMutex.withLock { // Ensure the response is synchronized with the write operation
-            connection.write(*frames)
+            write(*frames)
             val firstResponse = channelResponses.filter { it is T || it is AMQPResponse.Channel.Closed }.first()
             if (firstResponse is T) return firstResponse
             if (firstResponse is AMQPResponse.Channel.Closed) throw AMQPException.ChannelClosed(
                 replyCode = firstResponse.replyCode,
                 replyText = firstResponse.replyText
-            )
+            ).also { cancelAll(it) }
             error("Expected response of type ${T::class}, but got ${firstResponse::class}")
         }
+    }
+
+    fun cancelAll(channelClosed: AMQPException.ChannelClosed) {
+        if (state == ConnectionState.CLOSED) return // Already closed
+        this.state = ConnectionState.CLOSED
+        this@DefaultAMQPChannel.channelClosed.complete(channelClosed)
     }
 
     override suspend fun close(
@@ -60,7 +77,15 @@ open class DefaultAMQPChannel(
                 methodId = 0u,
             )
         )
-        return writeAndWaitForResponse(close)
+        return writeAndWaitForResponse<AMQPResponse.Channel.Closed>(close).also {
+            cancelAll(
+                AMQPException.ChannelClosed(
+                    replyCode = code,
+                    replyText = reason,
+                    isInitiatedByApplication = true
+                )
+            )
+        }
     }
 
     override suspend fun basicPublish(
@@ -103,7 +128,7 @@ open class DefaultAMQPChannel(
             }
         }
 
-        connection.write(*payloads.map { Frame(channelId = id, payload = it) }.toTypedArray())
+        write(*payloads.map { Frame(channelId = id, payload = it) }.toTypedArray())
 
         return if (isConfirmMode) {
             val count = deliveryTagMutex.withLock { deliveryTag++ }
@@ -158,7 +183,7 @@ open class DefaultAMQPChannel(
                             noWait = true
                         )
                     )
-                    connection.write(cancel)
+                    write(cancel)
                 }
             }
         }
@@ -185,6 +210,11 @@ open class DefaultAMQPChannel(
                 runCatching { // Catch to avoid cancelling messageListeningScope
                     val consumerTag = deferredConsumerTag.await()
                     when (response) {
+                        is AMQPResponse.Channel.Closed -> {
+                            deferredListeningJob.await().cancel()
+                            onCanceled(AMQPResponse.Channel.Basic.Canceled(consumerTag))
+                        }
+
                         is AMQPResponse.Channel.Basic.Canceled -> if (response.consumerTag == consumerTag) {
                             deferredListeningJob.await().cancel()
                             onCanceled(response)
@@ -242,7 +272,7 @@ open class DefaultAMQPChannel(
                 multiple = multiple
             )
         )
-        return connection.write(ack)
+        return write(ack)
     }
 
     override suspend fun basicAck(
@@ -265,7 +295,7 @@ open class DefaultAMQPChannel(
                 requeue = requeue
             )
         )
-        return connection.write(nack)
+        return write(nack)
     }
 
     override suspend fun basicNack(
@@ -287,7 +317,7 @@ open class DefaultAMQPChannel(
                 requeue = requeue
             )
         )
-        return connection.write(reject)
+        return write(reject)
     }
 
     override suspend fun basicReject(
