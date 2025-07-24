@@ -115,7 +115,7 @@ open class DefaultAMQPConnection(
         socketSubscription = messageListeningScope.launch {
             val readChannel = this@DefaultAMQPConnection.readChannel ?: return@launch
             FrameDecoder.decodeStreaming(readChannel) { frame ->
-                logger.debug("Received frame: $frame")
+                logger.debug("Received AMQP frame: $frame")
                 read(frame)
             }
         }
@@ -388,8 +388,9 @@ open class DefaultAMQPConnection(
     @InternalAmqpApi
     override suspend fun write(vararg frames: Frame) {
         writeMutex.withLock { // Ensure that all frames are sent in order, without any other writes in between
+            if (connectionClosed.isCompleted) throw connectionClosed.await()
             frames.forEach { frame ->
-                logger.debug("Sent frame: $frame")
+                logger.debug("Sent AMQP frame: $frame")
                 write(ProtocolBinary.encodeToByteArray(frame))
             }
         }

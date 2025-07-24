@@ -2,17 +2,17 @@ package dev.kourier.amqp.channel
 
 import dev.kourier.amqp.*
 import io.ktor.utils.io.core.*
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertNotNull
+import kotlin.test.*
 
 class AMQPChannelTest {
 
     @Test
     fun testCanCloseChannel() = withConnection { connection ->
         val channel = connection.openChannel()
+        assertFalse(channel.channelClosed.isCompleted)
         channel.close()
+        assertTrue(channel.channelClosed.isCompleted)
+        assertFailsWith<AMQPException.ChannelClosed> { channel.basicGet("test") }
     }
 
     @Test

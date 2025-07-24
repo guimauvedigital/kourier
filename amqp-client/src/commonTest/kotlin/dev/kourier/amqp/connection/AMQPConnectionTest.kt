@@ -1,10 +1,8 @@
 package dev.kourier.amqp.connection
 
+import dev.kourier.amqp.AMQPException
 import dev.kourier.amqp.withConnection
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 class AMQPConnectionTest {
 
@@ -30,6 +28,7 @@ class AMQPConnectionTest {
         assertTrue(connection.connectionClosed.isCompleted)
         connection.close()
         assertTrue(connection.connectionClosed.isCompleted)
+        assertFailsWith<AMQPException.ConnectionClosed> { connection.openChannel() }
     }
 
     @Test

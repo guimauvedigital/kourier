@@ -1,6 +1,8 @@
 package dev.kourier.amqp.channel
 
 import dev.kourier.amqp.*
+import dev.kourier.amqp.connection.ConnectionState
+import kotlinx.coroutines.Deferred
 
 interface AMQPChannel {
 
@@ -8,6 +10,19 @@ interface AMQPChannel {
      * Unique identifier of the channel.
      */
     val id: ChannelId
+
+    /**
+     * The channel connection state.
+     */
+    val state: ConnectionState
+
+    /**
+     * A deferred that completes when the channek is closed.
+     */
+    val channelClosed: Deferred<AMQPException.ChannelClosed>
+
+    @InternalAmqpApi
+    suspend fun write(vararg frames: Frame)
 
     /**
      * Closes the channel.

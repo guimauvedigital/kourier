@@ -21,6 +21,7 @@ sealed class AMQPException : IOException() {
     data class ChannelClosed(
         val replyCode: UShort? = null,
         val replyText: String? = null,
+        val isInitiatedByApplication: Boolean = false,
     ) : AMQPException()
 
     data object TooManyOpenedChannels : AMQPException()
