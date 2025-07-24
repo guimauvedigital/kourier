@@ -134,6 +134,26 @@ class AMQPChannelTest {
     }
 
     @Test
+    fun testBasicGetWithZeroBytesPayload() = withConnection { connection ->
+        val channel = connection.openChannel()
+
+        channel.queueDeclare("test", durable = true)
+
+        val body = "".toByteArray()
+        channel.basicPublish(body = body, exchange = "", routingKey = "test")
+
+        val msg = channel.basicGet("test")
+        assertNotNull(msg.message)
+
+        assertEquals(0u, msg.messageCount)
+        assertEquals("", msg.message.body.decodeToString())
+
+        channel.queueDelete("test")
+
+        channel.close()
+    }
+
+    @Test
     fun testBasicGetEmpty() = withConnection { connection ->
         val channel = connection.openChannel()
 

@@ -87,19 +87,19 @@ open class DefaultAMQPChannel(
         )
 
         val payloads = mutableListOf<Frame.Payload>()
-        if (body.size <= frameMax.toInt()) {
-            payloads.add(publish)
-            payloads.add(header)
-            payloads.add(Frame.Body(body))
-        } else {
-            payloads.add(publish)
-            payloads.add(header)
-            var offset = 0
-            while (offset < body.size) {
-                val length = minOf(frameMax.toInt(), body.size - offset)
-                val slice = body.copyOfRange(offset, offset + length)
-                payloads.add(Frame.Body(slice))
-                offset += length
+        payloads.add(publish)
+        payloads.add(header)
+        when {
+            body.isEmpty() -> {} // Do not send body
+            body.size <= frameMax.toInt() -> payloads.add(Frame.Body(body)) // Send all at once
+            else -> { // Split body into multiple frames
+                var offset = 0
+                while (offset < body.size) {
+                    val length = minOf(frameMax.toInt(), body.size - offset)
+                    val slice = body.copyOfRange(offset, offset + length)
+                    payloads.add(Frame.Body(slice))
+                    offset += length
+                }
             }
         }
 
