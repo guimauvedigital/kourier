@@ -366,7 +366,20 @@ open class DefaultAMQPConnection(
                 AMQPResponse.Channel.Confirm.Selected
             )
 
-            is Frame.Method.Tx -> TODO()
+            is Frame.Method.Tx.Select -> error("Unexpected Select frame received: $payload")
+            is Frame.Method.Tx.SelectOk -> channel?.channelResponses?.emit(
+                AMQPResponse.Channel.Tx.Selected
+            )
+
+            is Frame.Method.Tx.Commit -> error("Unexpected Commit frame received: $payload")
+            is Frame.Method.Tx.CommitOk -> channel?.channelResponses?.emit(
+                AMQPResponse.Channel.Tx.Committed
+            )
+
+            is Frame.Method.Tx.Rollback -> error("Unexpected Rollback frame received: $payload")
+            is Frame.Method.Tx.RollbackOk -> channel?.channelResponses?.emit(
+                AMQPResponse.Channel.Tx.Rollbacked
+            )
 
             is Frame.Header -> {
                 channel?.nextMessage?.setHeader(payload)
