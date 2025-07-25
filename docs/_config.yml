@@ -13,3 +13,6 @@ nav_enabled: true
 nav_external_links:
   - title: API reference
     url: https://kourier.dev/api
+
+mermaid:
+  version: "9.1.3"
