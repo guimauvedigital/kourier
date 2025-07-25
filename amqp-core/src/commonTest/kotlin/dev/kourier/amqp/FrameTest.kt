@@ -232,7 +232,7 @@ class FrameTest {
     }
 
     @Test
-    fun testFrameMethodQueueBasicQos() {
+    fun testFrameMethodBasicQos() {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Method.Basic.Qos(
@@ -247,7 +247,7 @@ class FrameTest {
     }
 
     @Test
-    fun testFrameMethodQueueBasicQosOk() {
+    fun testFrameMethodBasicQosOk() {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Method.Basic.QosOk
@@ -258,7 +258,7 @@ class FrameTest {
     }
 
     @Test
-    fun testFrameMethodQueueBasicConsume() {
+    fun testFrameMethodBasicConsume() {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Method.Basic.Consume(
@@ -278,7 +278,7 @@ class FrameTest {
     }
 
     @Test
-    fun testFrameMethodQueueBasicConsumeOk() {
+    fun testFrameMethodBasicConsumeOk() {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Method.Basic.ConsumeOk(
@@ -291,7 +291,7 @@ class FrameTest {
     }
 
     @Test
-    fun testFrameMethodQueueBasicCancel() {
+    fun testFrameMethodBasicCancel() {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Method.Basic.Cancel(
@@ -305,7 +305,7 @@ class FrameTest {
     }
 
     @Test
-    fun testFrameMethodQueueBasicCancelOk() {
+    fun testFrameMethodBasicCancelOk() {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Method.Basic.CancelOk(
@@ -318,7 +318,7 @@ class FrameTest {
     }
 
     @Test
-    fun testFrameMethodQueueBasicPublish() {
+    fun testFrameMethodBasicPublish() {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Method.Basic.Publish(
@@ -335,7 +335,7 @@ class FrameTest {
     }
 
     @Test
-    fun testFrameMethodQueueBasicReturn() {
+    fun testFrameMethodBasicReturn() {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Method.Basic.Return(
@@ -351,7 +351,7 @@ class FrameTest {
     }
 
     @Test
-    fun testFrameMethodQueueBasicDeliver() {
+    fun testFrameMethodBasicDeliver() {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Method.Basic.Deliver(
@@ -368,7 +368,7 @@ class FrameTest {
     }
 
     @Test
-    fun testFrameMethodQueueBasicGet() {
+    fun testFrameMethodBasicGet() {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Method.Basic.Get(
@@ -383,7 +383,7 @@ class FrameTest {
     }
 
     @Test
-    fun testFrameMethodQueueBasicGetOk() {
+    fun testFrameMethodBasicGetOk() {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Method.Basic.GetOk(
@@ -400,7 +400,7 @@ class FrameTest {
     }
 
     @Test
-    fun testFrameMethodQueueBasicGetEmpty() {
+    fun testFrameMethodBasicGetEmpty() {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Method.Basic.GetEmpty(
@@ -413,7 +413,7 @@ class FrameTest {
     }
 
     @Test
-    fun testFrameMethodQueueBasicAck() {
+    fun testFrameMethodBasicAck() {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Method.Basic.Ack(
@@ -427,7 +427,7 @@ class FrameTest {
     }
 
     @Test
-    fun testFrameMethodQueueBasicReject() {
+    fun testFrameMethodBasicReject() {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Method.Basic.Reject(
@@ -441,7 +441,7 @@ class FrameTest {
     }
 
     @Test
-    fun testFrameMethodQueueBasicRecoverAsync() {
+    fun testFrameMethodBasicRecoverAsync() {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Method.Basic.RecoverAsync(
@@ -454,7 +454,7 @@ class FrameTest {
     }
 
     @Test
-    fun testFrameMethodQueueBasicRecover() {
+    fun testFrameMethodBasicRecover() {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Method.Basic.Recover(
@@ -467,7 +467,7 @@ class FrameTest {
     }
 
     @Test
-    fun testFrameMethodQueueBasicRecoverOk() {
+    fun testFrameMethodBasicRecoverOk() {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Method.Basic.RecoverOk
@@ -478,7 +478,7 @@ class FrameTest {
     }
 
     @Test
-    fun testFrameMethodQueueBasicNack() {
+    fun testFrameMethodBasicNack() {
         val frame = Frame(
             channelId = 1u,
             payload = Frame.Method.Basic.Nack(
@@ -486,6 +486,30 @@ class FrameTest {
                 multiple = false,
                 requeue = false
             )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodConfirmSelect() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Confirm.Select(
+                noWait = false
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodConfirmSelectOk() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Confirm.SelectOk
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
         val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)

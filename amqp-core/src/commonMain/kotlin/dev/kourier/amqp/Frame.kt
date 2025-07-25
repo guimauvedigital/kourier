@@ -6,6 +6,7 @@ import dev.kourier.amqp.serialization.serializers.frame.method.FrameMethodSerial
 import dev.kourier.amqp.serialization.serializers.frame.method.basic.*
 import dev.kourier.amqp.serialization.serializers.frame.method.channel.FrameMethodChannelCloseSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.channel.FrameMethodChannelSerializer
+import dev.kourier.amqp.serialization.serializers.frame.method.confirm.FrameMethodConfirmSelectSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.confirm.FrameMethodConfirmSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.connection.*
 import dev.kourier.amqp.serialization.serializers.frame.method.exchange.*
@@ -573,7 +574,23 @@ data class Frame(
         @Serializable(with = FrameMethodConfirmSerializer::class)
         sealed class Confirm : Method() {
 
-            // TODO
+            val confirmKind: Kind
+                get() = when (this) {
+                    is Select -> Kind.SELECT
+                    is SelectOk -> Kind.SELECT_OK
+                }
+
+            enum class Kind(val value: UShort) {
+                SELECT(10u),
+                SELECT_OK(11u)
+            }
+
+            @Serializable(with = FrameMethodConfirmSelectSerializer::class)
+            data class Select(
+                val noWait: Boolean,
+            ) : Confirm()
+
+            data object SelectOk : Confirm()
 
         }
 

@@ -361,7 +361,11 @@ open class DefaultAMQPConnection(
                 AMQPResponse.Channel.Exchange.Unbound
             )
 
-            is Frame.Method.Confirm -> TODO()
+            is Frame.Method.Confirm.Select -> error("Unexpected Select frame received: $payload")
+            is Frame.Method.Confirm.SelectOk -> channel?.channelResponses?.emit(
+                AMQPResponse.Channel.Confirm.Selected
+            )
+
             is Frame.Method.Tx -> TODO()
 
             is Frame.Header -> {
