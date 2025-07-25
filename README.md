@@ -71,13 +71,24 @@ fun main() = runBlocking {
     val connection = createAMQPConnection(this, config)
 
     val channel = connection.openChannel()
-    channel.exchangeDeclare("my-exchange", "topic")
+    channel.exchangeDeclare("my-exchange", BuiltinExchangeType.DIRECT)
+    channel.queueDeclare("my-queue", durable = true)
+    channel.queueBind("my-queue", "my-exchange", "my-routing-key")
+    channel.basicPublish("Hello, AMQP!".toByteArray(), "my-exchange", "my-routing-key")
 
-    // More coming soon!
+    val consumer = channel.basicConsume("my-queue")
+    for (delivery in consumer) {
+        println("Received message: ${delivery.message.body.decodeToString()}")
+        delay(10_000) // Simulate processing time
+        channel.basicAck(delivery.message)
+    }
 
+    channel.close()
     connection.close()
 }
 ```
+
+More examples can be found on the [tutorial section of the documentation](https://kourier.dev/tutorials/).
 
 ## Libraries using kourier
 
