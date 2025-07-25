@@ -597,7 +597,36 @@ data class Frame(
         @Serializable(with = FrameMethodTxSerializer::class)
         sealed class Tx : Method() {
 
-            // TODO
+            val txKind: Kind
+                get() = when (this) {
+                    is Select -> Kind.SELECT
+                    is SelectOk -> Kind.SELECT_OK
+                    is Commit -> Kind.COMMIT
+                    is CommitOk -> Kind.COMMIT_OK
+                    is Rollback -> Kind.ROLLBACK
+                    is RollbackOk -> Kind.ROLLBACK_OK
+                }
+
+            enum class Kind(val value: UShort) {
+                SELECT(10u),
+                SELECT_OK(11u),
+                COMMIT(20u),
+                COMMIT_OK(21u),
+                ROLLBACK(30u),
+                ROLLBACK_OK(31u)
+            }
+
+            data object Select : Tx()
+
+            data object SelectOk : Tx()
+
+            data object Commit : Tx()
+
+            data object CommitOk : Tx()
+
+            data object Rollback : Tx()
+
+            data object RollbackOk : Tx()
 
         }
 

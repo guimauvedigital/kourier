@@ -516,6 +516,71 @@ class FrameTest {
         assertEquals(frame, decoded)
     }
 
+    @Test
+    fun testFrameMethodTxSelect() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Tx.Select
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodTxSelectOk() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Tx.SelectOk
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodTxCommit() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Tx.Commit
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodTxCommitOk() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Tx.CommitOk
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodTxRollback() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Tx.Rollback
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodTxRollbackOk() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Tx.RollbackOk
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
 
     @Test
     fun testFrameHeartbeat() {

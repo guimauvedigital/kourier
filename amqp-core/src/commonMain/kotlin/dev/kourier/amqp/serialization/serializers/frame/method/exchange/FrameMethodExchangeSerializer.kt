@@ -1,8 +1,6 @@
 package dev.kourier.amqp.serialization.serializers.frame.method.exchange
 
 import dev.kourier.amqp.Frame
-import dev.kourier.amqp.serialization.ProtocolBinaryDecoder
-import dev.kourier.amqp.serialization.ProtocolBinaryEncoder
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -18,8 +16,6 @@ object FrameMethodExchangeSerializer : KSerializer<Frame.Method.Exchange> {
         get() = buildSerialDescriptor("Frame.Method.Exchange", StructureKind.OBJECT)
 
     override fun serialize(encoder: Encoder, value: Frame.Method.Exchange) {
-        require(encoder is ProtocolBinaryEncoder)
-
         encoder.encodeShort(value.exchangeKind.value.toShort())
         when (value) {
             is Frame.Method.Exchange.Declare ->
@@ -40,8 +36,6 @@ object FrameMethodExchangeSerializer : KSerializer<Frame.Method.Exchange> {
     }
 
     override fun deserialize(decoder: Decoder): Frame.Method.Exchange {
-        require(decoder is ProtocolBinaryDecoder)
-
         val kind = decoder.decodeShort().toUShort().let { byte ->
             Frame.Method.Exchange.Kind.entries.first { it.value == byte }
         }
