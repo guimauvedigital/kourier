@@ -1,4 +1,4 @@
-package dev.kourier.amqp.tutorials
+package dev.kourier.tutorials
 
 import dev.kourier.amqp.Properties
 import dev.kourier.amqp.connection.amqpConfig
