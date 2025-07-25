@@ -1,6 +1,8 @@
 package dev.kourier.amqp.serialization.serializers.frame.method.confirm
 
 import dev.kourier.amqp.Frame
+import dev.kourier.amqp.serialization.ProtocolBinaryDecoder
+import dev.kourier.amqp.serialization.ProtocolBinaryEncoder
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -16,11 +18,25 @@ object FrameMethodConfirmSerializer : KSerializer<Frame.Method.Confirm> {
         get() = buildSerialDescriptor("Frame.Method.Confirm", StructureKind.OBJECT)
 
     override fun serialize(encoder: Encoder, value: Frame.Method.Confirm) {
-        TODO("Not yet implemented")
+        require(encoder is ProtocolBinaryEncoder)
+
+        encoder.encodeShort(value.confirmKind.value.toShort())
+        when (value) {
+            is Frame.Method.Confirm.Select -> encoder.encodeSerializableValue(FrameMethodConfirmSelectSerializer, value)
+            is Frame.Method.Confirm.SelectOk -> {}
+        }
     }
 
     override fun deserialize(decoder: Decoder): Frame.Method.Confirm {
-        TODO("Not yet implemented")
+        require(decoder is ProtocolBinaryDecoder)
+
+        val kind = decoder.decodeShort().toUShort().let { byte ->
+            Frame.Method.Confirm.Kind.entries.first { it.value == byte }
+        }
+        return when (kind) {
+            Frame.Method.Confirm.Kind.SELECT -> decoder.decodeSerializableValue(FrameMethodConfirmSelectSerializer)
+            Frame.Method.Confirm.Kind.SELECT_OK -> Frame.Method.Confirm.SelectOk
+        }
     }
 
 }
