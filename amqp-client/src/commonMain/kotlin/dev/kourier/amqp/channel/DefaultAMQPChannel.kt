@@ -20,7 +20,8 @@ open class DefaultAMQPChannel(
     val frameMax: UInt,
 ) : AMQPChannel {
 
-    private val isConfirmMode: Boolean = false
+    override var isConfirmMode: Boolean = false
+    override var isTxMode: Boolean = false
 
     private val deliveryTagMutex = Mutex()
     private var deliveryTag: ULong = 0u
@@ -354,6 +355,16 @@ open class DefaultAMQPChannel(
         return writeAndWaitForResponse(qos)
     }
 
+    override suspend fun flow(active: Boolean): AMQPResponse.Channel.Flowed {
+        val flow = Frame(
+            channelId = id,
+            payload = Frame.Method.Channel.Flow(
+                active = active
+            )
+        )
+        return writeAndWaitForResponse(flow)
+    }
+
     override suspend fun queueDeclare(
         name: String,
         durable: Boolean,
@@ -571,6 +582,46 @@ open class DefaultAMQPChannel(
             )
         )
         return writeAndWaitForResponse(unbind)
+    }
+
+    override suspend fun confirmSelect(): AMQPResponse.Channel.Confirm.Selected {
+        if (isConfirmMode) return AMQPResponse.Channel.Confirm.Selected
+        val select = Frame(
+            channelId = id,
+            payload = Frame.Method.Confirm.Select(
+                noWait = false
+            )
+        )
+        return writeAndWaitForResponse<AMQPResponse.Channel.Confirm.Selected>(select).also {
+            isConfirmMode = true
+        }
+    }
+
+    override suspend fun txSelect(): AMQPResponse.Channel.Tx.Selected {
+        if (isTxMode) return AMQPResponse.Channel.Tx.Selected
+        val select = Frame(
+            channelId = id,
+            payload = Frame.Method.Tx.Select
+        )
+        return writeAndWaitForResponse<AMQPResponse.Channel.Tx.Selected>(select).also {
+            isTxMode = true
+        }
+    }
+
+    override suspend fun txCommit(): AMQPResponse.Channel.Tx.Committed {
+        val commit = Frame(
+            channelId = id,
+            payload = Frame.Method.Tx.Commit
+        )
+        return writeAndWaitForResponse(commit)
+    }
+
+    override suspend fun txRollback(): AMQPResponse.Channel.Tx.Rollbacked {
+        val rollback = Frame(
+            channelId = id,
+            payload = Frame.Method.Tx.Rollback
+        )
+        return writeAndWaitForResponse(rollback)
     }
 
 }

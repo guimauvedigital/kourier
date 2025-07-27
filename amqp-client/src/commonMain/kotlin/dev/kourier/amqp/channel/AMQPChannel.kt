@@ -21,6 +21,16 @@ interface AMQPChannel {
      */
     val channelClosed: Deferred<AMQPException.ChannelClosed>
 
+    /**
+     * True when the channel is in confirm mode.
+     */
+    val isConfirmMode: Boolean
+
+    /**
+     * True when the channel is in transaction mode.
+     */
+    val isTxMode: Boolean
+
     @InternalAmqpApi
     suspend fun write(vararg frames: Frame)
 
@@ -230,6 +240,16 @@ interface AMQPChannel {
     ): AMQPResponse.Channel.Basic.QosOk
 
     /**
+     * Send a flow message to broker to start or stop sending messages to consumers.
+     * Warning: Not supported by all brokers.
+     *
+     * @param active Flow enabled or disabled.
+     *
+     * @return AMQPResponse.Channel.Flowed confirming that broker has accepted the flow request.
+     */
+    suspend fun flow(active: Boolean): AMQPResponse.Channel.Flowed
+
+    /**
      * Declares a queue.
      *
      * @param name Name of the queue.
@@ -400,5 +420,33 @@ interface AMQPChannel {
         routingKey: String,
         arguments: Table = emptyMap(),
     ): AMQPResponse.Channel.Exchange.Unbound
+
+    /**
+     * Set channel in publish confirm mode, each published message will be acked or nacked.
+     *
+     * @return AMQPResponse.Channel.Confirm.Selected confirming that broker has accepted the confirm request.
+     */
+    suspend fun confirmSelect(): AMQPResponse.Channel.Confirm.Selected
+
+    /**
+     * Set channel in transaction mode.
+     *
+     * @return AMQPResponse.Channel.Tx.Selected confirming that broker has accepted the transaction request.
+     */
+    suspend fun txSelect(): AMQPResponse.Channel.Tx.Selected
+
+    /**
+     * Commit a transaction.
+     *
+     * @return AMQPResponse.Channel.Tx.Committed confirming that broker has committed the transaction.
+     */
+    suspend fun txCommit(): AMQPResponse.Channel.Tx.Committed
+
+    /**
+     * Rollback a transaction.
+     *
+     * @return AMQPResponse.Channel.Tx.Rollbacked confirming that broker has rolled back the transaction.
+     */
+    suspend fun txRollback(): AMQPResponse.Channel.Tx.Rollbacked
 
 }

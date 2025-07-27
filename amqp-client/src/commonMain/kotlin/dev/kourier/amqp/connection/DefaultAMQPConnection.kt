@@ -243,8 +243,21 @@ open class DefaultAMQPConnection(
                 channels.remove(channel.id)
             }
 
-            is Frame.Method.Channel.Flow -> TODO()
-            is Frame.Method.Channel.FlowOk -> TODO()
+            is Frame.Method.Channel.Flow -> {
+                val flowOk = Frame(
+                    channelId = frame.channelId,
+                    payload = Frame.Method.Channel.FlowOk(
+                        active = payload.active,
+                    )
+                )
+                write(flowOk)
+            }
+
+            is Frame.Method.Channel.FlowOk -> channel?.channelResponses?.emit(
+                AMQPResponse.Channel.Flowed(
+                    active = payload.active,
+                )
+            )
 
             is Frame.Method.Queue.Declare -> error("Unexpected Declare frame received: $payload")
             is Frame.Method.Queue.DeclareOk -> channel?.channelResponses?.emit(
@@ -331,13 +344,19 @@ open class DefaultAMQPConnection(
 
             is Frame.Method.Basic.Publish -> error("Unexpected Publish frame received: $payload")
 
-            is Frame.Method.Basic.Ack -> {
-                // TODO: `receivePublishConfirm(.ack(deliveryTag: deliveryTag, multiple: multiple))`
-            }
+            is Frame.Method.Basic.Ack -> channel?.channelResponses?.emit(
+                AMQPResponse.Channel.Basic.PublishConfirm.Ack(
+                    deliveryTag = payload.deliveryTag,
+                    multiple = payload.multiple,
+                )
+            )
 
-            is Frame.Method.Basic.Nack -> {
-                // TODO: `receivePublishConfirm(.nack(deliveryTag: deliveryTag, multiple: multiple))`
-            }
+            is Frame.Method.Basic.Nack -> channel?.channelResponses?.emit(
+                AMQPResponse.Channel.Basic.PublishConfirm.Nack(
+                    deliveryTag = payload.deliveryTag,
+                    multiple = payload.multiple,
+                )
+            )
 
             is Frame.Method.Basic.Reject -> error("Unexpected Reject frame received: $payload")
 
