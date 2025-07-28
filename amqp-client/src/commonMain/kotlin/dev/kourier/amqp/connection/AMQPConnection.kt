@@ -24,9 +24,15 @@ interface AMQPConnection {
      */
     val connectionClosed: Deferred<AMQPException.ConnectionClosed>
 
+    /**
+     * Internal API to write raw bytes to the connection.
+     */
     @InternalAmqpApi
     suspend fun write(bytes: ByteArray)
 
+    /**
+     * Internal API to write raw frames to the connection.
+     */
     @InternalAmqpApi
     suspend fun write(vararg frames: Frame)
 

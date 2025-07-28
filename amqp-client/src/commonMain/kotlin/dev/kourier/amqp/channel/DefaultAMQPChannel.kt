@@ -1,33 +1,29 @@
 package dev.kourier.amqp.channel
 
 import dev.kourier.amqp.*
-import dev.kourier.amqp.connection.AMQPConnection
 import dev.kourier.amqp.connection.ConnectionState
 import dev.kourier.amqp.connection.DefaultAMQPConnection
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.produce
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 open class DefaultAMQPChannel(
-    val connection: AMQPConnection,
+    val connection: DefaultAMQPConnection,
     override val id: ChannelId,
     val frameMax: UInt,
 ) : AMQPChannel {
 
-    private val isConfirmMode: Boolean = false
+    override var isConfirmMode: Boolean = false
+    override var isTxMode: Boolean = false
 
     private val deliveryTagMutex = Mutex()
-    private var deliveryTag: ULong = 0u
+    private var deliveryTag: ULong = 1u
 
     override var state = ConnectionState.OPEN
-
-    override val channelClosed = CompletableDeferred<AMQPException.ChannelClosed>()
 
     @InternalAmqpApi
     val writeMutex = Mutex()
@@ -37,6 +33,20 @@ open class DefaultAMQPChannel(
 
     @InternalAmqpApi
     val channelResponses = MutableSharedFlow<AMQPResponse>(extraBufferCapacity = Channel.UNLIMITED)
+
+    override val channelClosed = CompletableDeferred<AMQPException.ChannelClosed>()
+
+    override val closedResponses: Flow<AMQPResponse.Channel.Closed> =
+        channelResponses.filterIsInstance<AMQPResponse.Channel.Closed>()
+
+    override val publishConfirmResponses: Flow<AMQPResponse.Channel.Basic.PublishConfirm> =
+        channelResponses.filterIsInstance<AMQPResponse.Channel.Basic.PublishConfirm>()
+
+    override val returnResponses: Flow<AMQPResponse.Channel.Message.Return> =
+        channelResponses.filterIsInstance<AMQPResponse.Channel.Message.Return>()
+
+    override val flowResponses: Flow<AMQPResponse.Channel.Flowed> =
+        channelResponses.filterIsInstance<AMQPResponse.Channel.Flowed>()
 
     @InternalAmqpApi
     override suspend fun write(vararg frames: Frame) {
@@ -161,7 +171,6 @@ open class DefaultAMQPChannel(
         exclusive: Boolean,
         arguments: Table,
     ): AMQPReceiveChannel {
-        require(connection is DefaultAMQPConnection)
         val deferredConsumeOk = CompletableDeferred<AMQPResponse.Channel.Basic.ConsumeOk>()
         val receiveChannel = connection.messageListeningScope.produce(capacity = Channel.UNLIMITED) {
             val consumeOk = basicConsume(
@@ -202,7 +211,6 @@ open class DefaultAMQPChannel(
         onDelivery: suspend (AMQPResponse.Channel.Message.Delivery) -> Unit,
         onCanceled: suspend (AMQPResponse.Channel.Basic.Canceled) -> Unit,
     ): AMQPResponse.Channel.Basic.ConsumeOk {
-        require(connection is DefaultAMQPConnection)
         val deferredConsumerTag = CompletableDeferred<String>()
         val deferredListeningJob = CompletableDeferred<Job>()
         val listeningJob = connection.messageListeningScope.launch {
@@ -352,6 +360,16 @@ open class DefaultAMQPChannel(
             )
         )
         return writeAndWaitForResponse(qos)
+    }
+
+    override suspend fun flow(active: Boolean): AMQPResponse.Channel.Flowed {
+        val flow = Frame(
+            channelId = id,
+            payload = Frame.Method.Channel.Flow(
+                active = active
+            )
+        )
+        return writeAndWaitForResponse(flow)
     }
 
     override suspend fun queueDeclare(
@@ -571,6 +589,46 @@ open class DefaultAMQPChannel(
             )
         )
         return writeAndWaitForResponse(unbind)
+    }
+
+    override suspend fun confirmSelect(): AMQPResponse.Channel.Confirm.Selected {
+        if (isConfirmMode) return AMQPResponse.Channel.Confirm.Selected
+        val select = Frame(
+            channelId = id,
+            payload = Frame.Method.Confirm.Select(
+                noWait = false
+            )
+        )
+        return writeAndWaitForResponse<AMQPResponse.Channel.Confirm.Selected>(select).also {
+            isConfirmMode = true
+        }
+    }
+
+    override suspend fun txSelect(): AMQPResponse.Channel.Tx.Selected {
+        if (isTxMode) return AMQPResponse.Channel.Tx.Selected
+        val select = Frame(
+            channelId = id,
+            payload = Frame.Method.Tx.Select
+        )
+        return writeAndWaitForResponse<AMQPResponse.Channel.Tx.Selected>(select).also {
+            isTxMode = true
+        }
+    }
+
+    override suspend fun txCommit(): AMQPResponse.Channel.Tx.Committed {
+        val commit = Frame(
+            channelId = id,
+            payload = Frame.Method.Tx.Commit
+        )
+        return writeAndWaitForResponse(commit)
+    }
+
+    override suspend fun txRollback(): AMQPResponse.Channel.Tx.Rollbacked {
+        val rollback = Frame(
+            channelId = id,
+            payload = Frame.Method.Tx.Rollback
+        )
+        return writeAndWaitForResponse(rollback)
     }
 
 }

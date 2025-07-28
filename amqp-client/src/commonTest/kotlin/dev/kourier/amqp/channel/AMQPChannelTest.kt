@@ -2,6 +2,11 @@ package dev.kourier.amqp.channel
 
 import dev.kourier.amqp.*
 import io.ktor.utils.io.core.*
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.test.*
 
 class AMQPChannelTest {
@@ -169,6 +174,30 @@ class AMQPChannelTest {
     }
 
     @Test
+    fun testBasicTx() = withConnection { connection ->
+        val channel = connection.openChannel()
+        channel.txSelect()
+        channel.txCommit()
+        channel.txRollback()
+        channel.close()
+    }
+
+    @Test
+    fun testConfirm() = withConnection { connection ->
+        val channel = connection.openChannel()
+        channel.confirmSelect()
+        channel.confirmSelect()
+        channel.close()
+    }
+
+    @Test
+    fun testFlow() = withConnection { connection ->
+        val channel = connection.openChannel()
+        channel.flow(active = true)
+        channel.close()
+    }
+
+    @Test
     fun testBasicQos() = withConnection { connection ->
         val channel = connection.openChannel()
 
@@ -219,6 +248,45 @@ class AMQPChannelTest {
         channel.queueDelete("test")
 
         channel.close()
+    }
+
+    @Test
+    fun testPublishConsume() = runBlocking {
+        withConnection { connection ->
+            val channel = connection.openChannel()
+
+            channel.queueDeclare("test_publish", durable = true)
+
+            val body = "{}".toByteArray()
+
+            channel.confirmSelect()
+
+            val confirmJob = launch {
+                val mutex = Mutex()
+                var count = 1
+                channel.publishConfirmResponses.collect {
+                    mutex.withLock {
+                        if (it.multiple) count = it.deliveryTag.toInt() else count++
+                        if (count >= 100) cancel()
+                    }
+                }
+            }
+
+            for (i in 1..100) {
+                val result = channel.basicPublish(body = body, exchange = "", routingKey = "test_publish")
+                assertEquals(i.toULong(), result.deliveryTag)
+            }
+
+            repeat(100) {
+                val result = channel.basicGet("test_publish")
+                channel.basicAck(result.message ?: kotlin.test.fail("No message received"))
+            }
+
+            confirmJob.join()
+
+            channel.queueDelete("test_publish")
+            channel.close()
+        }
     }
 
     @Test
