@@ -3,6 +3,7 @@ package dev.kourier.amqp.channel
 import dev.kourier.amqp.*
 import dev.kourier.amqp.connection.ConnectionState
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.flow.Flow
 
 interface AMQPChannel {
 
@@ -22,6 +23,33 @@ interface AMQPChannel {
     val channelClosed: Deferred<AMQPException.ChannelClosed>
 
     /**
+     * A flow of closed responses from the channel.
+     */
+    val closedResponses: Flow<AMQPResponse.Channel.Closed>
+
+    /**
+     * A flow of basic publish confirm responses.
+     *
+     * When channel is in confirm mode broker sends whether published message was accepted.
+     */
+    val publishConfirmResponses: Flow<AMQPResponse.Channel.Basic.PublishConfirm>
+
+    /**
+     * A flow of basic return responses.
+     *
+     * When broker cannot route message to any queue it sends a return message.
+     */
+    val returnResponses: Flow<AMQPResponse.Channel.Message.Return>
+
+    /**
+     * A flow of basic delivery messages.
+     *
+     * When broker cannot keep up with amount of published messages it sends a flow (false) message.
+     * When broker is again ready to handle new messages it sends a flow (true) message.
+     */
+    val flowResponses: Flow<AMQPResponse.Channel.Flowed>
+
+    /**
      * True when the channel is in confirm mode.
      */
     val isConfirmMode: Boolean
@@ -31,6 +59,9 @@ interface AMQPChannel {
      */
     val isTxMode: Boolean
 
+    /**
+     * Internal API to write raw frames to the channel.
+     */
     @InternalAmqpApi
     suspend fun write(vararg frames: Frame)
 
