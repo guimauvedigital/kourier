@@ -14,12 +14,6 @@ Pure Kotlin AMQP client and protocol implementation, optimized for KMP and corou
 * **Repository:** [github.com/guimauvedigital/kourier](https://github.com/guimauvedigital/kourier)
 * **Code coverage:** [codecov.io/github/guimauvedigital/kourier](https://codecov.io/github/guimauvedigital/kourier)
 
-> This library is in early development and is not yet feature complete. It is not recommended for production use at this
-> time. Here is what you can expect based on version number: (see Maven Central badge above for latest version)
-> - **0.0.x**: Early development, API may change frequently, not feature complete.
-> - **0.1.x**: Feature complete, but may still have breaking changes in the API.
-> - **1.x.x**: Stable, no breaking changes, API is final.
-
 ## Motivation
 
 Why we made kourier:
