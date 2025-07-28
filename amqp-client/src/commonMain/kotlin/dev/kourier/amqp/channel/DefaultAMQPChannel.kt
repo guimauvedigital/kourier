@@ -21,7 +21,7 @@ open class DefaultAMQPChannel(
     override var isTxMode: Boolean = false
 
     private val deliveryTagMutex = Mutex()
-    private var deliveryTag: ULong = 0u
+    private var deliveryTag: ULong = 1u
 
     override var state = ConnectionState.OPEN
 

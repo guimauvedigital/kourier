@@ -68,8 +68,18 @@ sealed class AMQPResponse {
 
             sealed class PublishConfirm : Basic() {
 
-                data class Ack(val deliveryTag: ULong, val multiple: Boolean) : PublishConfirm()
-                data class Nack(val deliveryTag: ULong, val multiple: Boolean) : PublishConfirm()
+                abstract val deliveryTag: ULong
+                abstract val multiple: Boolean
+
+                data class Ack(
+                    override val deliveryTag: ULong,
+                    override val multiple: Boolean,
+                ) : PublishConfirm()
+
+                data class Nack(
+                    override val deliveryTag: ULong,
+                    override val multiple: Boolean,
+                ) : PublishConfirm()
 
             }
 
