@@ -27,6 +27,7 @@ data class AMQPConfig(
         object Defaults {
             const val HOST: String = "localhost"
             const val PORT: Int = 5672
+            const val TLS_PORT: Int = 5671
             const val USER: String = "guest"
             const val PASSWORD: String = "guest"
             const val VHOST: String = "/"
