@@ -2,9 +2,20 @@ package dev.kourier.amqp.connection
 
 import dev.kourier.amqp.AMQPException
 import dev.kourier.amqp.withConnection
+import io.ktor.http.*
+import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
 class AMQPConnectionTest {
+
+    @Test
+    fun testConnectionWithUrl() = runBlocking {
+        val urlString = "amqp://guest:guest@localhost:5672/"
+        createAMQPConnection(this, urlString).close()
+        createAMQPConnection(this, Url(urlString)).close()
+        createAMQPConnection(this, amqpConfig(urlString)).close()
+        createAMQPConnection(this, amqpConfig(Url(urlString))).close()
+    }
 
     @Test
     fun testCanOpenChannelAndShutdown() = withConnection { connection ->
