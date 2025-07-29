@@ -76,7 +76,7 @@ fun amqpConfig(
         port = if (url.port != -1) url.port else scheme.defaultPort,
         user = url.user ?: AMQPConfig.Server.Defaults.USER,
         password = url.password ?: AMQPConfig.Server.Defaults.PASSWORD,
-        vhost = vhost ?: AMQPConfig.Server.Defaults.VHOST,
+        vhost = vhost?.takeIf { it.isNotEmpty() } ?: AMQPConfig.Server.Defaults.VHOST,
         timeout = timeout,
         connectionName = connectionName,
     )

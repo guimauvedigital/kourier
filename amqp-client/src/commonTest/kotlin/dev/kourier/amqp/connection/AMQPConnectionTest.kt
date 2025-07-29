@@ -9,7 +9,7 @@ import kotlin.test.*
 class AMQPConnectionTest {
 
     @Test
-    fun testConnectionWithUrl() = runBlocking {
+    fun testConnectionWithUrl(): Unit = runBlocking {
         val urlString = "amqp://guest:guest@localhost:5672/"
         createAMQPConnection(this, urlString).close()
         createAMQPConnection(this, Url(urlString)).close()
