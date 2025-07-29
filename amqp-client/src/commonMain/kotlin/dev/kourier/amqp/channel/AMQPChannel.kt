@@ -316,6 +316,15 @@ interface AMQPChannel {
     suspend fun queueDeclare(): AMQPResponse.Channel.Queue.Declared
 
     /**
+     * Returns the number of messages in a queue.
+     *
+     * @param name Name of the queue.
+     *
+     * @return Number of messages in the queue.
+     */
+    suspend fun messageCount(name: String): UInt
+
+    /**
      * Deletes a queue.
      *
      * @param name Name of the queue.

@@ -421,6 +421,10 @@ open class DefaultAMQPChannel(
         )
     }
 
+    override suspend fun messageCount(name: String): UInt {
+        return queueDeclarePassive(name).messageCount
+    }
+
     override suspend fun queueDelete(
         name: String,
         ifUnused: Boolean,

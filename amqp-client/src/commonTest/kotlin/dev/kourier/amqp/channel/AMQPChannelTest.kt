@@ -97,6 +97,9 @@ class AMQPChannelTest {
         val result = channel.basicPublish(body = body, exchange = "", routingKey = "test")
         assertEquals(0u, result.deliveryTag)
 
+        val messageCount = channel.messageCount("test")
+        assertEquals(1u, messageCount)
+
         channel.queueDelete("test")
 
         channel.close()
