@@ -36,7 +36,7 @@ To use kourier, add the following to your `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("dev.kourier:amqp-client:0.1.0")
+    implementation("dev.kourier:amqp-client:0.1.1")
 }
 ```
 

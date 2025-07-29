@@ -6,7 +6,7 @@ plugins {
 
 allprojects {
     group = "dev.kourier"
-    version = "0.1.0"
+    version = "0.1.1"
     project.ext.set("url", "https://github.com/guimauvedigital/kourier")
     project.ext.set("license.name", "Apache 2.0")
     project.ext.set("license.url", "https://www.apache.org/licenses/LICENSE-2.0.txt")
