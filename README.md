@@ -82,6 +82,24 @@ fun main() = runBlocking {
 }
 ```
 
+Alternative ways to connect to a broker:
+
+```kotlin
+// Configuration when connecting
+val connection = createAMQPConnection(this) {
+    server {
+        // ... same as before
+    }
+}
+
+// Configuration from URL
+val config = amqpConfig("amqp://guest:guest@localhost:5672/")
+val connection = createAMQPConnection(this, config)
+
+// Directly using a connection string
+val connection = createAMQPConnection(this, "amqp://guest:guest@localhost:5672/")
+```
+
 More examples can be found on the [tutorial section of the documentation](https://kourier.dev/tutorials/).
 
 ## Libraries using kourier
