@@ -12,7 +12,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 open class DefaultAMQPChannel(
-    val connection: DefaultAMQPConnection,
+    open val connection: DefaultAMQPConnection,
     override val id: ChannelId,
     val frameMax: UInt,
 ) : AMQPChannel {

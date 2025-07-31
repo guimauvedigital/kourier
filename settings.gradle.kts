@@ -39,3 +39,4 @@ dependencyResolutionManagement {
 rootProject.name = "kourier"
 include(":amqp-core")
 include(":amqp-client")
+include(":amqp-client-robust")
