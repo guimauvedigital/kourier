@@ -11,6 +11,7 @@
 Pure Kotlin AMQP client and protocol implementation, optimized for KMP and coroutines.
 
 * **Documentation:** [kourier.dev](https://kourier.dev)
+* **AI-generated wiki:** [deepwiki.com/guimauvedigital/kourier](https://deepwiki.com/guimauvedigital/kourier)
 * **Repository:** [github.com/guimauvedigital/kourier](https://github.com/guimauvedigital/kourier)
 * **Code coverage:** [codecov.io/github/guimauvedigital/kourier](https://codecov.io/github/guimauvedigital/kourier)
 
