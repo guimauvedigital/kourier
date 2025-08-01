@@ -53,6 +53,7 @@ open class RobustAMQPConnection(
     protected suspend fun connectionFactory() {
         while (!connectionClosed.isCompleted) {
             super.connect()
+            channels.list().filterIsInstance<RobustAMQPChannel>().forEach { it.restore() }
             closedResponses.first()
         }
     }

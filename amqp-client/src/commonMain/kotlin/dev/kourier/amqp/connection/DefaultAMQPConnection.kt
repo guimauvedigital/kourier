@@ -217,7 +217,7 @@ open class DefaultAMQPConnection(
             is Frame.Method.Connection.Unblocked -> TODO()
 
             is Frame.Method.Channel.Open -> error("Unexpected Open frame received: $payload")
-            is Frame.Method.Channel.OpenOk -> connectionResponses.emit(
+            is Frame.Method.Channel.OpenOk -> channel?.channelResponses?.emit(
                 AMQPResponse.Channel.Opened(
                     channelId = frame.channelId,
                 )
@@ -444,15 +444,7 @@ open class DefaultAMQPConnection(
 
     override suspend fun openChannel(): AMQPChannel {
         val channelId = channels.reserveNext() ?: throw AMQPException.TooManyOpenedChannels
-
-        val channelOpen = Frame(
-            channelId = channelId,
-            payload = Frame.Method.Channel.Open(
-                reserved1 = ""
-            )
-        )
-        val response = writeAndWaitForResponse<AMQPResponse.Channel.Opened>(channelOpen)
-        return createChannel(response.channelId, frameMax).also { channels.add(it) }
+        return createChannel(channelId, frameMax).also { it.open() }
     }
 
     override suspend fun sendHeartbeat() {
