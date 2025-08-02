@@ -23,6 +23,11 @@ interface AMQPChannel {
     val channelClosed: Deferred<AMQPException.ChannelClosed>
 
     /**
+     * A flow of opened responses from the channel.
+     */
+    val openedResponses: Flow<AMQPResponse.Channel.Opened>
+
+    /**
      * A flow of closed responses from the channel.
      */
     val closedResponses: Flow<AMQPResponse.Channel.Closed>
@@ -64,6 +69,16 @@ interface AMQPChannel {
      */
     @InternalAmqpApi
     suspend fun write(vararg frames: Frame)
+
+    /**
+     * Opens the channel.
+     *
+     * This method is called automatically when the channel is created.
+     * It is not necessary to call it manually.
+     *
+     * @return AMQPResponse.Channel.Opened confirming that broker has accepted the open request.
+     */
+    suspend fun open(): AMQPResponse.Channel.Opened
 
     /**
      * Closes the channel.

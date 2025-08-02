@@ -11,8 +11,8 @@ mavenPublishing {
     publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()
     pom {
-        name.set("amqp-core")
-        description.set("Core AMQP models for kourier.")
+        name.set("amqp-client-robust")
+        description.set("AMQP Client with automatic connection recovery for kourier.")
         url.set(project.ext.get("url")?.toString())
         licenses {
             license {
@@ -67,12 +67,6 @@ kotlin {
             }
         }
     }
-    js {
-        generateTypeScriptDefinitions()
-        binaries.library()
-        nodejs()
-        browser()
-    }
 
     applyDefaultHierarchyTemplate()
     sourceSets {
@@ -84,8 +78,7 @@ kotlin {
         }
         val commonMain by getting {
             dependencies {
-                api(libs.kaccelero.core)
-                api(libs.kotlinx.io)
+                api(project(":amqp-client"))
             }
         }
         val commonTest by getting {

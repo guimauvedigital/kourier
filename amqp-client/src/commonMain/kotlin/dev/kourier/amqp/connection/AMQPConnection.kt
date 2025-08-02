@@ -6,6 +6,7 @@ import dev.kourier.amqp.Frame
 import dev.kourier.amqp.InternalAmqpApi
 import dev.kourier.amqp.channel.AMQPChannel
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.flow.Flow
 
 interface AMQPConnection {
 
@@ -23,6 +24,11 @@ interface AMQPConnection {
      * A deferred that completes when the connection is closed.
      */
     val connectionClosed: Deferred<AMQPException.ConnectionClosed>
+
+    /**
+     * A flow of closed responses from the connection.
+     */
+    val closedResponses: Flow<AMQPResponse.Connection.Closed>
 
     /**
      * Internal API to write raw bytes to the connection.

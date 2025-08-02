@@ -13,10 +13,10 @@ import io.ktor.util.logging.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.io.IOException
@@ -49,8 +49,6 @@ open class DefaultAMQPConnection(
 
     }
 
-    override val connectionClosed = CompletableDeferred<AMQPException.ConnectionClosed>()
-
     private val logger = KtorSimpleLogger("AMQPConnection")
 
     override var state = ConnectionState.CLOSED
@@ -73,7 +71,12 @@ open class DefaultAMQPConnection(
     @InternalAmqpApi
     val channels = AMQPChannels()
 
-    private suspend fun connect() {
+    override val connectionClosed = CompletableDeferred<AMQPException.ConnectionClosed>()
+
+    override val closedResponses: Flow<AMQPResponse.Connection.Closed> =
+        connectionResponses.filterIsInstance<AMQPResponse.Connection.Closed>()
+
+    protected open suspend fun connect() {
         if (socket != null && socket?.isActive == true) return
 
         val selector = SelectorManager(Dispatchers.IO)
@@ -97,10 +100,8 @@ open class DefaultAMQPConnection(
         startListening()
 
         write(Protocol.PROTOCOL_START_0_9_1)
-        val response = withTimeout(10_000) {
-            connectionResponses
-                .mapNotNull { (it as? AMQPResponse.Connection.Connected) }
-                .first()
+        val response = withTimeout(config.server.timeout.inWholeMilliseconds) {
+            connectionResponses.filterIsInstance<AMQPResponse.Connection.Connected>().first()
         }
 
         this.channelMax = response.channelMax
@@ -109,7 +110,7 @@ open class DefaultAMQPConnection(
         this.state = ConnectionState.OPEN
     }
 
-    private fun startListening() {
+    protected open fun startListening() {
         socketSubscription?.cancel()
         heartbeatSubscription?.cancel()
         socketSubscription = messageListeningScope.launch {
@@ -216,7 +217,7 @@ open class DefaultAMQPConnection(
             is Frame.Method.Connection.Unblocked -> TODO()
 
             is Frame.Method.Channel.Open -> error("Unexpected Open frame received: $payload")
-            is Frame.Method.Channel.OpenOk -> connectionResponses.emit(
+            is Frame.Method.Channel.OpenOk -> channel?.channelResponses?.emit(
                 AMQPResponse.Channel.Opened(
                     channelId = frame.channelId,
                 )
@@ -438,21 +439,12 @@ open class DefaultAMQPConnection(
         return connectionResponses.filterIsInstance<T>().first()
     }
 
+    protected open fun createChannel(id: ChannelId, frameMax: UInt): AMQPChannel =
+        DefaultAMQPChannel(this, id, frameMax)
+
     override suspend fun openChannel(): AMQPChannel {
         val channelId = channels.reserveNext() ?: throw AMQPException.TooManyOpenedChannels
-
-        val channelOpen = Frame(
-            channelId = channelId,
-            payload = Frame.Method.Channel.Open(
-                reserved1 = ""
-            )
-        )
-        val response = writeAndWaitForResponse<AMQPResponse.Channel.Opened>(channelOpen)
-        return DefaultAMQPChannel(
-            connection = this,
-            id = response.channelId,
-            frameMax = frameMax
-        ).also { channels.add(it) }
+        return createChannel(channelId, frameMax).also { it.open() }
     }
 
     override suspend fun sendHeartbeat() {
@@ -485,7 +477,7 @@ open class DefaultAMQPConnection(
         return result
     }
 
-    private fun cancelAll(connectionClose: AMQPException.ConnectionClosed) {
+    protected open fun cancelAll(connectionClose: AMQPException.ConnectionClosed) {
         if (state != ConnectionState.SHUTTING_DOWN) return
 
         socketSubscription?.cancel()
