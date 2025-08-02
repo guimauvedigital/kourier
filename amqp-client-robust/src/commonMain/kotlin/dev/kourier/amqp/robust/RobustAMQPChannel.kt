@@ -6,9 +6,7 @@ import dev.kourier.amqp.ChannelId
 import dev.kourier.amqp.Table
 import dev.kourier.amqp.channel.DefaultAMQPChannel
 import dev.kourier.amqp.connection.ConnectionState
-import dev.kourier.amqp.robust.declared.DeclaredExchange
-import dev.kourier.amqp.robust.declared.DeclaredQos
-import dev.kourier.amqp.robust.declared.DeclaredQueue
+import dev.kourier.amqp.robust.states.*
 
 open class RobustAMQPChannel(
     override val connection: RobustAMQPConnection,
@@ -19,6 +17,9 @@ open class RobustAMQPChannel(
     private var declaredQos: DeclaredQos? = null
     private val declaredExchanges = mutableMapOf<String, DeclaredExchange>()
     private val declaredQueues = mutableMapOf<String, DeclaredQueue>()
+    private val boundExchanges = mutableMapOf<Triple<String, String, String>, BoundExchange>()
+    private val boundQueues = mutableMapOf<Triple<String, String, String>, BoundQueue>()
+    private val consumedQueues = mutableMapOf<Pair<String, String>, ConsumedQueue>()
 
     suspend fun restore() {
         open()
@@ -46,6 +47,33 @@ open class RobustAMQPChannel(
                 exclusive = it.exclusive,
                 autoDelete = it.autoDelete,
                 arguments = it.arguments
+            )
+        }
+        boundExchanges.values.forEach {
+            exchangeBind(
+                destination = it.destination,
+                source = it.source,
+                routingKey = it.routingKey,
+                arguments = it.arguments
+            )
+        }
+        boundQueues.values.forEach {
+            queueBind(
+                queue = it.queue,
+                exchange = it.exchange,
+                routingKey = it.routingKey,
+                arguments = it.arguments
+            )
+        }
+        consumedQueues.values.forEach { consumedQueue ->
+            basicConsume(
+                queue = consumedQueue.queue,
+                consumerTag = consumedQueue.consumerTag,
+                noAck = consumedQueue.noAck,
+                exclusive = consumedQueue.exclusive,
+                arguments = consumedQueue.arguments,
+                onDelivery = consumedQueue.onDelivery,
+                onCanceled = consumedQueue.onCanceled
             )
         }
     }
@@ -93,6 +121,33 @@ open class RobustAMQPChannel(
         }
     }
 
+    override suspend fun exchangeBind(
+        destination: String,
+        source: String,
+        routingKey: String,
+        arguments: Table,
+    ): AMQPResponse.Channel.Exchange.Bound {
+        return super.exchangeBind(destination, source, routingKey, arguments).also {
+            boundExchanges[Triple(destination, source, routingKey)] = BoundExchange(
+                destination = destination,
+                source = source,
+                routingKey = routingKey,
+                arguments = arguments
+            )
+        }
+    }
+
+    override suspend fun exchangeUnbind(
+        destination: String,
+        source: String,
+        routingKey: String,
+        arguments: Table,
+    ): AMQPResponse.Channel.Exchange.Unbound {
+        return super.exchangeUnbind(destination, source, routingKey, arguments).also {
+            boundExchanges.remove(Triple(destination, source, routingKey))
+        }
+    }
+
     override suspend fun queueDeclare(
         name: String,
         durable: Boolean,
@@ -118,6 +173,62 @@ open class RobustAMQPChannel(
     ): AMQPResponse.Channel.Queue.Deleted {
         return super.queueDelete(name, ifUnused, ifEmpty).also {
             declaredQueues.remove(name)
+        }
+    }
+
+    override suspend fun queueBind(
+        queue: String,
+        exchange: String,
+        routingKey: String,
+        arguments: Table,
+    ): AMQPResponse.Channel.Queue.Bound {
+        return super.queueBind(queue, exchange, routingKey, arguments).also {
+            boundQueues[Triple(queue, exchange, routingKey)] = BoundQueue(
+                queue = queue,
+                exchange = exchange,
+                routingKey = routingKey,
+                arguments = arguments
+            )
+        }
+    }
+
+    override suspend fun queueUnbind(
+        queue: String,
+        exchange: String,
+        routingKey: String,
+        arguments: Table,
+    ): AMQPResponse.Channel.Queue.Unbound {
+        return super.queueUnbind(queue, exchange, routingKey, arguments).also {
+            boundQueues.remove(Triple(queue, exchange, routingKey))
+        }
+    }
+
+    override suspend fun basicConsume(
+        queue: String,
+        consumerTag: String,
+        noAck: Boolean,
+        exclusive: Boolean,
+        arguments: Table,
+        onDelivery: suspend (AMQPResponse.Channel.Message.Delivery) -> Unit,
+        onCanceled: suspend (AMQPResponse.Channel.Basic.Canceled) -> Unit,
+    ): AMQPResponse.Channel.Basic.ConsumeOk {
+        return super.basicConsume(queue, consumerTag, noAck, exclusive, arguments, onDelivery, onCanceled).also {
+            consumedQueues[Pair(queue, it.consumerTag)] = ConsumedQueue(
+                queue = queue,
+                consumerTag = consumerTag,
+                noAck = noAck,
+                exclusive = exclusive,
+                arguments = arguments,
+                onDelivery = onDelivery,
+                onCanceled = onCanceled
+            )
+        }
+    }
+
+    override suspend fun basicCancel(consumerTag: String): AMQPResponse.Channel.Basic.Canceled {
+        return super.basicCancel(consumerTag).also {
+            val key = consumedQueues.entries.find { it.value.consumerTag == consumerTag }?.key ?: return@also
+            consumedQueues.remove(key)
         }
     }
 

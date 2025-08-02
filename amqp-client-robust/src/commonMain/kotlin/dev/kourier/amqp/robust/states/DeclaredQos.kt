@@ -1,4 +1,4 @@
-package dev.kourier.amqp.robust.declared
+package dev.kourier.amqp.robust.states
 
 data class DeclaredQos(
     val count: UShort,
