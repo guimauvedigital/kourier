@@ -1,16 +1,12 @@
 package dev.kourier.amqp.robust
 
-import dev.kourier.amqp.*
-import dev.kourier.amqp.channel.AMQPReceiveChannel
+import dev.kourier.amqp.AMQPException
+import dev.kourier.amqp.AMQPResponse
+import dev.kourier.amqp.ChannelId
+import dev.kourier.amqp.Table
 import dev.kourier.amqp.channel.DefaultAMQPChannel
 import dev.kourier.amqp.connection.ConnectionState
 import dev.kourier.amqp.robust.states.*
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.channels.produce
-import kotlinx.coroutines.runBlocking
 
 open class RobustAMQPChannel(
     override val connection: RobustAMQPConnection,
@@ -216,7 +212,13 @@ open class RobustAMQPChannel(
         onDelivery: suspend (AMQPResponse.Channel.Message.Delivery) -> Unit,
         onCanceled: suspend (AMQPResponse.Channel) -> Unit,
     ): AMQPResponse.Channel.Basic.ConsumeOk {
-        return super.basicConsume(queue, consumerTag, noAck, exclusive, arguments, onDelivery, onCanceled).also {
+        return super.basicConsume(
+            queue, consumerTag, noAck, exclusive, arguments, onDelivery,
+            onCanceled = { response ->
+                if (response is AMQPResponse.Channel.Closed && state == ConnectionState.OPEN) return@basicConsume
+                onCanceled(response)
+            }
+        ).also {
             consumedQueues[Pair(queue, it.consumerTag)] = ConsumedQueue(
                 queue = queue,
                 consumerTag = consumerTag,
@@ -227,48 +229,6 @@ open class RobustAMQPChannel(
                 onCanceled = onCanceled
             )
         }
-    }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    override suspend fun basicConsume(
-        queue: String,
-        consumerTag: String,
-        noAck: Boolean,
-        exclusive: Boolean,
-        arguments: Table,
-    ): AMQPReceiveChannel {
-        val deferredConsumeOk = CompletableDeferred<AMQPResponse.Channel.Basic.ConsumeOk>()
-        val receiveChannel = connection.messageListeningScope.produce(capacity = Channel.UNLIMITED) {
-            val consumeOk = basicConsume(
-                queue = queue,
-                consumerTag = consumerTag,
-                noAck = noAck,
-                exclusive = exclusive,
-                arguments = arguments,
-                onDelivery = { trySend(it) },
-                onCanceled = { response ->
-                    if (response is AMQPResponse.Channel.Closed && state == ConnectionState.OPEN) return@basicConsume
-                    close()
-                }
-            )
-            deferredConsumeOk.complete(consumeOk)
-            awaitClose {
-                runBlocking {
-                    val cancel = Frame(
-                        channelId = id,
-                        payload = Frame.Method.Basic.Cancel(
-                            consumerTag = consumeOk.consumerTag,
-                            noWait = true
-                        )
-                    )
-                    write(cancel)
-                }
-            }
-        }
-        return AMQPReceiveChannel(
-            consumeOk = deferredConsumeOk.await(),
-            receiveChannel = receiveChannel,
-        )
     }
 
     override suspend fun basicCancel(consumerTag: String): AMQPResponse.Channel.Basic.Canceled {
