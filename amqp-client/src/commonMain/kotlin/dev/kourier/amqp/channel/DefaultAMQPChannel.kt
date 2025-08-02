@@ -96,6 +96,7 @@ open class DefaultAMQPChannel(
         reason: String,
         code: UShort,
     ): AMQPResponse.Channel.Closed {
+        this.state = ConnectionState.SHUTTING_DOWN
         val close = Frame(
             channelId = id,
             payload = Frame.Method.Channel.Close(
@@ -227,7 +228,7 @@ open class DefaultAMQPChannel(
         exclusive: Boolean,
         arguments: Table,
         onDelivery: suspend (AMQPResponse.Channel.Message.Delivery) -> Unit,
-        onCanceled: suspend (AMQPResponse.Channel.Basic.Canceled) -> Unit,
+        onCanceled: suspend (AMQPResponse.Channel) -> Unit,
     ): AMQPResponse.Channel.Basic.ConsumeOk {
         val deferredConsumerTag = CompletableDeferred<String>()
         val deferredListeningJob = CompletableDeferred<Job>()
@@ -238,7 +239,7 @@ open class DefaultAMQPChannel(
                     when (response) {
                         is AMQPResponse.Channel.Closed -> {
                             deferredListeningJob.await().cancel()
-                            onCanceled(AMQPResponse.Channel.Basic.Canceled(consumerTag))
+                            onCanceled(response)
                         }
 
                         is AMQPResponse.Channel.Basic.Canceled -> if (response.consumerTag == consumerTag) {

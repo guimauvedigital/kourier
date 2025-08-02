@@ -176,7 +176,7 @@ interface AMQPChannel {
         exclusive: Boolean = false,
         arguments: Table = emptyMap(),
         onDelivery: suspend (AMQPResponse.Channel.Message.Delivery) -> Unit,
-        onCanceled: suspend (AMQPResponse.Channel.Basic.Canceled) -> Unit = {},
+        onCanceled: suspend (AMQPResponse.Channel) -> Unit = {},
     ): AMQPResponse.Channel.Basic.ConsumeOk
 
     /**
