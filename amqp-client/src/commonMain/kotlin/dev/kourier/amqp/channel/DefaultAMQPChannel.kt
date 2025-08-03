@@ -12,7 +12,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 open class DefaultAMQPChannel(
-    val connection: DefaultAMQPConnection,
+    open val connection: DefaultAMQPConnection,
     override val id: ChannelId,
     val frameMax: UInt,
 ) : AMQPChannel {
@@ -23,7 +23,8 @@ open class DefaultAMQPChannel(
     private val deliveryTagMutex = Mutex()
     private var deliveryTag: ULong = 1u
 
-    override var state = ConnectionState.OPEN
+    override var state = ConnectionState.CLOSED
+    private val stateMutex = Mutex()
 
     @InternalAmqpApi
     val writeMutex = Mutex()
@@ -35,6 +36,9 @@ open class DefaultAMQPChannel(
     val channelResponses = MutableSharedFlow<AMQPResponse>(extraBufferCapacity = Channel.UNLIMITED)
 
     override val channelClosed = CompletableDeferred<AMQPException.ChannelClosed>()
+
+    override val openedResponses: Flow<AMQPResponse.Channel.Opened> =
+        channelResponses.filterIsInstance<AMQPResponse.Channel.Opened>()
 
     override val closedResponses: Flow<AMQPResponse.Channel.Closed> =
         channelResponses.filterIsInstance<AMQPResponse.Channel.Closed>()
@@ -56,28 +60,43 @@ open class DefaultAMQPChannel(
 
     @InternalAmqpApi
     suspend inline fun <reified T : AMQPResponse> writeAndWaitForResponse(vararg frames: Frame): T {
-        writeMutex.withLock { // Ensure the response is synchronized with the write operation
+        val firstResponse = writeMutex.withLock { // Ensure the response is synchronized with the write operation
             write(*frames)
-            val firstResponse = channelResponses.filter { it is T || it is AMQPResponse.Channel.Closed }.first()
-            if (firstResponse is T) return firstResponse
-            if (firstResponse is AMQPResponse.Channel.Closed) throw AMQPException.ChannelClosed(
-                replyCode = firstResponse.replyCode,
-                replyText = firstResponse.replyText
-            ).also { cancelAll(it) }
-            error("Expected response of type ${T::class}, but got ${firstResponse::class}")
+            channelResponses.filter { it is T || it is AMQPResponse.Channel.Closed }.first()
         }
+        if (firstResponse is T) return firstResponse
+        if (firstResponse is AMQPResponse.Channel.Closed) throw AMQPException.ChannelClosed(
+            replyCode = firstResponse.replyCode,
+            replyText = firstResponse.replyText
+        ).also { cancelAll(it) }
+        error("Expected response of type ${T::class}, but got ${firstResponse::class}")
     }
 
-    fun cancelAll(channelClosed: AMQPException.ChannelClosed) {
+    open suspend fun cancelAll(channelClosed: AMQPException.ChannelClosed) {
         if (state == ConnectionState.CLOSED) return // Already closed
         this.state = ConnectionState.CLOSED
         this@DefaultAMQPChannel.channelClosed.complete(channelClosed)
+    }
+
+    override suspend fun open(): AMQPResponse.Channel.Opened = stateMutex.withLock {
+        if (state == ConnectionState.OPEN) return AMQPResponse.Channel.Opened(channelId = id)
+        val channelOpen = Frame(
+            channelId = id,
+            payload = Frame.Method.Channel.Open(
+                reserved1 = ""
+            )
+        )
+        connection.channels.add(this)
+        return writeAndWaitForResponse<AMQPResponse.Channel.Opened>(channelOpen).also {
+            state = ConnectionState.OPEN
+        }
     }
 
     override suspend fun close(
         reason: String,
         code: UShort,
     ): AMQPResponse.Channel.Closed {
+        this.state = ConnectionState.SHUTTING_DOWN
         val close = Frame(
             channelId = id,
             payload = Frame.Method.Channel.Close(
@@ -185,6 +204,7 @@ open class DefaultAMQPChannel(
             deferredConsumeOk.complete(consumeOk)
             awaitClose {
                 runBlocking {
+                    if (state != ConnectionState.OPEN) return@runBlocking
                     val cancel = Frame(
                         channelId = id,
                         payload = Frame.Method.Basic.Cancel(
@@ -209,7 +229,7 @@ open class DefaultAMQPChannel(
         exclusive: Boolean,
         arguments: Table,
         onDelivery: suspend (AMQPResponse.Channel.Message.Delivery) -> Unit,
-        onCanceled: suspend (AMQPResponse.Channel.Basic.Canceled) -> Unit,
+        onCanceled: suspend (AMQPResponse.Channel) -> Unit,
     ): AMQPResponse.Channel.Basic.ConsumeOk {
         val deferredConsumerTag = CompletableDeferred<String>()
         val deferredListeningJob = CompletableDeferred<Job>()
@@ -220,7 +240,7 @@ open class DefaultAMQPChannel(
                     when (response) {
                         is AMQPResponse.Channel.Closed -> {
                             deferredListeningJob.await().cancel()
-                            onCanceled(AMQPResponse.Channel.Basic.Canceled(consumerTag))
+                            onCanceled(response)
                         }
 
                         is AMQPResponse.Channel.Basic.Canceled -> if (response.consumerTag == consumerTag) {
