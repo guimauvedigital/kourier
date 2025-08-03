@@ -8,7 +8,7 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/guimauvedigital/kourier/badge)](https://www.codefactor.io/repository/github/guimauvedigital/kourier)
 [![Open Source Helpers](https://www.codetriage.com/guimauvedigital/kourier/badges/users.svg)](https://www.codetriage.com/guimauvedigital/kourier)
 
-Pure Kotlin AMQP client and protocol implementation, optimized for KMP and coroutines.
+Pure Kotlin AMQP/RabbitMQ client and protocol implementation, optimized for KMP and coroutines.
 
 * **Documentation:** [kourier.dev](https://kourier.dev)
 * **AI-generated wiki:** [deepwiki.com/guimauvedigital/kourier](https://deepwiki.com/guimauvedigital/kourier)
