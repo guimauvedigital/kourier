@@ -21,14 +21,19 @@ Why we made kourier:
 * **Pure Kotlin Implementation** with no dependency on the Java client or other library.
 * **Coroutines-first** design, allowing better integration with Kotlin's concurrency model and asynchronous consuming.
 * **Multiplatform support** allows compatibility with JVM but also Native targets.
+* **Robustness** with automatic recovery and reconnection logic, making it resilient to network issues and protocol
+  errors.
 
 ## Modules
 
 * `amqp-core`: Core AMQP 0.9.1 protocol implementation, including frames and encoding/decoding logic.
 * `amqp-client`: High-level AMQP client built on top of `amqp-core`, providing connection management, channel handling,
   and basic operations like publishing and consuming messages.
+* `amqp-client-robust`: Adds automatic recovery and reconnection logic to the `amqp-client`, making it more resilient to
+  network issues and protocol errors, inspired by [aio-pika](https://github.com/mosquito/aio-pika)'s robust client.
 
-Most of the time you will only need the `amqp-client` module, which depends itself on `amqp-core`.
+Most of the time you will only need the `amqp-client` module, which depends itself on `amqp-core`, or the
+`amqp-client-robust` module which depends on both `amqp-client` and `amqp-core` if you want automatic recovery features.
 
 ## Installation
 
@@ -37,6 +42,14 @@ To use kourier, add the following to your `build.gradle.kts`:
 ```kotlin
 dependencies {
     implementation("dev.kourier:amqp-client:0.1.1")
+}
+```
+
+Or if you want the robust client with automatic recovery:
+
+```kotlin
+dependencies {
+    implementation("dev.kourier:amqp-client-robust:0.1.1")
 }
 ```
 
@@ -50,7 +63,7 @@ repositories {
 
 ## Usage
 
-Here is a simple example of how to connect to an AMQP server, open a channel and so some stuff with it:
+Here is a simple example of how to connect to an AMQP server, open a channel and do some stuff with it:
 
 ```kotlin
 fun main() = runBlocking {
@@ -98,6 +111,15 @@ val connection = createAMQPConnection(this, config)
 
 // Directly using a connection string
 val connection = createAMQPConnection(this, "amqp://guest:guest@localhost:5672/")
+```
+
+If you want to use the robust client with automatic recovery, you can use `createRobustAMQPConnection` instead of
+`createAMQPConnection`. This will handle reconnections and recovery of channels and consumers automatically.
+
+```kotlin
+val connection = createRobustAMQPConnection(this, config) // All configuration options are available as before
+
+// Do stuff with the connection as before
 ```
 
 More examples can be found on the [tutorial section of the documentation](https://kourier.dev/tutorials/).

@@ -204,6 +204,7 @@ open class DefaultAMQPChannel(
             deferredConsumeOk.complete(consumeOk)
             awaitClose {
                 runBlocking {
+                    if (state != ConnectionState.OPEN) return@runBlocking
                     val cancel = Frame(
                         channelId = id,
                         payload = Frame.Method.Basic.Cancel(

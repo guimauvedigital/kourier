@@ -2,19 +2,29 @@ package dev.kourier.amqp.robust
 
 import dev.kourier.amqp.AMQPException
 import dev.kourier.amqp.BuiltinExchangeType
+import dev.kourier.amqp.channel.AMQPChannel
 import io.ktor.utils.io.core.*
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertTrue
+import kotlin.test.*
 import kotlin.time.Duration.Companion.seconds
 
 class RobustAMQPChannelTest {
+
+    private suspend fun AMQPChannel.closeByBreaking() =
+        assertFailsWith<AMQPException.ChannelClosed> {
+            exchangeDeclare(
+                "will-fail",
+                "nonexistent-type",
+                durable = true,
+                autoDelete = false,
+                internal = false,
+                arguments = emptyMap()
+            )
+        }
 
     @Test
     @OptIn(DelicateCoroutinesApi::class)
@@ -79,16 +89,7 @@ class RobustAMQPChannelTest {
             assertEquals("Before crash", msg.message.body.decodeToString())
 
             // 8. Break the channel by declaring an invalid exchange type
-            assertFailsWith<AMQPException.ChannelClosed> {
-                channel.exchangeDeclare(
-                    "will-fail",
-                    "nonexistent-type",
-                    durable = true,
-                    autoDelete = false,
-                    internal = false,
-                    arguments = emptyMap()
-                )
-            }
+            channel.closeByBreaking()
             closeEvent.await()
             reopenEvent.await()
 
@@ -101,6 +102,105 @@ class RobustAMQPChannelTest {
 
             channel.close()
             assertTrue(receivedMessages.isClosedForReceive)
+        }
+    }
+
+    @Test
+    fun testDeleteExchange() = runBlocking {
+        withConnection { connection ->
+            val channel = connection.openChannel()
+            val closeEvent = async { channel.closedResponses.first() }
+            val reopenEvent = async { channel.openedResponses.first() }
+
+            channel.exchangeDeclare("test-delete-exchange", BuiltinExchangeType.DIRECT, durable = true)
+            channel.exchangeDeclare("test-delete-exchange-2", BuiltinExchangeType.FANOUT, durable = true)
+
+            channel.exchangeBind("test-delete-exchange-2", "test-delete-exchange", routingKey = "")
+            channel.exchangeUnbind("test-delete-exchange-2", "test-delete-exchange", routingKey = "")
+
+            channel.exchangeDelete("test-delete-exchange")
+            channel.exchangeDelete("test-delete-exchange-2")
+
+            channel.closeByBreaking()
+            closeEvent.await()
+            reopenEvent.await()
+
+            assertFailsWith<AMQPException.ChannelClosed> {
+                channel.exchangeDeclarePassive("test-delete-exchange")
+            }
+
+            channel.close()
+        }
+    }
+
+    @Test
+    fun testDeleteQueue() = runBlocking {
+        withConnection { connection ->
+            val channel = connection.openChannel()
+            val closeEvent = async { channel.closedResponses.first() }
+            val reopenEvent = async { channel.openedResponses.first() }
+
+            channel.exchangeDeclare("test-delete-queue-exchange", BuiltinExchangeType.DIRECT, durable = true)
+            channel.queueDeclare(
+                "test-delete-queue",
+                durable = true,
+                exclusive = false,
+                autoDelete = false,
+                arguments = emptyMap()
+            )
+
+            channel.queueBind("test-delete-queue", "test-delete-queue-exchange", routingKey = "")
+            channel.queueUnbind("test-delete-queue", "test-delete-queue-exchange", routingKey = "")
+
+            channel.exchangeDelete("test-delete-queue-exchange")
+            channel.queueDelete("test-delete-queue")
+
+            channel.closeByBreaking()
+            closeEvent.await()
+            reopenEvent.await()
+
+            assertFailsWith<AMQPException.ChannelClosed> {
+                channel.queueDeclarePassive("test-delete-queue")
+            }
+
+            channel.close()
+        }
+    }
+
+    @Test
+    @OptIn(DelicateCoroutinesApi::class)
+    fun testCancelConsume() = runBlocking {
+        withConnection { connection ->
+            val channel = connection.openChannel()
+            val closeEvent = async { channel.closedResponses.first() }
+            val reopenEvent = async { channel.openedResponses.first() }
+
+            val queueName = "test-cancel-consume-queue"
+            channel.queueDeclare(
+                queueName,
+                durable = false,
+                exclusive = false,
+                autoDelete = true,
+                arguments = emptyMap()
+            )
+
+            val consumerTag = "test-cancel-consumer"
+            val receivedMessages = channel.basicConsume(
+                queue = queueName,
+                consumerTag = consumerTag,
+                noAck = true,
+                exclusive = false,
+                arguments = emptyMap()
+            )
+
+            channel.closeByBreaking()
+            closeEvent.await()
+            reopenEvent.await()
+
+            assertFalse(receivedMessages.isClosedForReceive)
+            channel.basicCancel(consumerTag)
+            assertTrue(receivedMessages.isClosedForReceive)
+            channel.close()
         }
     }
 
