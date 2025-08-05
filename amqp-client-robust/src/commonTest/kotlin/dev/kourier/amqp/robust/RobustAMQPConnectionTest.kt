@@ -1,15 +1,12 @@
 package dev.kourier.amqp.robust
 
-import dev.kaccelero.models.UUID
-import dev.kourier.amqp.AMQPException
-import dev.kourier.amqp.Field
+import dev.kourier.amqp.Frame
 import dev.kourier.amqp.connection.amqpConfig
 import io.ktor.http.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
 
 class RobustAMQPConnectionTest {
 
@@ -23,24 +20,24 @@ class RobustAMQPConnectionTest {
     }
 
     @Test
-    fun testGetQueueFail() = runBlocking {
+    fun testConnectionDrops() = runBlocking {
         withConnection { connection ->
-            val channel = connection.openChannel()
-            val closeEvent = async { channel.closedResponses.first() }
-            val reopenEvent = async { channel.openedResponses.first() }
+            val closeEvent = async { connection.closedResponses.first() }
+            val reopenEvent = async { connection.openedResponses.first() }
 
-            val name = "test-passive-queue-${UUID()}"
-            channel.queueDeclare(name, autoDelete = true, arguments = mapOf("x-max-length" to Field.Int(1)))
-            assertFailsWith<AMQPException.ChannelClosed> {
-                channel.queueDeclare(name, autoDelete = true)
-            }
+            // Write invalid frame to close connection (heartbeat frame is only allowed on channel 0)
+            connection.write(
+                Frame(
+                    channelId = 1u,
+                    payload = Frame.Heartbeat
+                )
+            )
 
             closeEvent.await()
             reopenEvent.await()
 
-            assertFailsWith<AMQPException.ChannelClosed> {
-                channel.queueDeclare(name, autoDelete = true)
-            }
+            val channel = connection.openChannel()
+            channel.close()
         }
     }
 
