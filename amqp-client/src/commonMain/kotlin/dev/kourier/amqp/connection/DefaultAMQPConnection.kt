@@ -115,9 +115,13 @@ open class DefaultAMQPConnection(
         heartbeatSubscription?.cancel()
         socketSubscription = messageListeningScope.launch {
             val readChannel = this@DefaultAMQPConnection.readChannel ?: return@launch
-            FrameDecoder.decodeStreaming(readChannel) { frame ->
-                logger.debug("Received AMQP frame: $frame")
-                read(frame)
+            try {
+                FrameDecoder.decodeStreaming(readChannel) { frame ->
+                    logger.debug("Received AMQP frame: $frame")
+                    read(frame)
+                }
+            } catch (e: Exception) {
+                closeFromChannelException(e)
             }
         }
         heartbeatSubscription = messageListeningScope.launch {
@@ -418,8 +422,12 @@ open class DefaultAMQPConnection(
     @InternalAmqpApi
     override suspend fun write(bytes: ByteArray) {
         val writeChannel = this.writeChannel ?: return
-        writeChannel.writeByteArray(bytes)
-        writeChannel.flush() // Maybe not needed since autoFlush is true?
+        try {
+            writeChannel.writeByteArray(bytes)
+            writeChannel.flush() // Maybe not needed since autoFlush is true?
+        } catch (e: ClosedWriteChannelException) {
+            closeFromChannelException(e)
+        }
     }
 
     @InternalAmqpApi
@@ -494,6 +502,21 @@ open class DefaultAMQPConnection(
 
         this.state = ConnectionState.CLOSED
         connectionClosed.complete(connectionClose)
+    }
+
+    protected open suspend fun closeFromChannelException(exception: Exception) {
+        // Same as if the server closed the connection properly
+        read(
+            Frame(
+                channelId = 0u,
+                payload = Frame.Method.Connection.Close(
+                    replyCode = 500u,
+                    replyText = exception.message ?: "Channel is closed",
+                    failingClassId = 0u,
+                    failingMethodId = 0u,
+                )
+            )
+        )
     }
 
 }

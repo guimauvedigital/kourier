@@ -51,6 +51,7 @@ object FrameDecoder {
                 }
             }
         }
+        throw channel.closedCause ?: EOFException("Channel closed without completing frame decoding")
     }
 
 }

@@ -47,4 +47,23 @@ class AMQPConnectionTest {
         connection.sendHeartbeat()
     }
 
+    @Test
+    fun testConnectionClosedExternally() = runBlocking {
+        val fakeServer = FakeServer(this)
+        fakeServer.serverReady.await()
+        val connection = createAMQPConnection(this) {
+            server {
+                port = 5673
+            }
+        }
+        try {
+            fakeServer.serverClosed.await()
+            assertFailsWith<AMQPException.ConnectionClosed> { connection.sendHeartbeat() }
+            assertTrue(connection.connectionClosed.isCompleted)
+        } finally {
+            connection.close()
+            fakeServer.serverJob.cancel()
+        }
+    }
+
 }
