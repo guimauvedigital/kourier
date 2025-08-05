@@ -1,7 +1,9 @@
 package dev.kourier.amqp.robust
 
+import dev.kaccelero.models.UUID
 import dev.kourier.amqp.AMQPException
 import dev.kourier.amqp.BuiltinExchangeType
+import dev.kourier.amqp.Field
 import dev.kourier.amqp.channel.AMQPChannel
 import io.ktor.utils.io.core.*
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -44,16 +46,12 @@ class RobustAMQPChannelTest {
                 exchange1,
                 BuiltinExchangeType.DIRECT,
                 durable = true,
-                autoDelete = false,
-                internal = false,
                 arguments = emptyMap()
             )
             channel.exchangeDeclare(
                 exchange2,
                 BuiltinExchangeType.FANOUT,
                 durable = true,
-                autoDelete = false,
-                internal = false,
                 arguments = emptyMap()
             )
 
@@ -102,6 +100,28 @@ class RobustAMQPChannelTest {
 
             channel.close()
             assertTrue(receivedMessages.isClosedForReceive)
+        }
+    }
+
+    @Test
+    fun testGetQueueFail() = runBlocking {
+        withConnection { connection ->
+            val channel = connection.openChannel()
+            val closeEvent = async { channel.closedResponses.first() }
+            val reopenEvent = async { channel.openedResponses.first() }
+
+            val name = "test-passive-queue-${UUID()}"
+            channel.queueDeclare(name, autoDelete = true, arguments = mapOf("x-max-length" to Field.Int(1)))
+            assertFailsWith<AMQPException.ChannelClosed> {
+                channel.queueDeclare(name, autoDelete = true)
+            }
+
+            closeEvent.await()
+            reopenEvent.await()
+
+            assertFailsWith<AMQPException.ChannelClosed> {
+                channel.queueDeclare(name, autoDelete = true)
+            }
         }
     }
 

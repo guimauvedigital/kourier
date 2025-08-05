@@ -26,6 +26,11 @@ interface AMQPConnection {
     val connectionClosed: Deferred<AMQPException.ConnectionClosed>
 
     /**
+     * A flow of opened responses from the connection.
+     */
+    val openedResponses: Flow<AMQPResponse.Connection.Connected>
+
+    /**
      * A flow of closed responses from the connection.
      */
     val closedResponses: Flow<AMQPResponse.Connection.Closed>

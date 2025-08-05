@@ -53,12 +53,12 @@ open class DefaultAMQPConnection(
 
     override var state = ConnectionState.CLOSED
 
-    private var socket: Socket? = null
-    private var readChannel: ByteReadChannel? = null
-    private var writeChannel: ByteWriteChannel? = null
+    protected var socket: Socket? = null
+    protected var readChannel: ByteReadChannel? = null
+    protected var writeChannel: ByteWriteChannel? = null
 
-    private var socketSubscription: Job? = null
-    private var heartbeatSubscription: Job? = null
+    protected var socketSubscription: Job? = null
+    protected var heartbeatSubscription: Job? = null
 
     private val writeMutex = Mutex()
 
@@ -72,6 +72,9 @@ open class DefaultAMQPConnection(
     val channels = AMQPChannels()
 
     override val connectionClosed = CompletableDeferred<AMQPException.ConnectionClosed>()
+
+    override val openedResponses: Flow<AMQPResponse.Connection.Connected> =
+        connectionResponses.filterIsInstance<AMQPResponse.Connection.Connected>()
 
     override val closedResponses: Flow<AMQPResponse.Connection.Closed> =
         connectionResponses.filterIsInstance<AMQPResponse.Connection.Closed>()
@@ -115,9 +118,13 @@ open class DefaultAMQPConnection(
         heartbeatSubscription?.cancel()
         socketSubscription = messageListeningScope.launch {
             val readChannel = this@DefaultAMQPConnection.readChannel ?: return@launch
-            FrameDecoder.decodeStreaming(readChannel) { frame ->
-                logger.debug("Received AMQP frame: $frame")
-                read(frame)
+            try {
+                FrameDecoder.decodeStreaming(readChannel) { frame ->
+                    logger.debug("Received AMQP frame: $frame")
+                    read(frame)
+                }
+            } catch (e: Exception) {
+                closeFromChannelException(e)
             }
         }
         heartbeatSubscription = messageListeningScope.launch {
@@ -200,18 +207,15 @@ open class DefaultAMQPConnection(
             )
 
             is Frame.Method.Connection.Close -> {
-                this.state = ConnectionState.SHUTTING_DOWN
-                cancelAll(
-                    AMQPException.ConnectionClosed(
-                        replyCode = payload.replyCode,
-                        replyText = payload.replyText,
-                    )
+                val closeOk = Frame(
+                    channelId = frame.channelId,
+                    payload = Frame.Method.Connection.CloseOk
                 )
+                write(closeOk)
+                closeFromBroker(payload)
             }
 
-            is Frame.Method.Connection.CloseOk -> connectionResponses.emit(
-                AMQPResponse.Connection.Closed
-            )
+            is Frame.Method.Connection.CloseOk -> connectionResponses.emit(AMQPResponse.Connection.Closed)
 
             is Frame.Method.Connection.Blocked -> TODO()
             is Frame.Method.Connection.Unblocked -> TODO()
@@ -418,8 +422,12 @@ open class DefaultAMQPConnection(
     @InternalAmqpApi
     override suspend fun write(bytes: ByteArray) {
         val writeChannel = this.writeChannel ?: return
-        writeChannel.writeByteArray(bytes)
-        writeChannel.flush() // Maybe not needed since autoFlush is true?
+        try {
+            writeChannel.writeByteArray(bytes)
+            writeChannel.flush() // Maybe not needed since autoFlush is true?
+        } catch (e: ClosedWriteChannelException) {
+            closeFromChannelException(e)
+        }
     }
 
     @InternalAmqpApi
@@ -494,6 +502,30 @@ open class DefaultAMQPConnection(
 
         this.state = ConnectionState.CLOSED
         connectionClosed.complete(connectionClose)
+    }
+
+    protected open suspend fun closeFromBroker(payload: Frame.Method.Connection.Close) {
+        this.state = ConnectionState.SHUTTING_DOWN
+        cancelAll(
+            AMQPException.ConnectionClosed(
+                replyCode = payload.replyCode,
+                replyText = payload.replyText,
+            )
+        )
+        connectionResponses.emit(AMQPResponse.Connection.Closed)
+    }
+
+    protected open suspend fun closeFromChannelException(exception: Exception) {
+        if (state != ConnectionState.OPEN) return
+        // Same as if the server closed the connection properly
+        closeFromBroker(
+            Frame.Method.Connection.Close(
+                replyCode = 500u,
+                replyText = exception.message ?: "Channel is closed",
+                failingClassId = 0u,
+                failingMethodId = 0u,
+            )
+        )
     }
 
 }
