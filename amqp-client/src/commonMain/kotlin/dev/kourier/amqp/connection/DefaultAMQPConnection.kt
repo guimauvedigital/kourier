@@ -21,6 +21,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.io.IOException
 import kotlinx.serialization.encodeToByteArray
+import kotlin.time.Duration.Companion.seconds
 
 open class DefaultAMQPConnection(
     override val config: AMQPConfig,
@@ -64,6 +65,7 @@ open class DefaultAMQPConnection(
 
     private var channelMax: UShort = 0u
     private var frameMax: UInt = 0u
+    private var heartbeat: UShort = 60u
 
     @InternalAmqpApi
     val connectionResponses = MutableSharedFlow<AMQPResponse>(extraBufferCapacity = Channel.UNLIMITED)
@@ -129,7 +131,7 @@ open class DefaultAMQPConnection(
         }
         heartbeatSubscription = messageListeningScope.launch {
             while (isActive) {
-                delay(config.server.timeout.inWholeMilliseconds / 2)
+                delay(heartbeat.toInt().seconds.inWholeMilliseconds / 2)
                 sendHeartbeat()
             }
         }
@@ -177,6 +179,7 @@ open class DefaultAMQPConnection(
             is Frame.Method.Connection.Tune -> {
                 this@DefaultAMQPConnection.channelMax = payload.channelMax
                 this@DefaultAMQPConnection.frameMax = payload.frameMax
+                this@DefaultAMQPConnection.heartbeat = payload.heartbeat
                 this@DefaultAMQPConnection.channels.channelMax = payload.channelMax
                 val tuneOk = Frame(
                     channelId = frame.channelId,
