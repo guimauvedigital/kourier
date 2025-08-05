@@ -46,16 +46,12 @@ class RobustAMQPChannelTest {
                 exchange1,
                 BuiltinExchangeType.DIRECT,
                 durable = true,
-                autoDelete = false,
-                internal = false,
                 arguments = emptyMap()
             )
             channel.exchangeDeclare(
                 exchange2,
                 BuiltinExchangeType.FANOUT,
                 durable = true,
-                autoDelete = false,
-                internal = false,
                 arguments = emptyMap()
             )
 
