@@ -307,6 +307,9 @@ class AMQPChannelTest {
             noAck = true
         )
 
+        val consumerCount = channel.consumerCount("test_consume")
+        assertEquals(1u, consumerCount)
+
         var count = 0
         runCatching {
             for (delivery in deliveryChannel) {
