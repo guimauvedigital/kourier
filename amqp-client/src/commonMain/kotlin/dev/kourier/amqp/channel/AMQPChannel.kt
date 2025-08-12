@@ -340,6 +340,15 @@ interface AMQPChannel {
     suspend fun messageCount(name: String): UInt
 
     /**
+     * Returns the number of consumers subscribed to a queue.
+     *
+     * @param name Name of the queue.
+     *
+     * @return Number of consumers subscribed to the queue.
+     */
+    suspend fun consumerCount(name: String): UInt
+
+    /**
      * Deletes a queue.
      *
      * @param name Name of the queue.
