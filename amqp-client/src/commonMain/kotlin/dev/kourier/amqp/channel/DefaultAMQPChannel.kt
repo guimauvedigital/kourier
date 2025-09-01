@@ -3,6 +3,7 @@ package dev.kourier.amqp.channel
 import dev.kourier.amqp.*
 import dev.kourier.amqp.connection.ConnectionState
 import dev.kourier.amqp.connection.DefaultAMQPConnection
+import io.ktor.util.logging.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
@@ -16,6 +17,8 @@ open class DefaultAMQPChannel(
     override val id: ChannelId,
     val frameMax: UInt,
 ) : AMQPChannel {
+
+    protected val logger = KtorSimpleLogger("AMQPChannel")
 
     override var isConfirmMode: Boolean = false
     override var isTxMode: Boolean = false
@@ -75,6 +78,7 @@ open class DefaultAMQPChannel(
     open suspend fun cancelAll(channelClosed: AMQPException.ChannelClosed) {
         if (state == ConnectionState.CLOSED) return // Already closed
         this.state = ConnectionState.CLOSED
+        logger.info("Channel $id closed: ${channelClosed.replyText} (${channelClosed.replyCode})")
         this@DefaultAMQPChannel.channelClosed.complete(channelClosed)
     }
 
@@ -89,6 +93,7 @@ open class DefaultAMQPChannel(
         connection.channels.add(this)
         return writeAndWaitForResponse<AMQPResponse.Channel.Opened>(channelOpen).also {
             state = ConnectionState.OPEN
+            logger.info("Channel $id opened")
         }
     }
 
@@ -240,11 +245,13 @@ open class DefaultAMQPChannel(
                     when (response) {
                         is AMQPResponse.Channel.Closed -> {
                             deferredListeningJob.await().cancel()
+                            logger.info("Consumer $consumerTag on channel $id canceled due to channel closed")
                             onCanceled(response)
                         }
 
                         is AMQPResponse.Channel.Basic.Canceled -> if (response.consumerTag == consumerTag) {
                             deferredListeningJob.await().cancel()
+                            logger.info("Consumer $consumerTag on channel $id canceled")
                             onCanceled(response)
                         }
 
@@ -273,6 +280,7 @@ open class DefaultAMQPChannel(
         )
         val result = writeAndWaitForResponse<AMQPResponse.Channel.Basic.ConsumeOk>(consume)
         deferredConsumerTag.complete(result.consumerTag)
+        logger.info("Consumer ${result.consumerTag} on channel $id started")
         return result
     }
 

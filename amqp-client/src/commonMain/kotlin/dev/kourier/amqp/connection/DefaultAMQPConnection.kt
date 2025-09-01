@@ -50,7 +50,7 @@ open class DefaultAMQPConnection(
 
     }
 
-    private val logger = KtorSimpleLogger("AMQPConnection")
+    protected val logger = KtorSimpleLogger("AMQPConnection")
 
     override var state = ConnectionState.CLOSED
 
@@ -113,6 +113,7 @@ open class DefaultAMQPConnection(
         this.frameMax = response.frameMax
 
         this.state = ConnectionState.OPEN
+        logger.info("Connected to AMQP broker at ${config.server.host}:${config.server.port}")
     }
 
     protected open fun startListening() {
@@ -504,6 +505,7 @@ open class DefaultAMQPConnection(
         writeChannel = null
 
         this.state = ConnectionState.CLOSED
+        logger.info("Disconnected from AMQP broker at ${config.server.host}:${config.server.port}")
         connectionClosed.complete(connectionClose)
     }
 

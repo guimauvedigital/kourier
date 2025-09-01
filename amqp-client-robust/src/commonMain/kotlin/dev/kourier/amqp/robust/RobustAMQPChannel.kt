@@ -83,6 +83,7 @@ open class RobustAMQPChannel(
 
         if (state == ConnectionState.CLOSED) return // Already closed
         this.state = ConnectionState.CLOSED
+        logger.info("Channel $id closed, attempting to restore...")
         restore()
     }
 
