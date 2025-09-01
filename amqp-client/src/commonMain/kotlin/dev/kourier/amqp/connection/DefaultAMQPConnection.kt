@@ -113,7 +113,7 @@ open class DefaultAMQPConnection(
         this.frameMax = response.frameMax
 
         this.state = ConnectionState.OPEN
-        logger.info("Connected to AMQP broker at ${config.server.host}:${config.server.port}")
+        logger.debug("Connected to AMQP broker at ${config.server.host}:${config.server.port}")
     }
 
     protected open fun startListening() {
@@ -147,7 +147,7 @@ open class DefaultAMQPConnection(
                     "connection_name" to Field.LongString(config.server.connectionName),
                     "product" to Field.LongString("kourier-amqp-client"),
                     "platform" to Field.LongString("Kotlin"),
-                    "version" to Field.LongString("0.2.3"),
+                    "version" to Field.LongString("0.2.4"),
                     "capabilities" to Field.Table(
                         mapOf(
                             "publisher_confirms" to Field.Boolean(true),
@@ -505,7 +505,7 @@ open class DefaultAMQPConnection(
         writeChannel = null
 
         this.state = ConnectionState.CLOSED
-        logger.info("Disconnected from AMQP broker at ${config.server.host}:${config.server.port}")
+        logger.debug("Disconnected from AMQP broker at ${config.server.host}:${config.server.port}")
         connectionClosed.complete(connectionClose)
     }
 

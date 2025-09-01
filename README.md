@@ -42,7 +42,7 @@ To use kourier, add the following to your `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("dev.kourier:amqp-client:0.2.3")
+    implementation("dev.kourier:amqp-client:0.2.4")
 }
 ```
 
@@ -50,7 +50,7 @@ Or if you want the robust client with automatic recovery:
 
 ```kotlin
 dependencies {
-    implementation("dev.kourier:amqp-client-robust:0.2.3")
+    implementation("dev.kourier:amqp-client-robust:0.2.4")
 }
 ```
 
