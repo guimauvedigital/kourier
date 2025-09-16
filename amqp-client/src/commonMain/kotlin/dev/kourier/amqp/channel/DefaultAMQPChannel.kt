@@ -256,6 +256,7 @@ open class DefaultAMQPChannel(
                         }
 
                         is AMQPResponse.Channel.Message.Delivery -> if (response.consumerTag == consumerTag) {
+                            logger.debug("Consumer $consumerTag on channel $id received delivery ${response.message.deliveryTag}")
                             onDelivery(response)
                         }
 
