@@ -4,10 +4,13 @@ import dev.kourier.amqp.AMQPMessage
 import dev.kourier.amqp.AMQPResponse
 import dev.kourier.amqp.Frame
 import dev.kourier.amqp.Properties
+import io.ktor.util.logging.*
 
 data class PartialDelivery(
     val method: Frame.Method.Basic,
 ) {
+
+    private val logger = KtorSimpleLogger("PartialDelivery")
 
     private var header: Frame.Header? = null
     private var payload: ByteArray? = null
@@ -15,24 +18,22 @@ data class PartialDelivery(
     val isComplete: Boolean
         get() = header != null && header!!.bodySize <= (payload?.size ?: 0).toUInt()
 
-    // NOTE: should be made throwing with validation for a more restrictive protocol implementation
     fun setHeader(header: Frame.Header) {
-        // validate that self.header == null
-        if (this.header != null) {
-            // Optionally throw or handle error
-            return
-        }
+        if (this.header != null) error("Header already set")
+        logger.debug("Setting PartialDelivery header: $header")
         this.header = header
     }
 
     // NOTE: should be made throwing with validation for a more restrictive protocol implementation
     fun addBody(buffer: ByteArray) {
-        val header = this.header ?: return // probably should take channel down
+        if (this.header == null) error("Header must be set before adding body")
 
         if (payload == null) {
+            logger.debug("Setting initial PartialDelivery body payload of size ${buffer.size} bytes")
             // Reserve capacity (not needed for ByteArray, but can preallocate)
             payload = buffer.copyOf()
         } else {
+            logger.debug("Appending to PartialDelivery body payload with additional size ${buffer.size} bytes")
             val oldPayload = payload!!
             val newPayload = ByteArray(oldPayload.size + buffer.size)
             oldPayload.copyInto(newPayload, 0, 0, oldPayload.size)
@@ -50,6 +51,7 @@ data class PartialDelivery(
     }
 
     suspend fun emitOnChannel(channel: DefaultAMQPChannel) {
+        logger.debug("Emitting completed PartialDelivery on channel ${channel.id}")
         val (method, properties, completeBody) = asCompletedMessage()
         channel.nextMessage = null
 
