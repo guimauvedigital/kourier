@@ -9,6 +9,262 @@ import kotlin.test.assertEquals
 class FrameTest {
 
     @Test
+    fun testFrameMethodConnectionStart() {
+        val frame = Frame(
+            channelId = 0u,
+            payload = Frame.Method.Connection.Start(
+                versionMajor = 0u,
+                versionMinor = 9u,
+                serverProperties = mapOf(
+                    "capabilities" to Field.Table(
+                        mapOf(
+                            "publisher_confirms" to Field.Boolean(true),
+                            "basic.nack" to Field.Boolean(true)
+                        )
+                    )
+                ),
+                mechanisms = "AMQPLAIN PLAIN",
+                locales = "en_US"
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodConnectionStartOk() {
+        val frame = Frame(
+            channelId = 0u,
+            payload = Frame.Method.Connection.StartOk(
+                clientProperties = mapOf(
+                    "product" to Field.LongString("TestClient")
+                ),
+                mechanism = "PLAIN",
+                response = "\u0000guest\u0000guest",
+                locale = "en_US"
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodConnectionSecure() {
+        val frame = Frame(
+            channelId = 0u,
+            payload = Frame.Method.Connection.Secure(
+                challenge = "challengeData"
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodConnectionSecureOk() {
+        val frame = Frame(
+            channelId = 0u,
+            payload = Frame.Method.Connection.SecureOk(
+                response = "responseData"
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodConnectionTune() {
+        val frame = Frame(
+            channelId = 0u,
+            payload = Frame.Method.Connection.Tune(
+                channelMax = 100u,
+                frameMax = 131072u,
+                heartbeat = 60u
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodConnectionTuneOk() {
+        val frame = Frame(
+            channelId = 0u,
+            payload = Frame.Method.Connection.TuneOk(
+                channelMax = 100u,
+                frameMax = 131072u,
+                heartbeat = 60u
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodConnectionOpen() {
+        val frame = Frame(
+            channelId = 0u,
+            payload = Frame.Method.Connection.Open(
+                vhost = "/",
+                reserved1 = "",
+                reserved2 = false
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodConnectionOpenOk() {
+        val frame = Frame(
+            channelId = 0u,
+            payload = Frame.Method.Connection.OpenOk(
+                reserved1 = ""
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodConnectionClose() {
+        val frame = Frame(
+            channelId = 0u,
+            payload = Frame.Method.Connection.Close(
+                replyCode = 200u,
+                replyText = "Normal shutdown",
+                failingClassId = 0u,
+                failingMethodId = 0u
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodConnectionCloseOk() {
+        val frame = Frame(
+            channelId = 0u,
+            payload = Frame.Method.Connection.CloseOk
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodConnectionBlocked() {
+        val frame = Frame(
+            channelId = 0u,
+            payload = Frame.Method.Connection.Blocked(
+                reason = "Low on memory"
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodConnectionUnblocked() {
+        val frame = Frame(
+            channelId = 0u,
+            payload = Frame.Method.Connection.Unblocked
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodChannelOpen() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Channel.Open(
+                reserved1 = ""
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodChannelOpenOk() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Channel.OpenOk(
+                reserved1 = ""
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodChannelFlow() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Channel.Flow(
+                active = true
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodChannelFlowOk() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Channel.FlowOk(
+                active = true
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodChannelClose() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Channel.Close(
+                replyCode = 200u,
+                replyText = "Normal shutdown",
+                classId = 0u,
+                methodId = 0u
+            )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodChannelCloseOk() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Channel.CloseOk
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
     fun testFrameMethodExchangeDeclare() {
         val frame = Frame(
             channelId = 1u,
@@ -30,6 +286,17 @@ class FrameTest {
     }
 
     @Test
+    fun testFrameMethodExchangeDeclareOk() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Exchange.DeclareOk
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
     fun testFrameMethodExchangeDelete() {
         val frame = Frame(
             channelId = 1u,
@@ -39,6 +306,17 @@ class FrameTest {
                 ifUnused = false,
                 noWait = false,
             )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodExchangeDeleteOk() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Exchange.DeleteOk
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
         val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
@@ -64,6 +342,17 @@ class FrameTest {
     }
 
     @Test
+    fun testFrameMethodExchangeBindOk() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Exchange.BindOk
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
     fun testFrameMethodExchangeUnbind() {
         val frame = Frame(
             channelId = 1u,
@@ -75,6 +364,17 @@ class FrameTest {
                 noWait = false,
                 arguments = emptyMap()
             )
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameMethodExchangeUnbindOk() {
+        val frame = Frame(
+            channelId = 1u,
+            payload = Frame.Method.Exchange.UnbindOk
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
         val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
@@ -583,10 +883,15 @@ class FrameTest {
     }
 
     @Test
-    fun testFrameHeartbeat() {
+    fun testFrameHeader() {
         val frame = Frame(
-            channelId = 0u,
-            payload = Frame.Heartbeat
+            channelId = 1u,
+            payload = Frame.Header(
+                classID = 60u,
+                weight = 0u,
+                bodySize = 100u,
+                properties = Properties()
+            )
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
         val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
@@ -596,8 +901,19 @@ class FrameTest {
     @Test
     fun testFrameBody() {
         val frame = Frame(
-            channelId = 0u,
+            channelId = 1u,
             payload = Frame.Body(byteArrayOf(1, 2, 3, 4, 5))
+        )
+        val encoded = ProtocolBinary.encodeToByteArray(frame)
+        val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)
+        assertEquals(frame, decoded)
+    }
+
+    @Test
+    fun testFrameHeartbeat() {
+        val frame = Frame(
+            channelId = 0u,
+            payload = Frame.Heartbeat
         )
         val encoded = ProtocolBinary.encodeToByteArray(frame)
         val decoded = ProtocolBinary.decodeFromByteArray<Frame>(encoded)

@@ -4,8 +4,7 @@ import dev.kourier.amqp.serialization.serializers.frame.FrameHeaderSerializer
 import dev.kourier.amqp.serialization.serializers.frame.FrameSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.FrameMethodSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.basic.*
-import dev.kourier.amqp.serialization.serializers.frame.method.channel.FrameMethodChannelCloseSerializer
-import dev.kourier.amqp.serialization.serializers.frame.method.channel.FrameMethodChannelSerializer
+import dev.kourier.amqp.serialization.serializers.frame.method.channel.*
 import dev.kourier.amqp.serialization.serializers.frame.method.confirm.FrameMethodConfirmSelectSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.confirm.FrameMethodConfirmSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.connection.*
@@ -132,20 +131,24 @@ data class Frame(
                 val locale: String,
             ) : Connection()
 
+            @Serializable(with = FrameMethodConnectionSecureSerializer::class)
             data class Secure(
                 val challenge: String,
             ) : Connection()
 
+            @Serializable(with = FrameMethodConnectionSecureOkSerializer::class)
             data class SecureOk(
                 val response: String,
             ) : Connection()
 
+            @Serializable(with = FrameMethodConnectionTuneSerializer::class)
             data class Tune(
                 val channelMax: UShort = 0u,
                 val frameMax: UInt = 131072u,
                 val heartbeat: UShort = 0u,
             ) : Connection()
 
+            @Serializable(with = FrameMethodConnectionTuneOkSerializer::class)
             data class TuneOk(
                 val channelMax: UShort = 0u,
                 val frameMax: UInt = 131072u,
@@ -159,6 +162,7 @@ data class Frame(
                 val reserved2: Boolean = false,
             ) : Connection()
 
+            @Serializable(with = FrameMethodConnectionOpenOkSerializer::class)
             data class OpenOk(
                 val reserved1: String,
             ) : Connection()
@@ -173,6 +177,7 @@ data class Frame(
 
             object CloseOk : Connection()
 
+            @Serializable(with = FrameMethodConnectionBlockedSerializer::class)
             data class Blocked(
                 val reason: String,
             ) : Connection()
@@ -203,18 +208,22 @@ data class Frame(
                 CLOSE_OK(41u)
             }
 
+            @Serializable(with = FrameMethodChannelOpenSerializer::class)
             data class Open(
                 val reserved1: String,
             ) : Channel()
 
+            @Serializable(with = FrameMethodChannelOpenOkSerializer::class)
             data class OpenOk(
                 val reserved1: String,
             ) : Channel()
 
+            @Serializable(with = FrameMethodChannelFlowSerializer::class)
             data class Flow(
                 val active: Boolean,
             ) : Channel()
 
+            @Serializable(with = FrameMethodChannelFlowOkSerializer::class)
             data class FlowOk(
                 val active: Boolean,
             ) : Channel()
