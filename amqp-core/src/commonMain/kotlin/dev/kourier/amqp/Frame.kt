@@ -4,8 +4,7 @@ import dev.kourier.amqp.serialization.serializers.frame.FrameHeaderSerializer
 import dev.kourier.amqp.serialization.serializers.frame.FrameSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.FrameMethodSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.basic.*
-import dev.kourier.amqp.serialization.serializers.frame.method.channel.FrameMethodChannelCloseSerializer
-import dev.kourier.amqp.serialization.serializers.frame.method.channel.FrameMethodChannelSerializer
+import dev.kourier.amqp.serialization.serializers.frame.method.channel.*
 import dev.kourier.amqp.serialization.serializers.frame.method.confirm.FrameMethodConfirmSelectSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.confirm.FrameMethodConfirmSerializer
 import dev.kourier.amqp.serialization.serializers.frame.method.connection.*
@@ -203,18 +202,22 @@ data class Frame(
                 CLOSE_OK(41u)
             }
 
+            @Serializable(with = FrameMethodChannelOpenSerializer::class)
             data class Open(
                 val reserved1: String,
             ) : Channel()
 
+            @Serializable(with = FrameMethodChannelOpenOkSerializer::class)
             data class OpenOk(
                 val reserved1: String,
             ) : Channel()
 
+            @Serializable(with = FrameMethodChannelFlowSerializer::class)
             data class Flow(
                 val active: Boolean,
             ) : Channel()
 
+            @Serializable(with = FrameMethodChannelFlowOkSerializer::class)
             data class FlowOk(
                 val active: Boolean,
             ) : Channel()
