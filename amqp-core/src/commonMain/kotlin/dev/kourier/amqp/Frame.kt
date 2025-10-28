@@ -131,20 +131,24 @@ data class Frame(
                 val locale: String,
             ) : Connection()
 
+            @Serializable(with = FrameMethodConnectionSecureSerializer::class)
             data class Secure(
                 val challenge: String,
             ) : Connection()
 
+            @Serializable(with = FrameMethodConnectionSecureOkSerializer::class)
             data class SecureOk(
                 val response: String,
             ) : Connection()
 
+            @Serializable(with = FrameMethodConnectionTuneSerializer::class)
             data class Tune(
                 val channelMax: UShort = 0u,
                 val frameMax: UInt = 131072u,
                 val heartbeat: UShort = 0u,
             ) : Connection()
 
+            @Serializable(with = FrameMethodConnectionTuneOkSerializer::class)
             data class TuneOk(
                 val channelMax: UShort = 0u,
                 val frameMax: UInt = 131072u,
@@ -158,6 +162,7 @@ data class Frame(
                 val reserved2: Boolean = false,
             ) : Connection()
 
+            @Serializable(with = FrameMethodConnectionOpenOkSerializer::class)
             data class OpenOk(
                 val reserved1: String,
             ) : Connection()
@@ -172,6 +177,7 @@ data class Frame(
 
             object CloseOk : Connection()
 
+            @Serializable(with = FrameMethodConnectionBlockedSerializer::class)
             data class Blocked(
                 val reason: String,
             ) : Connection()
