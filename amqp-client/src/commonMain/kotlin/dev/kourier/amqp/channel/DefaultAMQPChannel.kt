@@ -255,13 +255,22 @@ open class DefaultAMQPChannel(
                             onCanceled(response)
                         }
 
-                        is AMQPResponse.Channel.Message.Delivery -> if (response.consumerTag == consumerTag) {
-                            logger.debug("Consumer $consumerTag on channel $id received delivery ${response.message.deliveryTag}")
-                            onDelivery(response)
+                        is AMQPResponse.Channel.Message.Delivery -> if (response.consumerTag == consumerTag) launch {
+                            runCatching {
+                                logger.debug("Consumer $consumerTag on channel $id received delivery ${response.message.deliveryTag}")
+                                onDelivery(response)
+                            }.onFailure { exception ->
+                                logger.error(
+                                    "Error processing delivery ${response.message.deliveryTag} on channel $id",
+                                    exception
+                                )
+                            }
                         }
 
                         else -> {} // Ignore other responses
                     }
+                }.onFailure { exception ->
+                    logger.error("Error in consumer $consumerTag on channel $id", exception)
                 }
             }
         }

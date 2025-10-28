@@ -3,10 +3,12 @@ package dev.kourier.amqp.channel
 import dev.kourier.amqp.*
 import io.ktor.utils.io.core.*
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.Clock
 import kotlin.test.*
 
 class AMQPChannelTest {
@@ -372,6 +374,152 @@ class AMQPChannelTest {
             channel.basicConsume(queue = queueName)
             channel.basicPublish(body = "baz".toByteArray(), exchange = "", routingKey = queueName)
             channel.basicCancel(receiveChannel.consumeOk.consumerTag)
+        }
+    }
+
+    @Test
+    fun testConcurrentMessageProcessing() = runBlocking {
+        withConnection { connection ->
+            // Setup
+            val queueName = "test_concurrent_consume"
+            val messageCount = 10
+            val handlerDelayMs = 500L
+            // If concurrent: ~500ms total. If sequential: ~5000ms. Threshold: 2500ms (halfway)
+            val expectedMaxTime = handlerDelayMs * messageCount / 2
+
+            // Create channel with prefetchCount > 1
+            val channel = connection.openChannel()
+            channel.queueDeclare(queueName, durable = false, exclusive = true)
+            channel.basicQos(count = 10u)
+
+            // Track message processing
+            val processedMessages = mutableSetOf<Int>()
+            val processingTimes = mutableMapOf<Int, Long>()
+            val mutex = Mutex()
+            val startTime = Clock.System.now()
+
+            // Publish messages first
+            repeat(messageCount) { i ->
+                channel.basicPublish(
+                    body = i.toString().encodeToByteArray(),
+                    exchange = "",
+                    routingKey = queueName
+                )
+            }
+
+            // Consume messages with delay
+            channel.basicConsume(
+                queue = queueName,
+                onDelivery = { delivery ->
+                    val messageId = delivery.message.body.decodeToString().toInt()
+                    val messageStartTime = Clock.System.now()
+
+                    delay(handlerDelayMs) // Simulate long-running work
+
+                    mutex.withLock {
+                        processedMessages.add(messageId)
+                        processingTimes[messageId] = (Clock.System.now() - messageStartTime).inWholeMilliseconds
+                    }
+                    channel.basicAck(delivery.message.deliveryTag, false)
+                }
+            )
+
+            // Wait for all messages to be processed
+            var allProcessed = false
+            while (!allProcessed) {
+                mutex.withLock {
+                    allProcessed = processedMessages.size >= messageCount
+                }
+                if (!allProcessed) {
+                    delay(50)
+                }
+            }
+
+            val totalTime = (Clock.System.now() - startTime).inWholeMilliseconds
+
+            // Assertions
+            assertEquals(messageCount, processedMessages.size, "All messages should be processed")
+            assertTrue(
+                totalTime < expectedMaxTime,
+                "Messages should process concurrently: took ${totalTime}ms, expected < ${expectedMaxTime}ms"
+            )
+
+            channel.queueDelete(queueName)
+            channel.close()
+        }
+    }
+
+    @Test
+    fun testConcurrentMessageProcessingWithErrors() = runBlocking {
+        withConnection { connection ->
+            // Setup
+            val queueName = "test_concurrent_consume_errors"
+            val messageCount = 5
+
+            // Create channel
+            val channel = connection.openChannel()
+            channel.queueDeclare(queueName, durable = false, exclusive = true)
+            channel.basicQos(count = 10u)
+
+            // Track message processing
+            val processedMessages = mutableSetOf<Int>()
+            val failedMessages = mutableSetOf<Int>()
+            val mutex = Mutex()
+
+            // Publish messages first
+            repeat(messageCount) { i ->
+                channel.basicPublish(
+                    body = i.toString().encodeToByteArray(),
+                    exchange = "",
+                    routingKey = queueName
+                )
+            }
+
+            // Consume messages - throw error on message 2
+            channel.basicConsume(
+                queue = queueName,
+                onDelivery = { delivery ->
+                    val messageId = delivery.message.body.decodeToString().toInt()
+
+                    if (messageId == 2) {
+                        // This should be caught and logged, not crash the consumer
+                        throw RuntimeException("Simulated error for message $messageId")
+                    }
+
+                    mutex.withLock {
+                        processedMessages.add(messageId)
+                    }
+                    channel.basicAck(delivery.message.deliveryTag, false)
+                }
+            )
+
+            // Wait for all messages to be processed (except the failed one)
+            var allProcessed = false
+            while (!allProcessed) {
+                mutex.withLock {
+                    // We expect 4 messages to succeed (0, 1, 3, 4) and 1 to fail (2)
+                    allProcessed = processedMessages.size >= messageCount - 1
+                }
+                if (!allProcessed) {
+                    delay(50)
+                }
+            }
+
+            // Give a bit more time to ensure message 2 was attempted
+            delay(100)
+
+            // Assertions
+            mutex.withLock {
+                assertEquals(messageCount - 1, processedMessages.size, "4 messages should succeed")
+                assertFalse(processedMessages.contains(2), "Message 2 should have failed")
+                assertTrue(processedMessages.contains(0), "Message 0 should succeed")
+                assertTrue(processedMessages.contains(1), "Message 1 should succeed")
+                assertTrue(processedMessages.contains(3), "Message 3 should succeed")
+                assertTrue(processedMessages.contains(4), "Message 4 should succeed")
+            }
+
+            channel.queueDelete(queueName)
+            channel.close()
         }
     }
 
