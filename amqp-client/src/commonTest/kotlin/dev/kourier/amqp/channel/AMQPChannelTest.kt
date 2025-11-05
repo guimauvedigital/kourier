@@ -108,6 +108,114 @@ class AMQPChannelTest {
     }
 
     @Test
+    fun testBasicPublishFrameMaxExact() = withConnection { connection ->
+        val channel = connection.openChannel()
+        val frameMax = (channel as DefaultAMQPChannel).frameMax.toInt()
+
+        channel.queueDeclare("test_framemax", durable = true)
+
+        val body = ByteArray(frameMax) { 'A'.code.toByte() }
+        channel.basicPublish(body = body, exchange = "", routingKey = "test_framemax")
+
+        val msg = channel.basicGet("test_framemax")
+        assertNotNull(msg.message)
+        assertEquals(frameMax, msg.message.body.size)
+
+        channel.queueDelete("test_framemax")
+        channel.close()
+    }
+
+    @Test
+    fun testBasicPublishFrameMaxMinusOne() = withConnection { connection ->
+        val channel = connection.openChannel()
+        val frameMax = (channel as DefaultAMQPChannel).frameMax.toInt()
+
+        channel.queueDeclare("test_framemax", durable = true)
+
+        val body = ByteArray(frameMax - 1) { 'A'.code.toByte() }
+        channel.basicPublish(body = body, exchange = "", routingKey = "test_framemax")
+
+        val msg = channel.basicGet("test_framemax")
+        assertNotNull(msg.message)
+        assertEquals(frameMax - 1, msg.message.body.size)
+
+        channel.queueDelete("test_framemax")
+        channel.close()
+    }
+
+    @Test
+    fun testBasicPublishFrameMaxPlusOne() = withConnection { connection ->
+        val channel = connection.openChannel()
+        val frameMax = (channel as DefaultAMQPChannel).frameMax.toInt()
+
+        channel.queueDeclare("test_framemax", durable = true)
+
+        val body = ByteArray(frameMax + 1) { 'A'.code.toByte() }
+        channel.basicPublish(body = body, exchange = "", routingKey = "test_framemax")
+
+        val msg = channel.basicGet("test_framemax")
+        assertNotNull(msg.message)
+        assertEquals(frameMax + 1, msg.message.body.size)
+
+        channel.queueDelete("test_framemax")
+        channel.close()
+    }
+
+    @Test
+    fun testBasicPublishTwoTimesFrameMaxExact() = withConnection { connection ->
+        val channel = connection.openChannel()
+        val frameMax = (channel as DefaultAMQPChannel).frameMax.toInt()
+
+        channel.queueDeclare("test_framemax", durable = true)
+
+        val body = ByteArray(2 * frameMax) { 'A'.code.toByte() }
+        channel.basicPublish(body = body, exchange = "", routingKey = "test_framemax")
+
+        val msg = channel.basicGet("test_framemax")
+        assertNotNull(msg.message)
+        assertEquals(2 * frameMax, msg.message.body.size)
+
+        channel.queueDelete("test_framemax")
+        channel.close()
+    }
+
+    @Test
+    fun testBasicPublishTwoTimesFrameMaxMinusOne() = withConnection { connection ->
+        val channel = connection.openChannel()
+        val frameMax = (channel as DefaultAMQPChannel).frameMax.toInt()
+
+        channel.queueDeclare("test_framemax", durable = true)
+
+        val body = ByteArray(2 * frameMax - 1) { 'A'.code.toByte() }
+        channel.basicPublish(body = body, exchange = "", routingKey = "test_framemax")
+
+        val msg = channel.basicGet("test_framemax")
+        assertNotNull(msg.message)
+        assertEquals(2 * frameMax - 1, msg.message.body.size)
+
+        channel.queueDelete("test_framemax")
+        channel.close()
+    }
+
+    @Test
+    fun testBasicPublishTwoTimesFrameMaxPlusOne() = withConnection { connection ->
+        val channel = connection.openChannel()
+        val frameMax = (channel as DefaultAMQPChannel).frameMax.toInt()
+
+        channel.queueDeclare("test_framemax", durable = true)
+
+        val body = ByteArray(2 * frameMax + 1) { 'A'.code.toByte() }
+        channel.basicPublish(body = body, exchange = "", routingKey = "test_framemax")
+
+        val msg = channel.basicGet("test_framemax")
+        assertNotNull(msg.message)
+        assertEquals(2 * frameMax + 1, msg.message.body.size)
+
+        channel.queueDelete("test_framemax")
+        channel.close()
+    }
+
+    @Test
     fun testBasicGet() = withConnection { connection ->
         val channel = connection.openChannel()
 
