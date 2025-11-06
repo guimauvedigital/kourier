@@ -50,6 +50,7 @@ open class RobustAMQPConnection(
         withTimeout(config.server.timeout.inWholeMilliseconds) {
             connectionResponses.filterIsInstance<AMQPResponse.Connection.Connected>().first()
         }
+        connectionOpened.await()
     }
 
     protected suspend fun connectionFactory() {

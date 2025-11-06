@@ -2,6 +2,7 @@ package dev.kourier.amqp.robust
 
 import dev.kourier.amqp.BuiltinExchangeType
 import dev.kourier.amqp.Frame
+import dev.kourier.amqp.connection.ConnectionState
 import dev.kourier.amqp.connection.amqpConfig
 import io.ktor.http.*
 import io.ktor.utils.io.core.*
@@ -151,6 +152,13 @@ class RobustAMQPConnectionTest {
             assertEquals("After restore", msg2.message.body.decodeToString())
 
             channel.close()
+        }
+    }
+
+    @Test
+    fun testConnectionIsOpenAfterCreate() = runBlocking {
+        withConnection { connection ->
+            assertEquals(ConnectionState.OPEN, connection.state)
         }
     }
 
