@@ -1,18 +1,18 @@
 package dev.kourier.amqp.robust
 
-import dev.kourier.amqp.AMQPException
-import dev.kourier.amqp.AMQPResponse
-import dev.kourier.amqp.ChannelId
-import dev.kourier.amqp.Table
+import dev.kourier.amqp.*
 import dev.kourier.amqp.channel.DefaultAMQPChannel
 import dev.kourier.amqp.connection.ConnectionState
 import dev.kourier.amqp.robust.states.*
+import kotlinx.coroutines.CompletableDeferred
 
 open class RobustAMQPChannel(
     override val connection: RobustAMQPConnection,
     id: ChannelId,
     frameMax: UInt,
 ) : DefaultAMQPChannel(connection, id, frameMax) {
+
+    private var restoreCompleted = CompletableDeferred(Unit)
 
     private var declaredQos: DeclaredQos? = null
     private val declaredExchanges = mutableMapOf<String, DeclaredExchange>()
@@ -21,7 +21,7 @@ open class RobustAMQPChannel(
     private val boundQueues = mutableMapOf<Triple<String, String, String>, BoundQueue>()
     private val consumedQueues = mutableMapOf<Pair<String, String>, ConsumedQueue>()
 
-    suspend fun restore() {
+    suspend fun restore() = withChannelRestoreContext {
         open()
 
         declaredQos?.let {
@@ -78,13 +78,26 @@ open class RobustAMQPChannel(
         }
     }
 
+    override suspend fun write(vararg frames: Frame) {
+        val channelRestoreContext = currentChannelRestoreContext()
+        if (channelRestoreContext == null) restoreCompleted.await() // Wait for restore to complete if not in the restore context
+        super.write(*frames)
+    }
+
     override suspend fun cancelAll(channelClosed: AMQPException.ChannelClosed) {
         if (channelClosed.isInitiatedByApplication) return super.cancelAll(channelClosed)
 
         if (state == ConnectionState.CLOSED) return // Already closed
+        restoreCompleted = CompletableDeferred()
         this.state = ConnectionState.CLOSED
         logger.debug("Channel $id closed, attempting to restore...")
-        restore()
+        try {
+            restore()
+            restoreCompleted.complete(Unit)
+        } catch (e: Exception) {
+            restoreCompleted.completeExceptionally(e)
+            throw e
+        }
     }
 
     override suspend fun basicQos(count: UShort, global: Boolean): AMQPResponse.Channel.Basic.QosOk {
