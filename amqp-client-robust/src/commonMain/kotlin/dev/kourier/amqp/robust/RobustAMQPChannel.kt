@@ -21,9 +21,15 @@ open class RobustAMQPChannel(
     private val boundQueues = mutableMapOf<Triple<String, String, String>, BoundQueue>()
     private val consumedQueues = mutableMapOf<Pair<String, String>, ConsumedQueue>()
 
+    @InternalAmqpApi
+    fun prepareForRestore() {
+        if (restoreCompleted.isCompleted) restoreCompleted = CompletableDeferred()
+        state = ConnectionState.CLOSED
+    }
+
+    @InternalAmqpApi
     suspend fun restore() = withChannelRestoreContext {
-        restoreCompleted = CompletableDeferred()
-        this.state = ConnectionState.CLOSED
+        prepareForRestore()
 
         try {
             open()

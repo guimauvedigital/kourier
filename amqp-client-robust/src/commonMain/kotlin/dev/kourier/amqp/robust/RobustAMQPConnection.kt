@@ -61,7 +61,7 @@ open class RobustAMQPConnection(
             }
             closedResponses.first()
             channels.list().filterIsInstance<RobustAMQPChannel>().forEach {
-                it.state = ConnectionState.CLOSED // Set the state to CLOSED, so that it can be reopened later.
+                it.prepareForRestore() // Set the state to CLOSED, so that it can be reopened later.
             }
         }
     }
