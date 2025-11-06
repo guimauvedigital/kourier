@@ -73,6 +73,8 @@ open class DefaultAMQPConnection(
     @InternalAmqpApi
     val channels = AMQPChannels()
 
+    override var connectionOpened = CompletableDeferred<Unit>()
+
     override val connectionClosed = CompletableDeferred<AMQPException.ConnectionClosed>()
 
     override val openedResponses: Flow<AMQPResponse.Connection.Connected> =
@@ -113,6 +115,7 @@ open class DefaultAMQPConnection(
         this.frameMax = response.frameMax
 
         this.state = ConnectionState.OPEN
+        connectionOpened.complete(Unit)
         logger.debug("Connected to AMQP broker at ${config.server.host}:${config.server.port}")
     }
 

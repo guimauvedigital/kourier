@@ -21,6 +21,11 @@ interface AMQPConnection {
     val state: ConnectionState
 
     /**
+     * A deferred that completes when the connection is opened.
+     */
+    val connectionOpened: Deferred<Unit>
+
+    /**
      * A deferred that completes when the connection is closed.
      */
     val connectionClosed: Deferred<AMQPException.ConnectionClosed>

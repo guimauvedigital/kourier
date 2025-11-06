@@ -22,59 +22,68 @@ open class RobustAMQPChannel(
     private val consumedQueues = mutableMapOf<Pair<String, String>, ConsumedQueue>()
 
     suspend fun restore() = withChannelRestoreContext {
-        open()
+        restoreCompleted = CompletableDeferred()
+        this.state = ConnectionState.CLOSED
 
-        declaredQos?.let {
-            basicQos(
-                count = it.count,
-                global = it.global
-            )
-        }
-        declaredExchanges.values.forEach {
-            exchangeDeclare(
-                name = it.name,
-                type = it.type,
-                durable = it.durable,
-                autoDelete = it.autoDelete,
-                internal = it.internal,
-                arguments = it.arguments
-            )
-        }
-        declaredQueues.values.forEach {
-            queueDeclare(
-                name = it.name,
-                durable = it.durable,
-                exclusive = it.exclusive,
-                autoDelete = it.autoDelete,
-                arguments = it.arguments
-            )
-        }
-        boundExchanges.values.forEach {
-            exchangeBind(
-                destination = it.destination,
-                source = it.source,
-                routingKey = it.routingKey,
-                arguments = it.arguments
-            )
-        }
-        boundQueues.values.forEach {
-            queueBind(
-                queue = it.queue,
-                exchange = it.exchange,
-                routingKey = it.routingKey,
-                arguments = it.arguments
-            )
-        }
-        consumedQueues.values.forEach { consumedQueue ->
-            basicConsume(
-                queue = consumedQueue.queue,
-                consumerTag = consumedQueue.consumerTag,
-                noAck = consumedQueue.noAck,
-                exclusive = consumedQueue.exclusive,
-                arguments = consumedQueue.arguments,
-                onDelivery = consumedQueue.onDelivery,
-                onCanceled = consumedQueue.onCanceled
-            )
+        try {
+            open()
+
+            declaredQos?.let {
+                basicQos(
+                    count = it.count,
+                    global = it.global
+                )
+            }
+            declaredExchanges.values.forEach {
+                exchangeDeclare(
+                    name = it.name,
+                    type = it.type,
+                    durable = it.durable,
+                    autoDelete = it.autoDelete,
+                    internal = it.internal,
+                    arguments = it.arguments
+                )
+            }
+            declaredQueues.values.forEach {
+                queueDeclare(
+                    name = it.name,
+                    durable = it.durable,
+                    exclusive = it.exclusive,
+                    autoDelete = it.autoDelete,
+                    arguments = it.arguments
+                )
+            }
+            boundExchanges.values.forEach {
+                exchangeBind(
+                    destination = it.destination,
+                    source = it.source,
+                    routingKey = it.routingKey,
+                    arguments = it.arguments
+                )
+            }
+            boundQueues.values.forEach {
+                queueBind(
+                    queue = it.queue,
+                    exchange = it.exchange,
+                    routingKey = it.routingKey,
+                    arguments = it.arguments
+                )
+            }
+            consumedQueues.values.forEach { consumedQueue ->
+                basicConsume(
+                    queue = consumedQueue.queue,
+                    consumerTag = consumedQueue.consumerTag,
+                    noAck = consumedQueue.noAck,
+                    exclusive = consumedQueue.exclusive,
+                    arguments = consumedQueue.arguments,
+                    onDelivery = consumedQueue.onDelivery,
+                    onCanceled = consumedQueue.onCanceled
+                )
+            }
+            restoreCompleted.complete(Unit)
+        } catch (e: Exception) {
+            restoreCompleted.completeExceptionally(e)
+            throw e
         }
     }
 
@@ -88,16 +97,8 @@ open class RobustAMQPChannel(
         if (channelClosed.isInitiatedByApplication) return super.cancelAll(channelClosed)
 
         if (state == ConnectionState.CLOSED) return // Already closed
-        restoreCompleted = CompletableDeferred()
-        this.state = ConnectionState.CLOSED
         logger.debug("Channel $id closed, attempting to restore...")
-        try {
-            restore()
-            restoreCompleted.complete(Unit)
-        } catch (e: Exception) {
-            restoreCompleted.completeExceptionally(e)
-            throw e
-        }
+        restore()
     }
 
     override suspend fun basicQos(count: UShort, global: Boolean): AMQPResponse.Channel.Basic.QosOk {
