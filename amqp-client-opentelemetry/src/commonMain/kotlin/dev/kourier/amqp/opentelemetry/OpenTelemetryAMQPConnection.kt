@@ -30,35 +30,7 @@ class OpenTelemetryAMQPConnection(
     private val delegate: AMQPConnection,
     private val tracer: Tracer,
     private val tracingConfig: TracingConfig = TracingConfig.default(),
-) : AMQPConnection {
-
-    override val config: AMQPConfig
-        get() = delegate.config
-
-    override val state: ConnectionState
-        get() = delegate.state
-
-    override val connectionOpened: Deferred<Unit>
-        get() = delegate.connectionOpened
-
-    override val connectionClosed: Deferred<AMQPException.ConnectionClosed>
-        get() = delegate.connectionClosed
-
-    override val openedResponses: Flow<AMQPResponse.Connection.Connected>
-        get() = delegate.openedResponses
-
-    override val closedResponses: Flow<AMQPResponse.Connection.Closed>
-        get() = delegate.closedResponses
-
-    @InternalAmqpApi
-    override suspend fun write(bytes: ByteArray) {
-        delegate.write(bytes)
-    }
-
-    @InternalAmqpApi
-    override suspend fun write(vararg frames: Frame) {
-        delegate.write(*frames)
-    }
+) : AMQPConnection by delegate {
 
     override suspend fun openChannel(): AMQPChannel {
         val channel = if (tracingConfig.traceConnectionOperations) {

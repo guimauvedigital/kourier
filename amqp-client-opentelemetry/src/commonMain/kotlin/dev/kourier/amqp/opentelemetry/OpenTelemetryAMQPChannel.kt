@@ -1,16 +1,14 @@
 package dev.kourier.amqp.opentelemetry
 
-import dev.kourier.amqp.*
+import dev.kourier.amqp.AMQPResponse
+import dev.kourier.amqp.Properties
+import dev.kourier.amqp.Table
 import dev.kourier.amqp.channel.AMQPChannel
-import dev.kourier.amqp.channel.AMQPReceiveChannel
-import dev.kourier.amqp.connection.ConnectionState
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Context
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.flow.Flow
 
 /**
  * OpenTelemetry-instrumented wrapper around [AMQPChannel].
@@ -26,42 +24,7 @@ class OpenTelemetryAMQPChannel(
     private val delegate: AMQPChannel,
     private val tracer: Tracer,
     private val config: TracingConfig = TracingConfig.default(),
-) : AMQPChannel {
-
-    override val id: ChannelId
-        get() = delegate.id
-
-    override val state: ConnectionState
-        get() = delegate.state
-
-    override val channelClosed: Deferred<AMQPException.ChannelClosed>
-        get() = delegate.channelClosed
-
-    override val openedResponses: Flow<AMQPResponse.Channel.Opened>
-        get() = delegate.openedResponses
-
-    override val closedResponses: Flow<AMQPResponse.Channel.Closed>
-        get() = delegate.closedResponses
-
-    override val publishConfirmResponses: Flow<AMQPResponse.Channel.Basic.PublishConfirm>
-        get() = delegate.publishConfirmResponses
-
-    override val returnResponses: Flow<AMQPResponse.Channel.Message.Return>
-        get() = delegate.returnResponses
-
-    override val flowResponses: Flow<AMQPResponse.Channel.Flowed>
-        get() = delegate.flowResponses
-
-    override val isConfirmMode: Boolean
-        get() = delegate.isConfirmMode
-
-    override val isTxMode: Boolean
-        get() = delegate.isTxMode
-
-    @InternalAmqpApi
-    override suspend fun write(vararg frames: Frame) {
-        delegate.write(*frames)
-    }
+) : AMQPChannel by delegate {
 
     override suspend fun open(): AMQPResponse.Channel.Opened {
         return if (config.traceChannelManagementOperations) {
@@ -181,18 +144,6 @@ class OpenTelemetryAMQPChannel(
         noAck: Boolean,
         exclusive: Boolean,
         arguments: Table,
-    ): AMQPReceiveChannel {
-        // For the channel-based consume, return the channel as-is
-        // Tracing happens in the callback-based consume method
-        return delegate.basicConsume(queue, consumerTag, noAck, exclusive, arguments)
-    }
-
-    override suspend fun basicConsume(
-        queue: String,
-        consumerTag: String,
-        noAck: Boolean,
-        exclusive: Boolean,
-        arguments: Table,
         onDelivery: suspend (AMQPResponse.Channel.Message.Delivery) -> Unit,
         onCanceled: suspend (AMQPResponse.Channel) -> Unit,
     ): AMQPResponse.Channel.Basic.ConsumeOk {
@@ -262,37 +213,6 @@ class OpenTelemetryAMQPChannel(
         }
     }
 
-    override suspend fun basicCancel(consumerTag: String): AMQPResponse.Channel.Basic.Canceled {
-        return delegate.basicCancel(consumerTag)
-    }
-
-    override suspend fun basicAck(deliveryTag: ULong, multiple: Boolean) {
-        delegate.basicAck(deliveryTag, multiple)
-    }
-
-    override suspend fun basicAck(message: AMQPMessage, multiple: Boolean) {
-        delegate.basicAck(message, multiple)
-    }
-
-    override suspend fun basicNack(deliveryTag: ULong, multiple: Boolean, requeue: Boolean) {
-        delegate.basicNack(deliveryTag, multiple, requeue)
-    }
-
-    override suspend fun basicNack(message: AMQPMessage, multiple: Boolean, requeue: Boolean) {
-        delegate.basicNack(message, multiple, requeue)
-    }
-
-    override suspend fun basicReject(deliveryTag: ULong, requeue: Boolean) {
-        delegate.basicReject(deliveryTag, requeue)
-    }
-
-    override suspend fun basicReject(message: AMQPMessage, requeue: Boolean) {
-        delegate.basicReject(message, requeue)
-    }
-
-    override suspend fun basicRecover(requeue: Boolean): AMQPResponse.Channel.Basic.Recovered {
-        return delegate.basicRecover(requeue)
-    }
 
     override suspend fun basicQos(count: UShort, global: Boolean): AMQPResponse.Channel.Basic.QosOk {
         return if (config.traceChannelManagementOperations) {
@@ -306,9 +226,6 @@ class OpenTelemetryAMQPChannel(
         }
     }
 
-    override suspend fun flow(active: Boolean): AMQPResponse.Channel.Flowed {
-        return delegate.flow(active)
-    }
 
     override suspend fun queueDeclare(
         name: String,
@@ -330,23 +247,12 @@ class OpenTelemetryAMQPChannel(
         }
     }
 
-    override suspend fun queueDeclarePassive(name: String): AMQPResponse.Channel.Queue.Declared {
-        return delegate.queueDeclarePassive(name)
-    }
 
-    override suspend fun queueDeclare(): AMQPResponse.Channel.Queue.Declared {
-        return delegate.queueDeclare()
-    }
-
-    override suspend fun messageCount(name: String): UInt {
-        return delegate.messageCount(name)
-    }
-
-    override suspend fun consumerCount(name: String): UInt {
-        return delegate.consumerCount(name)
-    }
-
-    override suspend fun queueDelete(name: String, ifUnused: Boolean, ifEmpty: Boolean): AMQPResponse.Channel.Queue.Deleted {
+    override suspend fun queueDelete(
+        name: String,
+        ifUnused: Boolean,
+        ifEmpty: Boolean,
+    ): AMQPResponse.Channel.Queue.Deleted {
         return if (config.traceChannelManagementOperations) {
             executeInSpan("queue.delete", SpanKind.CLIENT) { span ->
                 span.setAttribute("messaging.queue.name", name)
@@ -357,9 +263,6 @@ class OpenTelemetryAMQPChannel(
         }
     }
 
-    override suspend fun queuePurge(name: String): AMQPResponse.Channel.Queue.Purged {
-        return delegate.queuePurge(name)
-    }
 
     override suspend fun queueBind(
         queue: String,
@@ -379,14 +282,6 @@ class OpenTelemetryAMQPChannel(
         }
     }
 
-    override suspend fun queueUnbind(
-        queue: String,
-        exchange: String,
-        routingKey: String,
-        arguments: Table,
-    ): AMQPResponse.Channel.Queue.Unbound {
-        return delegate.queueUnbind(queue, exchange, routingKey, arguments)
-    }
 
     override suspend fun exchangeDeclare(
         name: String,
@@ -410,9 +305,6 @@ class OpenTelemetryAMQPChannel(
         }
     }
 
-    override suspend fun exchangeDeclarePassive(name: String): AMQPResponse.Channel.Exchange.Declared {
-        return delegate.exchangeDeclarePassive(name)
-    }
 
     override suspend fun exchangeDelete(name: String, ifUnused: Boolean): AMQPResponse.Channel.Exchange.Deleted {
         return if (config.traceChannelManagementOperations) {
@@ -443,30 +335,6 @@ class OpenTelemetryAMQPChannel(
         }
     }
 
-    override suspend fun exchangeUnbind(
-        destination: String,
-        source: String,
-        routingKey: String,
-        arguments: Table,
-    ): AMQPResponse.Channel.Exchange.Unbound {
-        return delegate.exchangeUnbind(destination, source, routingKey, arguments)
-    }
-
-    override suspend fun confirmSelect(): AMQPResponse.Channel.Confirm.Selected {
-        return delegate.confirmSelect()
-    }
-
-    override suspend fun txSelect(): AMQPResponse.Channel.Tx.Selected {
-        return delegate.txSelect()
-    }
-
-    override suspend fun txCommit(): AMQPResponse.Channel.Tx.Committed {
-        return delegate.txCommit()
-    }
-
-    override suspend fun txRollback(): AMQPResponse.Channel.Tx.Rollbacked {
-        return delegate.txRollback()
-    }
 
     /**
      * Helper function to execute code within a span.

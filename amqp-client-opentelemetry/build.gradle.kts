@@ -52,7 +52,7 @@ kotlin {
                 optIn("dev.kourier.amqp.InternalAmqpApi")
             }
         }
-        val jvmMain by getting {
+        val commonMain by getting {
             dependencies {
                 api(project(":amqp-client"))
                 api(libs.opentelemetry.api)
@@ -64,6 +64,9 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(project(":amqp-client-robust"))
+                implementation("io.opentelemetry:opentelemetry-sdk-testing:1.44.1")
+                implementation("org.junit.jupiter:junit-jupiter-api:5.10.0")
+                runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.0")
             }
         }
     }
