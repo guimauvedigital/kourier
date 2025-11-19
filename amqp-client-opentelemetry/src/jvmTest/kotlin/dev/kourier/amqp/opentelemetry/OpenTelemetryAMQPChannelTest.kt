@@ -8,7 +8,10 @@ import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.extension.RegisterExtension
-import kotlin.test.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class OpenTelemetryAMQPChannelTest {
 
@@ -53,7 +56,10 @@ class OpenTelemetryAMQPChannelTest {
             val attributes = publishSpan.attributes.asMap()
             assertEquals("rabbitmq", attributes[stringKey(SemanticAttributes.MESSAGING_SYSTEM)])
             assertEquals("publish", attributes[stringKey(SemanticAttributes.MESSAGING_OPERATION)])
-            assertEquals("test-exchange-attributes", attributes[stringKey(SemanticAttributes.MESSAGING_DESTINATION_NAME)])
+            assertEquals(
+                "test-exchange-attributes",
+                attributes[stringKey(SemanticAttributes.MESSAGING_DESTINATION_NAME)]
+            )
             assertEquals("test.route", attributes[stringKey(SemanticAttributes.MESSAGING_RABBITMQ_ROUTING_KEY)])
             assertEquals("msg-123", attributes[stringKey(SemanticAttributes.MESSAGING_MESSAGE_ID)])
             assertEquals("corr-456", attributes[stringKey(SemanticAttributes.MESSAGING_CONVERSATION_ID)])
@@ -144,6 +150,9 @@ class OpenTelemetryAMQPChannelTest {
             channel.exchangeDeclare("test-exchange-consume", type = BuiltinExchangeType.DIRECT)
             channel.queueBind("test-queue-consume", "test-exchange-consume", "test-key")
 
+            // Purge the queue to remove any leftover messages from previous test runs
+            channel.queuePurge("test-queue-consume")
+
             // Set up consumer and wait for delivery
             var deliveryReceived = false
             val consumeOk = channel.basicConsume(
@@ -183,7 +192,11 @@ class OpenTelemetryAMQPChannelTest {
             assertEquals("test-exchange-consume", attributes[stringKey(SemanticAttributes.MESSAGING_DESTINATION_NAME)])
             assertEquals("test-key", attributes[stringKey(SemanticAttributes.MESSAGING_RABBITMQ_ROUTING_KEY)])
         } finally {
-            runCatching { channel.close() }
+            runCatching {
+                channel.queueDelete("test-queue-consume")
+                channel.exchangeDelete("test-exchange-consume")
+                channel.close()
+            }
             runCatching { connection.close() }
         }
         Unit
@@ -203,19 +216,16 @@ class OpenTelemetryAMQPChannelTest {
             channel.exchangeDeclare("test-exchange-propagation", type = BuiltinExchangeType.DIRECT)
             channel.queueBind("test-queue-propagation", "test-exchange-propagation", "test-key")
 
+            // Purge the queue to remove any leftover messages from previous test runs
+            channel.queuePurge("test-queue-propagation")
+
             var deliveryReceived = false
-            var messageHasTraceHeaders = false
-            var traceparentValue: String? = null
 
             // Set up consumer
             channel.basicConsume(
                 queue = "test-queue-propagation",
                 onDelivery = { delivery ->
                     deliveryReceived = true
-                    // Check if trace context headers are present in the delivered message
-                    val headers = delivery.message.properties.headers
-                    messageHasTraceHeaders = headers?.containsKey("traceparent") == true
-                    traceparentValue = (headers?.get("traceparent") as? dev.kourier.amqp.Field.LongString)?.value
                 }
             )
 
@@ -232,16 +242,6 @@ class OpenTelemetryAMQPChannelTest {
 
             // Verify delivery happened
             assertTrue(deliveryReceived, "Message should have been delivered")
-            assertTrue(messageHasTraceHeaders, "Message should contain trace context headers")
-            assertNotNull(traceparentValue, "traceparent header should have a value")
-
-            // Verify traceparent format is valid (00-{32 hex chars}-{16 hex chars}-{2 hex chars})
-            val parts = traceparentValue!!.split("-")
-            assertEquals(4, parts.size, "traceparent should have 4 parts")
-            assertEquals("00", parts[0], "version should be 00")
-            assertEquals(32, parts[1].length, "trace-id should be 32 characters")
-            assertEquals(16, parts[2].length, "span-id should be 16 characters")
-            assertEquals(2, parts[3].length, "trace-flags should be 2 characters")
 
             // Verify both producer and consumer spans were created
             val spans = otelTesting.spans
@@ -251,10 +251,21 @@ class OpenTelemetryAMQPChannelTest {
             assertNotNull(publishSpan, "Publish span should be created")
             assertNotNull(consumerSpan, "Consumer span should be created")
 
-            // Note: We verify trace context injection/extraction work correctly.
-            // The parent-child relationship is tested in SpanPropagatorTest unit tests.
+            // Verify trace propagation works correctly - the critical feature!
+            assertEquals(
+                publishSpan.spanContext.traceId, consumerSpan.spanContext.traceId,
+                "Consumer span should be in the same trace as producer"
+            )
+            assertEquals(
+                publishSpan.spanId, consumerSpan.parentSpanId,
+                "Consumer span's parent should be the producer span"
+            )
         } finally {
-            runCatching { channel.close() }
+            runCatching {
+                channel.queueDelete("test-queue-propagation")
+                channel.exchangeDelete("test-exchange-propagation")
+                channel.close()
+            }
             runCatching { connection.close() }
         }
         Unit
@@ -273,6 +284,9 @@ class OpenTelemetryAMQPChannelTest {
             channel.queueDeclare("test-queue-error")
             channel.exchangeDeclare("test-exchange-error", type = BuiltinExchangeType.DIRECT)
             channel.queueBind("test-queue-error", "test-exchange-error", "test-key")
+
+            // Purge the queue to remove any leftover messages from previous test runs
+            channel.queuePurge("test-queue-error")
 
             var errorThrown = false
 
@@ -303,13 +317,17 @@ class OpenTelemetryAMQPChannelTest {
             val spans = otelTesting.spans
             val errorSpan = spans.find {
                 it.name == "test-queue-error receive" &&
-                it.status.statusCode == StatusCode.ERROR
+                        it.status.statusCode == StatusCode.ERROR
             }
 
             assertNotNull(errorSpan, "Error span should have been recorded")
             assertTrue(errorSpan.status.description.contains("Test error in delivery handler"))
         } finally {
-            runCatching { channel.close() }
+            runCatching {
+                channel.queueDelete("test-queue-error")
+                channel.exchangeDelete("test-exchange-error")
+                channel.close()
+            }
             runCatching { connection.close() }
         }
         Unit
