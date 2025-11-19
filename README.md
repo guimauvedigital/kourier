@@ -32,6 +32,8 @@ Why we made kourier:
   and basic operations like publishing and consuming messages.
 * `amqp-client-robust`: Adds automatic recovery and reconnection logic to the `amqp-client`, making it more resilient to
   network issues and protocol errors, inspired by [aio-pika](https://github.com/mosquito/aio-pika)'s robust client.
+* `amqp-client-opentelemetry`: Provides OpenTelemetry instrumentation for tracing AMQP operations using the
+  `withTracing` extension function.
 
 Most of the time you will only need the `amqp-client` module, which depends itself on `amqp-core`, or the
 `amqp-client-robust` module which depends on both `amqp-client` and `amqp-core` if you want automatic recovery features.
@@ -51,6 +53,15 @@ Or if you want the robust client with automatic recovery:
 ```kotlin
 dependencies {
     implementation("dev.kourier:amqp-client-robust:0.3.0")
+}
+```
+
+For OpenTelemetry tracing support (requires OpenTelemetry API):
+
+```kotlin
+dependencies {
+    implementation("dev.kourier:amqp-client-opentelemetry:0.3.0")
+    implementation("io.opentelemetry:opentelemetry-api:1.44.1")
 }
 ```
 
@@ -121,6 +132,43 @@ If you want to use the robust client with automatic recovery, you can use `creat
 val connection = createRobustAMQPConnection(this, config) // All configuration options are available as before
 
 // Do stuff with the connection as before
+```
+
+To enable OpenTelemetry tracing for your AMQP operations, wrap your connection or channel with `withTracing`:
+
+```kotlin
+// Get a tracer from your OpenTelemetry instance
+val tracer = openTelemetry.getTracer("dev.kourier.amqp")
+
+val connection = createAMQPConnection(this, config)
+val tracedConnection = connection.withTracing(tracer) // All channels opened through this connection will be traced
+
+// Or trace individual channels
+val channel = connection.openChannel()
+val tracedChannel = channel.withTracing(tracer)
+```
+
+The OpenTelemetry integration provides automatic distributed tracing with W3C Trace Context propagation through message
+headers. By default, only message publish and consume operations are traced to minimize overhead. You can configure
+additional tracing options:
+
+```kotlin
+// Debug configuration with full tracing enabled
+val tracedConnection = connection.withTracing(
+    tracer,
+    TracingConfig.debug() // Traces connection, channel management operations, and captures message bodies
+)
+
+// Custom configuration
+val tracedConnection = connection.withTracing(
+    tracer,
+    TracingConfig(
+        traceConnectionOperations = true,        // Trace connection open/close/heartbeat
+        traceChannelManagementOperations = true, // Trace queue/exchange declarations and bindings
+        captureMessageBody = true,               // Capture message bodies in spans (be careful with sensitive data)
+        maxBodySizeToCapture = 512               // Limit captured body size
+    )
+)
 ```
 
 More examples can be found on the [tutorial section of the documentation](https://kourier.dev/tutorials/).
