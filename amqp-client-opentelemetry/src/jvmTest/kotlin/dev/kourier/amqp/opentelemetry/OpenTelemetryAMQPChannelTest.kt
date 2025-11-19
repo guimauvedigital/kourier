@@ -139,35 +139,175 @@ class OpenTelemetryAMQPChannelTest {
         val channel = tracedConnection.openChannel()
 
         try {
-            // Declare queue before consuming
-            channel.queueDeclare("test-queue")
+            // Declare queue and exchange before consuming
+            channel.queueDeclare("test-queue-consume")
+            channel.exchangeDeclare("test-exchange-consume", type = BuiltinExchangeType.DIRECT)
+            channel.queueBind("test-queue-consume", "test-exchange-consume", "test-key")
 
-            // Simulate message consumption
+            // Set up consumer and wait for delivery
             var deliveryReceived = false
             val consumeOk = channel.basicConsume(
-                queue = "test-queue",
+                queue = "test-queue-consume",
                 onDelivery = { delivery ->
                     deliveryReceived = true
-
-                    // Verify consumer span
-                    val spans = otelTesting.spans
-                    val consumerSpan = spans.find { it.name == "test-queue receive" }
-
-                    if (consumerSpan != null) {
-                        assertEquals(SpanKind.CONSUMER, consumerSpan.kind)
-
-                        val attributes = consumerSpan.attributes.asMap()
-                        assertEquals("rabbitmq", attributes[stringKey(SemanticAttributes.MESSAGING_SYSTEM)])
-                        assertEquals("receive", attributes[stringKey(SemanticAttributes.MESSAGING_OPERATION)])
-                        assertEquals("test-queue", attributes[stringKey(SemanticAttributes.MESSAGING_SOURCE_NAME)])
-                    }
                 }
             )
 
             assertNotNull(consumeOk)
 
-            // Note: Without a real RabbitMQ broker, we can't test actual message delivery
-            // This test verifies the consume setup works without errors
+            // Publish a message to trigger the consumer
+            channel.basicPublish(
+                body = "test message for consumer".encodeToByteArray(),
+                exchange = "test-exchange-consume",
+                routingKey = "test-key",
+                properties = Properties(messageId = "consume-test-123")
+            )
+
+            // Wait a bit for message delivery
+            kotlinx.coroutines.delay(500)
+
+            // Verify delivery was received
+            assertTrue(deliveryReceived, "Message should have been delivered")
+
+            // Verify consumer span was created with correct attributes (after callback completes)
+            val spans = otelTesting.spans
+            val consumerSpan = spans.find { it.name == "test-queue-consume receive" }
+
+            assertNotNull(consumerSpan, "Consumer span should be created")
+            assertEquals(SpanKind.CONSUMER, consumerSpan.kind)
+
+            val attributes = consumerSpan.attributes.asMap()
+            assertEquals("rabbitmq", attributes[stringKey(SemanticAttributes.MESSAGING_SYSTEM)])
+            assertEquals("receive", attributes[stringKey(SemanticAttributes.MESSAGING_OPERATION)])
+            assertEquals("test-queue-consume", attributes[stringKey(SemanticAttributes.MESSAGING_SOURCE_NAME)])
+            assertEquals("test-exchange-consume", attributes[stringKey(SemanticAttributes.MESSAGING_DESTINATION_NAME)])
+            assertEquals("test-key", attributes[stringKey(SemanticAttributes.MESSAGING_RABBITMQ_ROUTING_KEY)])
+        } finally {
+            runCatching { channel.close() }
+            runCatching { connection.close() }
+        }
+        Unit
+    }
+
+    @Test
+    fun `basicConsume propagates trace context from published message`() = runBlocking {
+        // Setup
+        val tracer = otelTesting.openTelemetry.getTracer("test")
+        val connection = createAMQPConnection(this) {}
+        val tracedConnection = connection.withTracing(tracer)
+        val channel = tracedConnection.openChannel()
+
+        try {
+            // Declare resources
+            channel.queueDeclare("test-queue-propagation")
+            channel.exchangeDeclare("test-exchange-propagation", type = BuiltinExchangeType.DIRECT)
+            channel.queueBind("test-queue-propagation", "test-exchange-propagation", "test-key")
+
+            var deliveryReceived = false
+            var messageHasTraceHeaders = false
+            var traceparentValue: String? = null
+
+            // Set up consumer
+            channel.basicConsume(
+                queue = "test-queue-propagation",
+                onDelivery = { delivery ->
+                    deliveryReceived = true
+                    // Check if trace context headers are present in the delivered message
+                    val headers = delivery.message.properties.headers
+                    messageHasTraceHeaders = headers?.containsKey("traceparent") == true
+                    traceparentValue = (headers?.get("traceparent") as? dev.kourier.amqp.Field.LongString)?.value
+                }
+            )
+
+            // Publish a message (this creates a producer span)
+            channel.basicPublish(
+                body = "propagation test".encodeToByteArray(),
+                exchange = "test-exchange-propagation",
+                routingKey = "test-key",
+                properties = Properties()
+            )
+
+            // Wait for delivery
+            kotlinx.coroutines.delay(500)
+
+            // Verify delivery happened
+            assertTrue(deliveryReceived, "Message should have been delivered")
+            assertTrue(messageHasTraceHeaders, "Message should contain trace context headers")
+            assertNotNull(traceparentValue, "traceparent header should have a value")
+
+            // Verify traceparent format is valid (00-{32 hex chars}-{16 hex chars}-{2 hex chars})
+            val parts = traceparentValue!!.split("-")
+            assertEquals(4, parts.size, "traceparent should have 4 parts")
+            assertEquals("00", parts[0], "version should be 00")
+            assertEquals(32, parts[1].length, "trace-id should be 32 characters")
+            assertEquals(16, parts[2].length, "span-id should be 16 characters")
+            assertEquals(2, parts[3].length, "trace-flags should be 2 characters")
+
+            // Verify both producer and consumer spans were created
+            val spans = otelTesting.spans
+            val publishSpan = spans.find { it.name == "test-exchange-propagation send" }
+            val consumerSpan = spans.find { it.name == "test-queue-propagation receive" }
+
+            assertNotNull(publishSpan, "Publish span should be created")
+            assertNotNull(consumerSpan, "Consumer span should be created")
+
+            // Note: We verify trace context injection/extraction work correctly.
+            // The parent-child relationship is tested in SpanPropagatorTest unit tests.
+        } finally {
+            runCatching { channel.close() }
+            runCatching { connection.close() }
+        }
+        Unit
+    }
+
+    @Test
+    fun `basicConsume handles errors in delivery handler`() = runBlocking {
+        // Setup
+        val tracer = otelTesting.openTelemetry.getTracer("test")
+        val connection = createAMQPConnection(this) {}
+        val tracedConnection = connection.withTracing(tracer)
+        val channel = tracedConnection.openChannel()
+
+        try {
+            // Declare resources
+            channel.queueDeclare("test-queue-error")
+            channel.exchangeDeclare("test-exchange-error", type = BuiltinExchangeType.DIRECT)
+            channel.queueBind("test-queue-error", "test-exchange-error", "test-key")
+
+            var errorThrown = false
+
+            // Set up consumer that throws an error
+            channel.basicConsume(
+                queue = "test-queue-error",
+                onDelivery = { delivery ->
+                    errorThrown = true
+                    throw RuntimeException("Test error in delivery handler")
+                }
+            )
+
+            // Publish a message
+            channel.basicPublish(
+                body = "error test".encodeToByteArray(),
+                exchange = "test-exchange-error",
+                routingKey = "test-key",
+                properties = Properties()
+            )
+
+            // Wait for delivery and error
+            kotlinx.coroutines.delay(500)
+
+            // Verify error was thrown
+            assertTrue(errorThrown, "Error should have been thrown")
+
+            // Verify error span was recorded (after callback completes)
+            val spans = otelTesting.spans
+            val errorSpan = spans.find {
+                it.name == "test-queue-error receive" &&
+                it.status.statusCode == StatusCode.ERROR
+            }
+
+            assertNotNull(errorSpan, "Error span should have been recorded")
+            assertTrue(errorSpan.status.description.contains("Test error in delivery handler"))
         } finally {
             runCatching { channel.close() }
             runCatching { connection.close() }
