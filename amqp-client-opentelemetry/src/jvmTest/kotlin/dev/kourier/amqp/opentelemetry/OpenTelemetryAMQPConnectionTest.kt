@@ -1,5 +1,6 @@
 package dev.kourier.amqp.opentelemetry
 
+import dev.kourier.amqp.BuiltinExchangeType
 import dev.kourier.amqp.Properties
 import dev.kourier.amqp.connection.createAMQPConnection
 import io.opentelemetry.api.trace.SpanKind
@@ -159,8 +160,8 @@ class OpenTelemetryAMQPConnectionTest {
             assertNotEquals(channel1.id, channel2.id)
 
             // Declare exchanges before publishing
-            channel1.exchangeDeclare("exchange1", type = "direct")
-            channel2.exchangeDeclare("exchange2", type = "direct")
+            channel1.exchangeDeclare("exchange1", type = BuiltinExchangeType.DIRECT)
+            channel2.exchangeDeclare("exchange2", type = BuiltinExchangeType.DIRECT)
 
             // Publish on both channels
             channel1.basicPublish(
@@ -209,7 +210,7 @@ class OpenTelemetryAMQPConnectionTest {
             val channel = tracedConnection.openChannel()
 
             // Declare exchange before publishing
-            channel.exchangeDeclare("test-exchange-custom", type = "direct")
+            channel.exchangeDeclare("test-exchange-custom", type = BuiltinExchangeType.DIRECT)
 
             channel.basicPublish(
                 body = "test".encodeToByteArray(),

@@ -1,5 +1,6 @@
 package dev.kourier.amqp.opentelemetry
 
+import dev.kourier.amqp.BuiltinExchangeType
 import dev.kourier.amqp.Properties
 import dev.kourier.amqp.connection.createAMQPConnection
 import io.opentelemetry.api.trace.SpanKind
@@ -27,7 +28,7 @@ class OpenTelemetryAMQPChannelTest {
 
         try {
             // Declare exchange before publishing
-            channel.exchangeDeclare("test-exchange-attributes", type = "direct")
+            channel.exchangeDeclare("test-exchange-attributes", type = BuiltinExchangeType.DIRECT)
 
             // Execute publish
             channel.basicPublish(
@@ -73,7 +74,7 @@ class OpenTelemetryAMQPChannelTest {
 
         try {
             // Declare exchange before publishing
-            channel.exchangeDeclare("test-exchange-headers", type = "direct")
+            channel.exchangeDeclare("test-exchange-headers", type = BuiltinExchangeType.DIRECT)
 
             // Publish with empty properties
             val properties = Properties()
@@ -138,6 +139,9 @@ class OpenTelemetryAMQPChannelTest {
         val channel = tracedConnection.openChannel()
 
         try {
+            // Declare queue before consuming
+            channel.queueDeclare("test-queue")
+
             // Simulate message consumption
             var deliveryReceived = false
             val consumeOk = channel.basicConsume(
@@ -180,12 +184,15 @@ class OpenTelemetryAMQPChannelTest {
         val channel = tracedConnection.openChannel()
 
         try {
+            // Declare queue before getting
+            channel.queueDeclare("test-queue-get")
+
             // Execute get (will return empty response without real broker)
-            val response = channel.basicGet("test-queue", noAck = false)
+            val response = channel.basicGet("test-queue-get", noAck = false)
 
             // Verify span was created
             val spans = otelTesting.spans
-            val getSpan = spans.find { it.name == "test-queue get" }
+            val getSpan = spans.find { it.name == "test-queue-get get" }
 
             assertNotNull(getSpan, "Consumer span should be created for basicGet")
             assertEquals(SpanKind.CONSUMER, getSpan.kind)
@@ -193,7 +200,7 @@ class OpenTelemetryAMQPChannelTest {
             val attributes = getSpan.attributes.asMap()
             assertEquals("rabbitmq", attributes[stringKey(SemanticAttributes.MESSAGING_SYSTEM)])
             assertEquals("get", attributes[stringKey(SemanticAttributes.MESSAGING_OPERATION)])
-            assertEquals("test-queue", attributes[stringKey(SemanticAttributes.MESSAGING_SOURCE_NAME)])
+            assertEquals("test-queue-get", attributes[stringKey(SemanticAttributes.MESSAGING_SOURCE_NAME)])
         } finally {
             channel.close()
             connection.close()
@@ -213,7 +220,7 @@ class OpenTelemetryAMQPChannelTest {
 
         try {
             // Declare exchange before publishing
-            channel.exchangeDeclare("my-exchange", type = "direct")
+            channel.exchangeDeclare("my-exchange", type = BuiltinExchangeType.DIRECT)
 
             // Test publish with custom formatter
             channel.basicPublish(
@@ -244,7 +251,7 @@ class OpenTelemetryAMQPChannelTest {
         try {
             // Execute management operations
             channel.queueDeclare("test-queue-mgmt", durable = true)
-            channel.exchangeDeclare("test-exchange-mgmt", type = "direct", durable = true)
+            channel.exchangeDeclare("test-exchange-mgmt", type = BuiltinExchangeType.DIRECT, durable = true)
             channel.queueBind("test-queue-mgmt", "test-exchange-mgmt", "test-key")
 
             // Verify management spans were created
@@ -282,7 +289,7 @@ class OpenTelemetryAMQPChannelTest {
         try {
             // Execute management operations
             channel.queueDeclare("test-queue-nomgmt")
-            channel.exchangeDeclare("test-exchange-nomgmt", type = "direct")
+            channel.exchangeDeclare("test-exchange-nomgmt", type = BuiltinExchangeType.DIRECT)
 
             // Verify no management spans were created
             val spans = otelTesting.spans
