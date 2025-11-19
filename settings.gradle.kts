@@ -38,7 +38,16 @@ dependencyResolutionManagement {
             version("opentelemetry", "1.44.1")
             library("opentelemetry-api", "io.opentelemetry", "opentelemetry-api").versionRef("opentelemetry")
             library("opentelemetry-context", "io.opentelemetry", "opentelemetry-context").versionRef("opentelemetry")
-            library("opentelemetry-semconv", "io.opentelemetry.semconv", "opentelemetry-semconv").version("1.28.0-alpha")
+            library(
+                "opentelemetry-extension-kotlin",
+                "io.opentelemetry",
+                "opentelemetry-extension-kotlin"
+            ).versionRef("opentelemetry")
+            library(
+                "opentelemetry-semconv",
+                "io.opentelemetry.semconv",
+                "opentelemetry-semconv"
+            ).version("1.28.0-alpha")
         }
     }
 }

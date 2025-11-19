@@ -9,6 +9,8 @@ import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Context
+import io.opentelemetry.extension.kotlin.asContextElement
+import kotlinx.coroutines.withContext
 
 /**
  * OpenTelemetry-instrumented wrapper around [AMQPChannel].
@@ -174,45 +176,43 @@ class OpenTelemetryAMQPChannel(
             .setParent(parentContext)
             .startSpan()
 
-        try {
-            // Set semantic attributes
-            span.setAttribute(SemanticAttributes.MESSAGING_SYSTEM, "rabbitmq")
-            span.setAttribute(SemanticAttributes.MESSAGING_OPERATION, SemanticAttributes.OPERATION_RECEIVE)
-            span.setAttribute(SemanticAttributes.MESSAGING_SOURCE_NAME, queue)
-            span.setAttribute(SemanticAttributes.MESSAGING_MESSAGE_ID, delivery.message.deliveryTag.toString())
-            span.setAttribute(SemanticAttributes.MESSAGING_MESSAGE_BODY_SIZE, delivery.message.body.size.toLong())
+        withContext(span.asContextElement()) {
+            try {
+                // Set semantic attributes
+                span.setAttribute(SemanticAttributes.MESSAGING_SYSTEM, "rabbitmq")
+                span.setAttribute(SemanticAttributes.MESSAGING_OPERATION, SemanticAttributes.OPERATION_RECEIVE)
+                span.setAttribute(SemanticAttributes.MESSAGING_SOURCE_NAME, queue)
+                span.setAttribute(SemanticAttributes.MESSAGING_MESSAGE_ID, delivery.message.deliveryTag.toString())
+                span.setAttribute(SemanticAttributes.MESSAGING_MESSAGE_BODY_SIZE, delivery.message.body.size.toLong())
 
-            delivery.message.properties.correlationId?.let {
-                span.setAttribute(SemanticAttributes.MESSAGING_CONVERSATION_ID, it)
-            }
-            span.setAttribute(SemanticAttributes.MESSAGING_DESTINATION_NAME, delivery.message.exchange)
-            span.setAttribute(SemanticAttributes.MESSAGING_RABBITMQ_ROUTING_KEY, delivery.message.routingKey)
-
-            // Capture message body if configured
-            if (config.captureMessageBody && delivery.message.body.isNotEmpty()) {
-                val bodyToCapture = if (delivery.message.body.size > config.maxBodySizeToCapture) {
-                    delivery.message.body.copyOfRange(0, config.maxBodySizeToCapture)
-                } else {
-                    delivery.message.body
+                delivery.message.properties.correlationId?.let {
+                    span.setAttribute(SemanticAttributes.MESSAGING_CONVERSATION_ID, it)
                 }
-                span.setAttribute("messaging.message.body", bodyToCapture.decodeToString())
-            }
+                span.setAttribute(SemanticAttributes.MESSAGING_DESTINATION_NAME, delivery.message.exchange)
+                span.setAttribute(SemanticAttributes.MESSAGING_RABBITMQ_ROUTING_KEY, delivery.message.routingKey)
 
-            // Make span current and call handler
-            span.makeCurrent().use {
+                // Capture message body if configured
+                if (config.captureMessageBody && delivery.message.body.isNotEmpty()) {
+                    val bodyToCapture = if (delivery.message.body.size > config.maxBodySizeToCapture) {
+                        delivery.message.body.copyOfRange(0, config.maxBodySizeToCapture)
+                    } else {
+                        delivery.message.body
+                    }
+                    span.setAttribute("messaging.message.body", bodyToCapture.decodeToString())
+                }
+
                 handler(delivery)
-            }
 
-            span.setStatus(StatusCode.OK)
-        } catch (e: Exception) {
-            span.recordException(e)
-            span.setStatus(StatusCode.ERROR, e.message ?: "Error processing message")
-            throw e
-        } finally {
-            span.end()
+                span.setStatus(StatusCode.OK)
+            } catch (e: Exception) {
+                span.recordException(e)
+                span.setStatus(StatusCode.ERROR, e.message ?: "Error processing message")
+                throw e
+            } finally {
+                span.end()
+            }
         }
     }
-
 
     override suspend fun basicQos(count: UShort, global: Boolean): AMQPResponse.Channel.Basic.QosOk {
         return if (config.traceChannelManagementOperations) {
