@@ -141,7 +141,7 @@ class OpenTelemetryAMQPConnectionTest {
         }
     }
 
-    //@Test // TODO: Fix this
+    @Test
     fun `multiple channels from same connection are independently traced`() = runBlocking {
         // Setup
         val tracer = otelTesting.openTelemetry.getTracer("test")
@@ -157,6 +157,10 @@ class OpenTelemetryAMQPConnectionTest {
             assertTrue(channel1 is OpenTelemetryAMQPChannel)
             assertTrue(channel2 is OpenTelemetryAMQPChannel)
             assertNotEquals(channel1.id, channel2.id)
+
+            // Declare exchanges before publishing
+            channel1.exchangeDeclare("exchange1", type = "direct")
+            channel2.exchangeDeclare("exchange2", type = "direct")
 
             // Publish on both channels
             channel1.basicPublish(
@@ -203,9 +207,13 @@ class OpenTelemetryAMQPConnectionTest {
         try {
             // Open channel and publish
             val channel = tracedConnection.openChannel()
+
+            // Declare exchange before publishing
+            channel.exchangeDeclare("test-exchange-custom", type = "direct")
+
             channel.basicPublish(
                 body = "test".encodeToByteArray(),
-                exchange = "test-exchange",
+                exchange = "test-exchange-custom",
                 routingKey = "test",
                 properties = Properties()
             )

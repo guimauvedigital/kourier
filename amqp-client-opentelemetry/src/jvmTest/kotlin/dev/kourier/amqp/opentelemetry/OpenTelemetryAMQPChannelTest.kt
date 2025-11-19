@@ -26,10 +26,13 @@ class OpenTelemetryAMQPChannelTest {
         val channel = tracedConnection.openChannel()
 
         try {
+            // Declare exchange before publishing
+            channel.exchangeDeclare("test-exchange-attributes", type = "direct")
+
             // Execute publish
             channel.basicPublish(
                 body = "test message".encodeToByteArray(),
-                exchange = "test-exchange",
+                exchange = "test-exchange-attributes",
                 routingKey = "test.route",
                 properties = Properties(
                     messageId = "msg-123",
@@ -39,7 +42,7 @@ class OpenTelemetryAMQPChannelTest {
 
             // Verify span was created
             val spans = otelTesting.spans
-            val publishSpan = spans.find { it.name == "test-exchange send" }
+            val publishSpan = spans.find { it.name == "test-exchange-attributes send" }
 
             assertNotNull(publishSpan, "Producer span should be created")
             assertEquals(SpanKind.PRODUCER, publishSpan.kind)
@@ -49,7 +52,7 @@ class OpenTelemetryAMQPChannelTest {
             val attributes = publishSpan.attributes.asMap()
             assertEquals("rabbitmq", attributes[stringKey(SemanticAttributes.MESSAGING_SYSTEM)])
             assertEquals("publish", attributes[stringKey(SemanticAttributes.MESSAGING_OPERATION)])
-            assertEquals("test-exchange", attributes[stringKey(SemanticAttributes.MESSAGING_DESTINATION_NAME)])
+            assertEquals("test-exchange-attributes", attributes[stringKey(SemanticAttributes.MESSAGING_DESTINATION_NAME)])
             assertEquals("test.route", attributes[stringKey(SemanticAttributes.MESSAGING_RABBITMQ_ROUTING_KEY)])
             assertEquals("msg-123", attributes[stringKey(SemanticAttributes.MESSAGING_MESSAGE_ID)])
             assertEquals("corr-456", attributes[stringKey(SemanticAttributes.MESSAGING_CONVERSATION_ID)])
@@ -69,11 +72,14 @@ class OpenTelemetryAMQPChannelTest {
         val channel = tracedConnection.openChannel()
 
         try {
+            // Declare exchange before publishing
+            channel.exchangeDeclare("test-exchange-headers", type = "direct")
+
             // Publish with empty properties
             val properties = Properties()
             val response = channel.basicPublish(
                 body = "test".encodeToByteArray(),
-                exchange = "test-exchange",
+                exchange = "test-exchange-headers",
                 routingKey = "test.route",
                 properties = properties
             )
@@ -81,7 +87,7 @@ class OpenTelemetryAMQPChannelTest {
             // Note: We can't easily verify the injected headers without accessing the actual message
             // but we can verify the span was created and is valid
             val spans = otelTesting.spans
-            val publishSpan = spans.find { it.name == "test-exchange send" }
+            val publishSpan = spans.find { it.name == "test-exchange-headers send" }
             assertNotNull(publishSpan)
             assertTrue(publishSpan.spanContext.isValid)
             assertTrue(publishSpan.spanContext.traceId.isNotEmpty())
@@ -101,6 +107,9 @@ class OpenTelemetryAMQPChannelTest {
         val channel = tracedConnection.openChannel()
 
         try {
+            // Declare queue before publishing to default exchange
+            channel.queueDeclare("my-queue")
+
             // Publish to default exchange (empty string)
             channel.basicPublish(
                 body = "test".encodeToByteArray(),
@@ -203,6 +212,9 @@ class OpenTelemetryAMQPChannelTest {
         val channel = tracedConnection.openChannel()
 
         try {
+            // Declare exchange before publishing
+            channel.exchangeDeclare("my-exchange", type = "direct")
+
             // Test publish with custom formatter
             channel.basicPublish(
                 body = "test".encodeToByteArray(),
