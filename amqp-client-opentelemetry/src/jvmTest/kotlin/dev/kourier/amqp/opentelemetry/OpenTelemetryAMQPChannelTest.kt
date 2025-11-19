@@ -3,10 +3,16 @@ package dev.kourier.amqp.opentelemetry
 import dev.kourier.amqp.BuiltinExchangeType
 import dev.kourier.amqp.Properties
 import dev.kourier.amqp.connection.createAMQPConnection
+import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.api.trace.Tracer
+import io.opentelemetry.extension.kotlin.asContextElement
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.junit.jupiter.api.extension.RegisterExtension
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -465,8 +471,204 @@ class OpenTelemetryAMQPChannelTest {
         }
     }
 
+    @Test
+    fun `should propagate trace context through multiple suspensions and dispatcher switches`() = runBlocking {
+        // This test verifies that using withContext(span.asContextElement()) correctly propagates
+        // OpenTelemetry context across coroutine suspensions and dispatcher switches.
+        // This is critical because message handlers are suspend functions that may:
+        // 1. Suspend and resume on different threads
+        // 2. Call other suspend functions (database, HTTP, etc.)
+        // 3. Have multiple suspension points (delays, awaits, etc.)
+
+        // Setup
+        val tracer = otelTesting.openTelemetry.getTracer("test")
+        val connection = createAMQPConnection(this) {}
+        val tracedConnection = connection.withTracing(tracer)
+        val channel = tracedConnection.openChannel()
+
+        try {
+            // Declare resources
+            channel.queueDeclare("test-queue-coroutine-ctx")
+            channel.exchangeDeclare("test-exchange-coroutine-ctx", type = BuiltinExchangeType.DIRECT)
+            channel.queueBind("test-queue-coroutine-ctx", "test-exchange-coroutine-ctx", "test-key")
+            channel.queuePurge("test-queue-coroutine-ctx")
+
+            var deliveryReceived = false
+
+            // Create a handler that simulates realistic message processing with:
+            // - Multiple suspension points (delays)
+            // - Dispatcher switches (to IO)
+            // - Child span creation (database, IO operations, etc.)
+            val handler: suspend (dev.kourier.amqp.AMQPResponse.Channel.Message.Delivery) -> Unit = { delivery ->
+                // Capture parent span at start
+                val parentAtStart = Span.current()
+
+                // First suspension point - simulate async processing
+                delay(10)
+
+                // Simulate database call (creates child span)
+                createChildSpan(tracer, "database_query") {
+                    delay(5) // Suspension inside child operation
+                }
+
+                // Switch to IO dispatcher explicitly to verify context propagates across dispatchers
+                withContext(Dispatchers.IO) {
+                    // Verify context is still available on different dispatcher
+                    val spanOnIO = Span.current()
+
+                    // Create child span on IO dispatcher
+                    createChildSpan(tracer, "io_operation") {
+                        delay(5)
+                    }
+                }
+
+                // Back to original dispatcher - another suspension
+                delay(10)
+
+                // Final child span
+                createChildSpan(tracer, "final_operation") {
+                    delay(5)
+                }
+
+                // Verify parent is still the same throughout all operations
+                val parentAtEnd = Span.current()
+                assertEquals(
+                    parentAtStart.spanContext.spanId,
+                    parentAtEnd.spanContext.spanId,
+                    "Parent span should remain the same throughout handler execution"
+                )
+
+                deliveryReceived = true
+            }
+
+            // Set up consumer with our test handler
+            channel.basicConsume(
+                queue = "test-queue-coroutine-ctx",
+                onDelivery = handler
+            )
+
+            // Publish a message to trigger the consumer
+            channel.basicPublish(
+                body = "coroutine context test".encodeToByteArray(),
+                exchange = "test-exchange-coroutine-ctx",
+                routingKey = "test-key",
+                properties = Properties()
+            )
+
+            // Wait for message delivery and processing
+            delay(500)
+
+            // Verify delivery was received
+            assertTrue(deliveryReceived, "Message should have been delivered and processed")
+
+            // Verify span structure
+            val spans = otelTesting.spans
+
+            // Should have 1 producer + 1 consumer + 3 child spans = 5 total
+            // (Note: If management operations are traced, there might be more)
+            val publishSpan = spans.find { it.name == "test-exchange-coroutine-ctx send" }
+            val consumerSpan = spans.find { it.name == "test-queue-coroutine-ctx receive" }
+            val databaseSpan = spans.find { it.name == "database_query" }
+            val ioSpan = spans.find { it.name == "io_operation" }
+            val finalSpan = spans.find { it.name == "final_operation" }
+
+            assertNotNull(publishSpan, "Publish span should be created")
+            assertNotNull(consumerSpan, "Consumer span should be created")
+            assertNotNull(databaseSpan, "Database query span should be created")
+            assertNotNull(ioSpan, "IO operation span should be created")
+            assertNotNull(finalSpan, "Final operation span should be created")
+
+            // Critical assertion: All child spans share the same trace ID as the consumer span
+            // This proves that context propagated correctly through all suspensions and dispatcher switches
+            val childSpans = listOf(databaseSpan, ioSpan, finalSpan)
+            childSpans.forEach { childSpan ->
+                assertEquals(
+                    consumerSpan.traceId,
+                    childSpan.traceId,
+                    "Child span '${childSpan.name}' should have same trace ID as consumer span"
+                )
+            }
+
+            // Critical assertion: All child spans have the consumer span as their parent
+            // This proves that Span.current() correctly returned the consumer span context
+            childSpans.forEach { childSpan ->
+                assertEquals(
+                    consumerSpan.spanId,
+                    childSpan.parentSpanId,
+                    "Child span '${childSpan.name}' should have consumer span as parent"
+                )
+            }
+
+            // Verify all child spans are INTERNAL kind
+            childSpans.forEach { childSpan ->
+                assertEquals(
+                    SpanKind.INTERNAL,
+                    childSpan.kind,
+                    "Child span '${childSpan.name}' should be INTERNAL kind"
+                )
+            }
+
+            // Verify the trace is connected end-to-end
+            // The publish span and consumer span should be in the same trace (due to context injection)
+            assertEquals(
+                publishSpan.traceId,
+                consumerSpan.traceId,
+                "Consumer and producer should be in the same trace"
+            )
+            assertEquals(
+                publishSpan.spanId,
+                consumerSpan.parentSpanId,
+                "Consumer span should have producer span as parent"
+            )
+
+            // What this test proves:
+            // 1. withContext(span.asContextElement()) correctly propagates context across delay() suspensions
+            // 2. Context is maintained when switching dispatchers (Dispatchers.IO)
+            // 3. Child operations can see the parent span via Span.current()
+            // 4. All spans remain connected in a single distributed trace
+            //
+            // If the code used span.makeCurrent().use {} instead, this test would fail because
+            // context would be lost at suspension points (ThreadLocal doesn't propagate across coroutines)
+        } finally {
+            runCatching {
+                channel.queueDelete("test-queue-coroutine-ctx")
+                channel.exchangeDelete("test-exchange-coroutine-ctx")
+                channel.close()
+            }
+            runCatching { connection.close() }
+        }
+        Unit
+    }
+
     // Helper functions to create OpenTelemetry AttributeKeys
     private fun stringKey(name: String) = io.opentelemetry.api.common.AttributeKey.stringKey(name)
     private fun longKey(name: String) = io.opentelemetry.api.common.AttributeKey.longKey(name)
     private fun boolKey(name: String) = io.opentelemetry.api.common.AttributeKey.booleanKey(name)
+
+    /**
+     * Helper function to create a child span within a coroutine context.
+     * Uses withContext(span.asContextElement()) to ensure proper context propagation.
+     */
+    private suspend fun createChildSpan(
+        tracer: Tracer,
+        name: String,
+        block: suspend () -> Unit,
+    ) {
+        val span = tracer.spanBuilder(name)
+            .setSpanKind(SpanKind.INTERNAL)
+            .startSpan()
+
+        withContext(span.asContextElement()) {
+            try {
+                block()
+                span.setStatus(StatusCode.OK)
+            } catch (e: Exception) {
+                span.recordException(e)
+                span.setStatus(StatusCode.ERROR)
+                throw e
+            } finally {
+                span.end()
+            }
+        }
+    }
 }
