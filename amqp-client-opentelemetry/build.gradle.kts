@@ -57,6 +57,7 @@ kotlin {
                 api(project(":amqp-client"))
                 api(libs.opentelemetry.api)
                 api(libs.opentelemetry.context)
+                api(libs.opentelemetry.extension.kotlin)
                 implementation(libs.opentelemetry.semconv)
             }
         }
