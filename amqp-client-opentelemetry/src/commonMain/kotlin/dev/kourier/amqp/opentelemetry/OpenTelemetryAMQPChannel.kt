@@ -347,9 +347,8 @@ class OpenTelemetryAMQPChannel(
         val span = tracer.spanBuilder(spanName)
             .setSpanKind(spanKind)
             .startSpan()
-
         return try {
-            span.makeCurrent().use {
+            withContext(span.asContextElement()) {
                 val result = block(span)
                 span.setStatus(StatusCode.OK)
                 result

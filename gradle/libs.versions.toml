@@ -1,0 +1,31 @@
+[versions]
+kotlin = "2.1.21"
+kover = "0.8.3"
+detekt = "1.23.8"
+dokka = "2.0.0"
+ksp = "2.1.21-2.0.2"
+maven = "0.30.0"
+ktor = "3.1.3"
+opentelemetry = "1.56.0"
+opentelemetry-semconv = "1.34.0"
+kotlinx-io = "0.7.0"
+kotlinx-serialization = "1.8.1"
+
+[plugins]
+multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+maven = { id = "com.vanniktech.maven.publish", version.ref = "maven" }
+
+[libraries]
+ktor-network = { group = "io.ktor", name = "ktor-network", version.ref = "ktor" }
+ktor-network-tls = { group = "io.ktor", name = "ktor-network-tls", version.ref = "ktor" }
+kotlinx-io = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinx-io" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+opentelemetry-api = { group = "io.opentelemetry", name = "opentelemetry-api", version.ref = "opentelemetry" }
+opentelemetry-context = { group = "io.opentelemetry", name = "opentelemetry-context", version.ref = "opentelemetry" }
+opentelemetry-extension-kotlin = { group = "io.opentelemetry", name = "opentelemetry-extension-kotlin", version.ref = "opentelemetry" }
+opentelemetry-semconv = { group = "io.opentelemetry.semconv", name = "opentelemetry-semconv", version.ref = "opentelemetry-semconv" }

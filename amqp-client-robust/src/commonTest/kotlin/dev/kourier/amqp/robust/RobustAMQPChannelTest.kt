@@ -1,6 +1,5 @@
 package dev.kourier.amqp.robust
 
-import dev.kaccelero.models.UUID
 import dev.kourier.amqp.AMQPException
 import dev.kourier.amqp.BuiltinExchangeType
 import dev.kourier.amqp.Field
@@ -13,6 +12,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlin.test.*
 import kotlin.time.Duration.Companion.seconds
+import kotlin.uuid.Uuid
 
 class RobustAMQPChannelTest {
 
@@ -110,7 +110,7 @@ class RobustAMQPChannelTest {
             val closeEvent = async { channel.closedResponses.first() }
             val reopenEvent = async { channel.openedResponses.first() }
 
-            val name = "test-passive-queue-${UUID()}"
+            val name = "test-passive-queue-${Uuid.random()}"
             channel.queueDeclare(name, autoDelete = true, arguments = mapOf("x-max-length" to Field.Int(1)))
             assertFailsWith<AMQPException.ChannelClosed> {
                 channel.queueDeclare(name, autoDelete = true)

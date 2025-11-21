@@ -5,7 +5,6 @@ import dev.kourier.amqp.ProtocolError
 import dev.kourier.amqp.Table
 import dev.kourier.amqp.serialization.ProtocolBinaryDecoder
 import dev.kourier.amqp.serialization.ProtocolBinaryEncoder
-import kotlinx.datetime.Instant
 import kotlinx.io.Buffer
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
@@ -16,6 +15,7 @@ import kotlinx.serialization.descriptors.StructureKind
 import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlin.time.Instant
 
 object TableSerializer : KSerializer<Table> {
 

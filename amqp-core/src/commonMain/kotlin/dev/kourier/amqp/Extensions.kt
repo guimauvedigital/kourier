@@ -1,6 +1,6 @@
 package dev.kourier.amqp
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * Creates a [Properties] using a DSL builder.

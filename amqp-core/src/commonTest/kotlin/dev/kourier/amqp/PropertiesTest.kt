@@ -1,11 +1,11 @@
 package dev.kourier.amqp
 
 import dev.kourier.amqp.serialization.ProtocolBinary
-import kotlinx.datetime.Instant
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Instant
 
 class PropertiesTest {
 

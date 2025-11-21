@@ -80,13 +80,14 @@ kotlin {
         all {
             languageSettings.apply {
                 optIn("dev.kourier.amqp.InternalAmqpApi")
+                optIn("kotlin.time.ExperimentalTime")
                 optIn("kotlin.js.ExperimentalJsExport")
             }
         }
         val commonMain by getting {
             dependencies {
-                api(libs.kaccelero.core)
                 api(libs.kotlinx.io)
+                api(libs.kotlinx.serialization.json)
             }
         }
         val commonTest by getting {

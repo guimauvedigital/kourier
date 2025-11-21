@@ -1,6 +1,6 @@
 package dev.kourier.amqp
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 sealed class Field {
 

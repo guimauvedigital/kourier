@@ -74,6 +74,7 @@ kotlin {
         all {
             languageSettings.apply {
                 optIn("dev.kourier.amqp.InternalAmqpApi")
+                optIn("kotlin.time.ExperimentalTime")
                 optIn("kotlin.js.ExperimentalJsExport")
             }
         }
