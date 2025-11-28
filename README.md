@@ -1,19 +1,19 @@
 # kourier
 
-[![License](https://img.shields.io/github/license/guimauvedigital/kourier)](LICENSE)
-[![Maven Central Version](https://img.shields.io/maven-central/v/dev.kourier/amqp-client)](https://klibs.io/project/guimauvedigital/kourier)
-[![Issues](https://img.shields.io/github/issues/guimauvedigital/kourier)]()
-[![Pull Requests](https://img.shields.io/github/issues-pr/guimauvedigital/kourier)]()
-[![codecov](https://codecov.io/github/guimauvedigital/kourier/branch/main/graph/badge.svg?token=F7K641TYFZ)](https://codecov.io/github/guimauvedigital/kourier)
-[![CodeFactor](https://www.codefactor.io/repository/github/guimauvedigital/kourier/badge)](https://www.codefactor.io/repository/github/guimauvedigital/kourier)
-[![Open Source Helpers](https://www.codetriage.com/guimauvedigital/kourier/badges/users.svg)](https://www.codetriage.com/guimauvedigital/kourier)
+[![License](https://img.shields.io/github/license/nathanfallet/kourier)](LICENSE)
+[![Maven Central Version](https://img.shields.io/maven-central/v/dev.kourier/amqp-client)](https://klibs.io/project/nathanfallet/kourier)
+[![Issues](https://img.shields.io/github/issues/nathanfallet/kourier)]()
+[![Pull Requests](https://img.shields.io/github/issues-pr/nathanfallet/kourier)]()
+[![codecov](https://codecov.io/github/nathanfallet/kourier/branch/main/graph/badge.svg?token=F7K641TYFZ)](https://codecov.io/github/nathanfallet/kourier)
+[![CodeFactor](https://www.codefactor.io/repository/github/nathanfallet/kourier/badge)](https://www.codefactor.io/repository/github/nathanfallet/kourier)
+[![Open Source Helpers](https://www.codetriage.com/nathanfallet/kourier/badges/users.svg)](https://www.codetriage.com/nathanfallet/kourier)
 
 Pure Kotlin AMQP/RabbitMQ client and protocol implementation, optimized for KMP and coroutines.
 
 * **Documentation:** [kourier.dev](https://kourier.dev)
-* **AI-generated wiki:** [deepwiki.com/guimauvedigital/kourier](https://deepwiki.com/guimauvedigital/kourier)
-* **Repository:** [github.com/guimauvedigital/kourier](https://github.com/guimauvedigital/kourier)
-* **Code coverage:** [codecov.io/github/guimauvedigital/kourier](https://codecov.io/github/guimauvedigital/kourier)
+* **AI-generated wiki:** [deepwiki.com/nathanfallet/kourier](https://deepwiki.com/nathanfallet/kourier)
+* **Repository:** [github.com/nathanfallet/kourier](https://github.com/nathanfallet/kourier)
+* **Code coverage:** [codecov.io/github/nathanfallet/kourier](https://codecov.io/github/nathanfallet/kourier)
 
 ## Motivation
 
@@ -44,7 +44,7 @@ To use kourier, add the following to your `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("dev.kourier:amqp-client:0.3.1")
+    implementation("dev.kourier:amqp-client:0.3.2")
 }
 ```
 
@@ -52,7 +52,7 @@ Or if you want the robust client with automatic recovery:
 
 ```kotlin
 dependencies {
-    implementation("dev.kourier:amqp-client-robust:0.3.1")
+    implementation("dev.kourier:amqp-client-robust:0.3.2")
 }
 ```
 
@@ -60,7 +60,7 @@ For OpenTelemetry tracing support (requires OpenTelemetry API):
 
 ```kotlin
 dependencies {
-    implementation("dev.kourier:amqp-client-opentelemetry:0.3.1")
+    implementation("dev.kourier:amqp-client-opentelemetry:0.3.2")
     implementation("io.opentelemetry:opentelemetry-api:1.44.1")
 }
 ```
@@ -175,7 +175,7 @@ More examples can be found on the [tutorial section of the documentation](https:
 
 ## Libraries using kourier
 
-- [dev.kaccelero:messaging-amqp](https://github.com/guimauvedigital/kaccelero/tree/main/messaging-amqp): AMQP/RabbitMQ
-  implementation of a messaging queue service.
+- [io.github.damirdenis-tudor:ktor-server-rabbitmq](https://github.com/DamirDenis-Tudor/ktor-server-rabbitmq): Ktor
+  plugin for RabbitMQ messaging using kourier.
 
 If you are using kourier in your library, please let us know by opening a pull request to add it to this list!
