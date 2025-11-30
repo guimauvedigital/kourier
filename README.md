@@ -1,19 +1,19 @@
 # kourier
 
-[![License](https://img.shields.io/github/license/nathanfallet/kourier)](LICENSE)
-[![Maven Central Version](https://img.shields.io/maven-central/v/dev.kourier/amqp-client)](https://klibs.io/project/nathanfallet/kourier)
-[![Issues](https://img.shields.io/github/issues/nathanfallet/kourier)]()
-[![Pull Requests](https://img.shields.io/github/issues-pr/nathanfallet/kourier)]()
-[![codecov](https://codecov.io/github/nathanfallet/kourier/branch/main/graph/badge.svg?token=F7K641TYFZ)](https://codecov.io/github/nathanfallet/kourier)
-[![CodeFactor](https://www.codefactor.io/repository/github/nathanfallet/kourier/badge)](https://www.codefactor.io/repository/github/nathanfallet/kourier)
-[![Open Source Helpers](https://www.codetriage.com/nathanfallet/kourier/badges/users.svg)](https://www.codetriage.com/nathanfallet/kourier)
+[![License](https://img.shields.io/github/license/kourier-amqp/kourier)](LICENSE)
+[![Maven Central Version](https://img.shields.io/maven-central/v/dev.kourier/amqp-client)](https://klibs.io/project/kourier-amqp/kourier)
+[![Issues](https://img.shields.io/github/issues/kourier-amqp/kourier)]()
+[![Pull Requests](https://img.shields.io/github/issues-pr/kourier-amqp/kourier)]()
+[![codecov](https://codecov.io/github/kourier-amqp/kourier/branch/main/graph/badge.svg?token=F7K641TYFZ)](https://codecov.io/github/kourier-amqp/kourier)
+[![CodeFactor](https://www.codefactor.io/repository/github/kourier-amqp/kourier/badge)](https://www.codefactor.io/repository/github/kourier-amqp/kourier)
+[![Open Source Helpers](https://www.codetriage.com/kourier-amqp/kourier/badges/users.svg)](https://www.codetriage.com/kourier-amqp/kourier)
 
 Pure Kotlin AMQP/RabbitMQ client and protocol implementation, optimized for KMP and coroutines.
 
 * **Documentation:** [kourier.dev](https://kourier.dev)
-* **AI-generated wiki:** [deepwiki.com/nathanfallet/kourier](https://deepwiki.com/nathanfallet/kourier)
-* **Repository:** [github.com/nathanfallet/kourier](https://github.com/nathanfallet/kourier)
-* **Code coverage:** [codecov.io/github/nathanfallet/kourier](https://codecov.io/github/nathanfallet/kourier)
+* **AI-generated wiki:** [deepwiki.com/kourier-amqp/kourier](https://deepwiki.com/kourier-amqp/kourier)
+* **Repository:** [github.com/kourier-amqp/kourier](https://github.com/kourier-amqp/kourier)
+* **Code coverage:** [codecov.io/github/kourier-amqp/kourier](https://codecov.io/github/kourier-amqp/kourier)
 
 ## Motivation
 
@@ -44,7 +44,7 @@ To use kourier, add the following to your `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("dev.kourier:amqp-client:0.3.2")
+    implementation("dev.kourier:amqp-client:0.3.3")
 }
 ```
 
@@ -52,7 +52,7 @@ Or if you want the robust client with automatic recovery:
 
 ```kotlin
 dependencies {
-    implementation("dev.kourier:amqp-client-robust:0.3.2")
+    implementation("dev.kourier:amqp-client-robust:0.3.3")
 }
 ```
 
@@ -60,7 +60,7 @@ For OpenTelemetry tracing support (requires OpenTelemetry API):
 
 ```kotlin
 dependencies {
-    implementation("dev.kourier:amqp-client-opentelemetry:0.3.2")
+    implementation("dev.kourier:amqp-client-opentelemetry:0.3.3")
     implementation("io.opentelemetry:opentelemetry-api:1.44.1")
 }
 ```
