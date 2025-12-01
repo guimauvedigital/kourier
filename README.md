@@ -1,4 +1,8 @@
-# kourier
+# Kourier — Kotlin RabbitMQ Client
+
+The **Kotlin RabbitMQ client** built from scratch. Pure Kotlin AMQP 0-9-1 implementation with native coroutines support,
+Kotlin Multiplatform compatibility, and automatic reconnection. Not a Java client wrapper. A complete protocol
+implementation.
 
 [![License](https://img.shields.io/github/license/kourier-amqp/kourier)](LICENSE)
 [![Maven Central Version](https://img.shields.io/maven-central/v/dev.kourier/amqp-client)](https://klibs.io/project/kourier-amqp/kourier)
@@ -7,8 +11,6 @@
 [![codecov](https://codecov.io/github/kourier-amqp/kourier/branch/main/graph/badge.svg?token=F7K641TYFZ)](https://codecov.io/github/kourier-amqp/kourier)
 [![CodeFactor](https://www.codefactor.io/repository/github/kourier-amqp/kourier/badge)](https://www.codefactor.io/repository/github/kourier-amqp/kourier)
 [![Open Source Helpers](https://www.codetriage.com/kourier-amqp/kourier/badges/users.svg)](https://www.codetriage.com/kourier-amqp/kourier)
-
-Pure Kotlin AMQP/RabbitMQ client and protocol implementation, optimized for KMP and coroutines.
 
 * **Documentation:** [kourier.dev](https://kourier.dev)
 * **AI-generated wiki:** [deepwiki.com/kourier-amqp/kourier](https://deepwiki.com/kourier-amqp/kourier)
