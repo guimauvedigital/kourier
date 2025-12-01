@@ -1,4 +1,4 @@
-# Kourier — Kotlin RabbitMQ Client
+# Kourier - Kotlin RabbitMQ Client
 
 The **Kotlin RabbitMQ client** built from scratch. Pure Kotlin AMQP 0-9-1 implementation with native coroutines support,
 Kotlin Multiplatform compatibility, and automatic reconnection. Not a Java client wrapper. A complete protocol
