@@ -4,6 +4,60 @@ import dev.kourier.amqp.AMQPResponse
 import dev.kourier.amqp.states.*
 
 /**
+ * Binds an exchange using a [BoundExchange] instance.
+ *
+ * @param boundExchange The [BoundExchange] instance containing the exchange binding properties.
+ *
+ * @return The bound exchange response.
+ */
+suspend fun AMQPChannel.exchangeBind(boundExchange: BoundExchange): AMQPResponse.Channel.Exchange.Bound {
+    return this.exchangeBind(
+        destination = boundExchange.destination,
+        source = boundExchange.source,
+        routingKey = boundExchange.routingKey,
+        arguments = boundExchange.arguments
+    )
+}
+
+/**
+ * Binds an exchange using a [BoundExchangeBuilder] block.
+ *
+ * @param block The block to configure the [BoundExchangeBuilder].
+ *
+ * @return The bound exchange response.
+ */
+suspend fun AMQPChannel.exchangeBind(block: BoundExchangeBuilder.() -> Unit): AMQPResponse.Channel.Exchange.Bound {
+    return this.exchangeBind(boundExchange(block))
+}
+
+/**
+ * Binds a queue using a [BoundQueue] instance.
+ *
+ * @param boundQueue The [BoundQueue] instance containing the queue binding properties.
+ *
+ * @return The bound queue response.
+ */
+suspend fun AMQPChannel.queueBind(boundQueue: BoundQueue): AMQPResponse.Channel.Queue.Bound {
+    return this.queueBind(
+        queue = boundQueue.queue,
+        exchange = boundQueue.exchange,
+        routingKey = boundQueue.routingKey,
+        arguments = boundQueue.arguments
+    )
+}
+
+/**
+ * Binds a queue using a [BoundQueueBuilder] block.
+ *
+ * @param block The block to configure the [BoundQueueBuilder].
+ *
+ * @return The bound queue response.
+ */
+suspend fun AMQPChannel.queueBind(block: BoundQueueBuilder.() -> Unit): AMQPResponse.Channel.Queue.Bound {
+    return this.queueBind(boundQueue(block))
+}
+
+/**
  * Declares an exchange using a [DeclaredExchange] instance.
  *
  * @param declaredExchange The [DeclaredExchange] instance containing the exchange properties.

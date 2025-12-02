@@ -1,10 +1,7 @@
 package dev.kourier.amqp.robust
 
 import dev.kourier.amqp.*
-import dev.kourier.amqp.channel.DefaultAMQPChannel
-import dev.kourier.amqp.channel.basicQos
-import dev.kourier.amqp.channel.exchangeDeclare
-import dev.kourier.amqp.channel.queueDeclare
+import dev.kourier.amqp.channel.*
 import dev.kourier.amqp.connection.ConnectionState
 import dev.kourier.amqp.states.*
 import kotlinx.coroutines.CompletableDeferred
@@ -40,22 +37,8 @@ open class RobustAMQPChannel(
             declaredQos?.let { basicQos(it) }
             declaredExchanges.values.forEach { exchangeDeclare(it) }
             declaredQueues.values.forEach { queueDeclare(it) }
-            boundExchanges.values.forEach {
-                exchangeBind(
-                    destination = it.destination,
-                    source = it.source,
-                    routingKey = it.routingKey,
-                    arguments = it.arguments
-                )
-            }
-            boundQueues.values.forEach {
-                queueBind(
-                    queue = it.queue,
-                    exchange = it.exchange,
-                    routingKey = it.routingKey,
-                    arguments = it.arguments
-                )
-            }
+            boundExchanges.values.forEach { exchangeBind(it) }
+            boundQueues.values.forEach { queueBind(it) }
             consumedQueues.values.forEach { consumedQueue ->
                 basicConsume(
                     queue = consumedQueue.queue,
