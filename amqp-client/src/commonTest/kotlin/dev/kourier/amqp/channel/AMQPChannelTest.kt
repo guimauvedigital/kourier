@@ -26,10 +26,17 @@ class AMQPChannelTest {
     fun testQueue() = withConnection { connection ->
         val channel = connection.openChannel()
 
-        val queueDeclare = channel.queueDeclare("test", durable = false)
+        val queueDeclare = channel.queueDeclare {
+            name = "test"
+            durable = false
+        }
         assertEquals("test", queueDeclare.queueName)
 
-        channel.queueBind("test", "amq.topic", "test")
+        channel.queueBind {
+            queue = "test"
+            exchange = "amq.topic"
+            routingKey = "test"
+        }
         channel.queueUnbind("test", "amq.topic", "test")
 
         channel.queuePurge("test")
@@ -59,10 +66,20 @@ class AMQPChannelTest {
     fun testExchange() = withConnection { connection ->
         val channel = connection.openChannel()
 
-        channel.exchangeDeclare("test1", BuiltinExchangeType.TOPIC)
-        channel.exchangeDeclare("test2", BuiltinExchangeType.TOPIC)
+        channel.exchangeDeclare {
+            name = "test1"
+            type = BuiltinExchangeType.TOPIC
+        }
+        channel.exchangeDeclare {
+            name = "test2"
+            type = BuiltinExchangeType.TOPIC
+        }
 
-        channel.exchangeBind("test1", "test2", "test")
+        channel.exchangeBind {
+            destination = "test1"
+            source = "test2"
+            routingKey = "test"
+        }
         channel.exchangeUnbind("test1", "test2", "test")
 
         channel.exchangeDelete("test1")
@@ -92,7 +109,10 @@ class AMQPChannelTest {
     fun testBasicPublish() = withConnection { connection ->
         val channel = connection.openChannel()
 
-        channel.queueDeclare("test", durable = true)
+        channel.queueDeclare {
+            name = "test"
+            durable = true
+        }
 
         val body = "{}".toByteArray()
 
@@ -112,7 +132,10 @@ class AMQPChannelTest {
         val channel = connection.openChannel()
         val frameMax = (channel as DefaultAMQPChannel).frameMax.toInt()
 
-        channel.queueDeclare("test_framemax", durable = true)
+        channel.queueDeclare {
+            name = "test_framemax"
+            durable = true
+        }
 
         val body = ByteArray(frameMax) { 'A'.code.toByte() }
         channel.basicPublish(body = body, exchange = "", routingKey = "test_framemax")
@@ -130,7 +153,10 @@ class AMQPChannelTest {
         val channel = connection.openChannel()
         val frameMax = (channel as DefaultAMQPChannel).frameMax.toInt()
 
-        channel.queueDeclare("test_framemax", durable = true)
+        channel.queueDeclare {
+            name = "test_framemax"
+            durable = true
+        }
 
         val body = ByteArray(frameMax - 1) { 'A'.code.toByte() }
         channel.basicPublish(body = body, exchange = "", routingKey = "test_framemax")
@@ -148,7 +174,10 @@ class AMQPChannelTest {
         val channel = connection.openChannel()
         val frameMax = (channel as DefaultAMQPChannel).frameMax.toInt()
 
-        channel.queueDeclare("test_framemax", durable = true)
+        channel.queueDeclare {
+            name = "test_framemax"
+            durable = true
+        }
 
         val body = ByteArray(frameMax + 1) { 'A'.code.toByte() }
         channel.basicPublish(body = body, exchange = "", routingKey = "test_framemax")
@@ -166,7 +195,10 @@ class AMQPChannelTest {
         val channel = connection.openChannel()
         val frameMax = (channel as DefaultAMQPChannel).frameMax.toInt()
 
-        channel.queueDeclare("test_framemax", durable = true)
+        channel.queueDeclare {
+            name = "test_framemax"
+            durable = true
+        }
 
         val body = ByteArray(2 * frameMax) { 'A'.code.toByte() }
         channel.basicPublish(body = body, exchange = "", routingKey = "test_framemax")
@@ -184,7 +216,10 @@ class AMQPChannelTest {
         val channel = connection.openChannel()
         val frameMax = (channel as DefaultAMQPChannel).frameMax.toInt()
 
-        channel.queueDeclare("test_framemax", durable = true)
+        channel.queueDeclare {
+            name = "test_framemax"
+            durable = true
+        }
 
         val body = ByteArray(2 * frameMax - 1) { 'A'.code.toByte() }
         channel.basicPublish(body = body, exchange = "", routingKey = "test_framemax")
@@ -202,7 +237,10 @@ class AMQPChannelTest {
         val channel = connection.openChannel()
         val frameMax = (channel as DefaultAMQPChannel).frameMax.toInt()
 
-        channel.queueDeclare("test_framemax", durable = true)
+        channel.queueDeclare {
+            name = "test_framemax"
+            durable = true
+        }
 
         val body = ByteArray(2 * frameMax + 1) { 'A'.code.toByte() }
         channel.basicPublish(body = body, exchange = "", routingKey = "test_framemax")
@@ -219,7 +257,10 @@ class AMQPChannelTest {
     fun testBasicGet() = withConnection { connection ->
         val channel = connection.openChannel()
 
-        channel.queueDeclare("test", durable = true)
+        channel.queueDeclare {
+            name = "test"
+            durable = true
+        }
 
         val body = "{}".toByteArray()
         val properties = Properties(
@@ -255,7 +296,10 @@ class AMQPChannelTest {
     fun testBasicGetWithZeroBytesPayload() = withConnection { connection ->
         val channel = connection.openChannel()
 
-        channel.queueDeclare("test", durable = true)
+        channel.queueDeclare {
+            name = "test"
+            durable = true
+        }
 
         val body = "".toByteArray()
         channel.basicPublish(body = body, exchange = "", routingKey = "test")
@@ -275,7 +319,10 @@ class AMQPChannelTest {
     fun testBasicGetEmpty() = withConnection { connection ->
         val channel = connection.openChannel()
 
-        channel.queueDeclare("test", durable = true)
+        channel.queueDeclare {
+            name = "test"
+            durable = true
+        }
 
         val result = channel.basicGet("test")
         assertEquals(null, result.message)
@@ -314,8 +361,14 @@ class AMQPChannelTest {
     fun testBasicQos() = withConnection { connection ->
         val channel = connection.openChannel()
 
-        channel.basicQos(count = 100u, global = true)
-        channel.basicQos(count = 100u, global = false)
+        channel.basicQos {
+            count = 100u
+            global = true
+        }
+        channel.basicQos {
+            count = 100u
+            global = false
+        }
 
         channel.close()
     }
@@ -324,7 +377,10 @@ class AMQPChannelTest {
     fun testConsumeConfirms() = withConnection { connection ->
         val channel = connection.openChannel()
 
-        channel.queueDeclare("test", durable = true)
+        channel.queueDeclare {
+            name = "test"
+            durable = true
+        }
 
         val body = "{}".toByteArray()
 
@@ -368,7 +424,10 @@ class AMQPChannelTest {
         withConnection { connection ->
             val channel = connection.openChannel()
 
-            channel.queueDeclare("test_publish", durable = true)
+            channel.queueDeclare {
+                name = "test_publish"
+                durable = true
+            }
 
             val body = "{}".toByteArray()
 
@@ -405,7 +464,10 @@ class AMQPChannelTest {
     @Test
     fun testBasicConsumeManualCancel() = withConnection { connection ->
         val channel = connection.openChannel()
-        channel.queueDeclare("test_consume", durable = true)
+        channel.queueDeclare {
+            name = "test_consume"
+            durable = true
+        }
 
         val body = "{}".toByteArray()
         repeat(100) {
@@ -436,7 +498,10 @@ class AMQPChannelTest {
     @Test
     fun testBasicConsumeManualCancelFromReceiveChannel() = withConnection { connection ->
         val channel = connection.openChannel()
-        channel.queueDeclare("test_consume", durable = true)
+        channel.queueDeclare {
+            name = "test_consume"
+            durable = true
+        }
 
         val body = "{}".toByteArray()
         repeat(100) {
@@ -475,7 +540,11 @@ class AMQPChannelTest {
         repeat(1001) { run ->
             val queueName = "temp_queue_$run"
             val channel = connection.openChannel()
-            channel.queueDeclare(name = queueName, durable = false, exclusive = true)
+            channel.queueDeclare {
+                name = queueName
+                durable = false
+                exclusive = true
+            }
 
             val receiveChannel = channel.basicConsume(queue = queueName)
             channel.basicPublish(body = "baz".toByteArray(), exchange = "", routingKey = queueName)
@@ -497,8 +566,14 @@ class AMQPChannelTest {
 
             // Create channel with prefetchCount > 1
             val channel = connection.openChannel()
-            channel.queueDeclare(queueName, durable = false, exclusive = true)
-            channel.basicQos(count = 10u)
+            channel.queueDeclare {
+                name = queueName
+                durable = false
+                exclusive = true
+            }
+            channel.basicQos {
+                count = 10u
+            }
 
             // Track message processing
             val processedMessages = mutableSetOf<Int>()
@@ -566,8 +641,14 @@ class AMQPChannelTest {
 
             // Create channel
             val channel = connection.openChannel()
-            channel.queueDeclare(queueName, durable = false, exclusive = true)
-            channel.basicQos(count = 10u)
+            channel.queueDeclare {
+                name = queueName
+                durable = false
+                exclusive = true
+            }
+            channel.basicQos {
+                count = 10u
+            }
 
             // Track message processing
             val processedMessages = mutableSetOf<Int>()
