@@ -2,6 +2,9 @@ package dev.kourier.amqp.robust
 
 import dev.kourier.amqp.*
 import dev.kourier.amqp.channel.DefaultAMQPChannel
+import dev.kourier.amqp.channel.basicQos
+import dev.kourier.amqp.channel.exchangeDeclare
+import dev.kourier.amqp.channel.queueDeclare
 import dev.kourier.amqp.connection.ConnectionState
 import dev.kourier.amqp.states.*
 import kotlinx.coroutines.CompletableDeferred
@@ -34,31 +37,9 @@ open class RobustAMQPChannel(
         try {
             open()
 
-            declaredQos?.let {
-                basicQos(
-                    count = it.count,
-                    global = it.global
-                )
-            }
-            declaredExchanges.values.forEach {
-                exchangeDeclare(
-                    name = it.name,
-                    type = it.type,
-                    durable = it.durable,
-                    autoDelete = it.autoDelete,
-                    internal = it.internal,
-                    arguments = it.arguments
-                )
-            }
-            declaredQueues.values.forEach {
-                queueDeclare(
-                    name = it.name,
-                    durable = it.durable,
-                    exclusive = it.exclusive,
-                    autoDelete = it.autoDelete,
-                    arguments = it.arguments
-                )
-            }
+            declaredQos?.let { basicQos(it) }
+            declaredExchanges.values.forEach { exchangeDeclare(it) }
+            declaredQueues.values.forEach { queueDeclare(it) }
             boundExchanges.values.forEach {
                 exchangeBind(
                     destination = it.destination,
