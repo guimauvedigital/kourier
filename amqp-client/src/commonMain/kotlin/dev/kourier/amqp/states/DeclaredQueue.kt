@@ -1,12 +1,11 @@
-package dev.kourier.amqp.robust.states
+package dev.kourier.amqp.states
 
 import dev.kourier.amqp.Table
 
-data class DeclaredExchange(
+data class DeclaredQueue(
     val name: String,
-    val type: String,
     val durable: Boolean,
+    val exclusive: Boolean,
     val autoDelete: Boolean,
-    val internal: Boolean,
     val arguments: Table,
 )

@@ -3,7 +3,7 @@ package dev.kourier.amqp.robust
 import dev.kourier.amqp.*
 import dev.kourier.amqp.channel.DefaultAMQPChannel
 import dev.kourier.amqp.connection.ConnectionState
-import dev.kourier.amqp.robust.states.*
+import dev.kourier.amqp.states.*
 import kotlinx.coroutines.CompletableDeferred
 
 open class RobustAMQPChannel(
