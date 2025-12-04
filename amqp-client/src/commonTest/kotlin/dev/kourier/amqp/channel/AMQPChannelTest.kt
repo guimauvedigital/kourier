@@ -37,10 +37,18 @@ class AMQPChannelTest {
             exchange = "amq.topic"
             routingKey = "test"
         }
-        channel.queueUnbind("test", "amq.topic", "test")
+        channel.queueUnbind {
+            queue = "test"
+            exchange = "amq.topic"
+            routingKey = "test"
+        }
 
-        channel.queuePurge("test")
-        channel.queueDelete("test")
+        channel.queuePurge {
+            name = "test"
+        }
+        channel.queueDelete {
+            name = "test"
+        }
 
         channel.close()
     }
@@ -49,15 +57,21 @@ class AMQPChannelTest {
     fun testQueueDeclarePassive() = withConnection { connection ->
         val passiveChannel = connection.openChannel()
         val exception = assertFailsWith<AMQPException.ChannelClosed> {
-            passiveChannel.queueDeclarePassive("test")
+            passiveChannel.queueDeclarePassive {
+                name = "test"
+            }
         }
         assertEquals(404u, exception.replyCode)
 
         val channel = connection.openChannel()
         channel.queueDeclare("test")
-        channel.queueDeclarePassive("test")
+        channel.queueDeclarePassive {
+            name = "test"
+        }
 
-        channel.queueDelete("test")
+        channel.queueDelete {
+            name = "test"
+        }
 
         channel.close()
     }
@@ -80,10 +94,18 @@ class AMQPChannelTest {
             source = "test2"
             routingKey = "test"
         }
-        channel.exchangeUnbind("test1", "test2", "test")
+        channel.exchangeUnbind {
+            destination = "test1"
+            source = "test2"
+            routingKey = "test"
+        }
 
-        channel.exchangeDelete("test1")
-        channel.exchangeDelete("test2")
+        channel.exchangeDelete {
+            name = "test1"
+        }
+        channel.exchangeDelete {
+            name = "test2"
+        }
 
         channel.close()
     }
@@ -92,15 +114,21 @@ class AMQPChannelTest {
     fun testExchangeDeclarePassive() = withConnection { connection ->
         val passiveChannel = connection.openChannel()
         val exception = assertFailsWith<AMQPException.ChannelClosed> {
-            passiveChannel.exchangeDeclarePassive("test")
+            passiveChannel.exchangeDeclarePassive {
+                name = "test"
+            }
         }
         assertEquals(404u, exception.replyCode)
 
         val channel = connection.openChannel()
         channel.exchangeDeclare("test", BuiltinExchangeType.TOPIC)
-        channel.exchangeDeclarePassive("test")
+        channel.exchangeDeclarePassive {
+            name = "test"
+        }
 
-        channel.exchangeDelete("test")
+        channel.exchangeDelete {
+            name = "test"
+        }
 
         channel.close()
     }
@@ -116,13 +144,19 @@ class AMQPChannelTest {
 
         val body = "{}".toByteArray()
 
-        val result = channel.basicPublish(body = body, exchange = "", routingKey = "test")
+        val result = channel.basicPublish {
+            this.body = body
+            exchange = ""
+            routingKey = "test"
+        }
         assertEquals(0u, result.deliveryTag)
 
         val messageCount = channel.messageCount("test")
         assertEquals(1u, messageCount)
 
-        channel.queueDelete("test")
+        channel.queueDelete {
+            name = "test"
+        }
 
         channel.close()
     }
@@ -138,13 +172,21 @@ class AMQPChannelTest {
         }
 
         val body = ByteArray(frameMax) { 'A'.code.toByte() }
-        channel.basicPublish(body = body, exchange = "", routingKey = "test_framemax")
+        channel.basicPublish {
+            this.body = body
+            exchange = ""
+            routingKey = "test_framemax"
+        }
 
-        val msg = channel.basicGet("test_framemax")
+        val msg = channel.basicGet {
+            queue = "test_framemax"
+        }
         assertNotNull(msg.message)
         assertEquals(frameMax, msg.message.body.size)
 
-        channel.queueDelete("test_framemax")
+        channel.queueDelete {
+            name = "test_framemax"
+        }
         channel.close()
     }
 
@@ -159,13 +201,21 @@ class AMQPChannelTest {
         }
 
         val body = ByteArray(frameMax - 1) { 'A'.code.toByte() }
-        channel.basicPublish(body = body, exchange = "", routingKey = "test_framemax")
+        channel.basicPublish {
+            this.body = body
+            exchange = ""
+            routingKey = "test_framemax"
+        }
 
-        val msg = channel.basicGet("test_framemax")
+        val msg = channel.basicGet {
+            queue = "test_framemax"
+        }
         assertNotNull(msg.message)
         assertEquals(frameMax - 1, msg.message.body.size)
 
-        channel.queueDelete("test_framemax")
+        channel.queueDelete {
+            name = "test_framemax"
+        }
         channel.close()
     }
 
@@ -180,13 +230,21 @@ class AMQPChannelTest {
         }
 
         val body = ByteArray(frameMax + 1) { 'A'.code.toByte() }
-        channel.basicPublish(body = body, exchange = "", routingKey = "test_framemax")
+        channel.basicPublish {
+            this.body = body
+            exchange = ""
+            routingKey = "test_framemax"
+        }
 
-        val msg = channel.basicGet("test_framemax")
+        val msg = channel.basicGet {
+            queue = "test_framemax"
+        }
         assertNotNull(msg.message)
         assertEquals(frameMax + 1, msg.message.body.size)
 
-        channel.queueDelete("test_framemax")
+        channel.queueDelete {
+            name = "test_framemax"
+        }
         channel.close()
     }
 
@@ -201,13 +259,21 @@ class AMQPChannelTest {
         }
 
         val body = ByteArray(2 * frameMax) { 'A'.code.toByte() }
-        channel.basicPublish(body = body, exchange = "", routingKey = "test_framemax")
+        channel.basicPublish {
+            this.body = body
+            exchange = ""
+            routingKey = "test_framemax"
+        }
 
-        val msg = channel.basicGet("test_framemax")
+        val msg = channel.basicGet {
+            queue = "test_framemax"
+        }
         assertNotNull(msg.message)
         assertEquals(2 * frameMax, msg.message.body.size)
 
-        channel.queueDelete("test_framemax")
+        channel.queueDelete {
+            name = "test_framemax"
+        }
         channel.close()
     }
 
@@ -222,13 +288,21 @@ class AMQPChannelTest {
         }
 
         val body = ByteArray(2 * frameMax - 1) { 'A'.code.toByte() }
-        channel.basicPublish(body = body, exchange = "", routingKey = "test_framemax")
+        channel.basicPublish {
+            this.body = body
+            exchange = ""
+            routingKey = "test_framemax"
+        }
 
-        val msg = channel.basicGet("test_framemax")
+        val msg = channel.basicGet {
+            queue = "test_framemax"
+        }
         assertNotNull(msg.message)
         assertEquals(2 * frameMax - 1, msg.message.body.size)
 
-        channel.queueDelete("test_framemax")
+        channel.queueDelete {
+            name = "test_framemax"
+        }
         channel.close()
     }
 
@@ -243,13 +317,21 @@ class AMQPChannelTest {
         }
 
         val body = ByteArray(2 * frameMax + 1) { 'A'.code.toByte() }
-        channel.basicPublish(body = body, exchange = "", routingKey = "test_framemax")
+        channel.basicPublish {
+            this.body = body
+            exchange = ""
+            routingKey = "test_framemax"
+        }
 
-        val msg = channel.basicGet("test_framemax")
+        val msg = channel.basicGet {
+            queue = "test_framemax"
+        }
         assertNotNull(msg.message)
         assertEquals(2 * frameMax + 1, msg.message.body.size)
 
-        channel.queueDelete("test_framemax")
+        channel.queueDelete {
+            name = "test_framemax"
+        }
         channel.close()
     }
 
@@ -278,16 +360,25 @@ class AMQPChannelTest {
             userId = "guest",
             appId = "appID"
         )
-        channel.basicPublish(body = body, exchange = "", routingKey = "test", properties = properties)
+        channel.basicPublish {
+            this.body = body
+            exchange = ""
+            routingKey = "test"
+            this.properties = properties
+        }
 
-        val msg = channel.basicGet("test")
+        val msg = channel.basicGet {
+            queue = "test"
+        }
         assertNotNull(msg.message)
 
         assertEquals(0u, msg.messageCount)
         assertEquals("{}", msg.message.body.decodeToString())
         assertEquals(properties, msg.message.properties)
 
-        channel.queueDelete("test")
+        channel.queueDelete {
+            name = "test"
+        }
 
         channel.close()
     }
@@ -302,15 +393,23 @@ class AMQPChannelTest {
         }
 
         val body = "".toByteArray()
-        channel.basicPublish(body = body, exchange = "", routingKey = "test")
+        channel.basicPublish {
+            this.body = body
+            exchange = ""
+            routingKey = "test"
+        }
 
-        val msg = channel.basicGet("test")
+        val msg = channel.basicGet {
+            queue = "test"
+        }
         assertNotNull(msg.message)
 
         assertEquals(0u, msg.messageCount)
         assertEquals("", msg.message.body.decodeToString())
 
-        channel.queueDelete("test")
+        channel.queueDelete {
+            name = "test"
+        }
 
         channel.close()
     }
@@ -324,11 +423,15 @@ class AMQPChannelTest {
             durable = true
         }
 
-        val result = channel.basicGet("test")
+        val result = channel.basicGet {
+            queue = "test"
+        }
         assertEquals(null, result.message)
         assertEquals(0u, result.messageCount)
 
-        channel.queueDelete("test")
+        channel.queueDelete {
+            name = "test"
+        }
 
         channel.close()
     }
@@ -336,24 +439,26 @@ class AMQPChannelTest {
     @Test
     fun testBasicTx() = withConnection { connection ->
         val channel = connection.openChannel()
-        channel.txSelect()
-        channel.txCommit()
-        channel.txRollback()
+        channel.txSelect {}
+        channel.txCommit {}
+        channel.txRollback {}
         channel.close()
     }
 
     @Test
     fun testConfirm() = withConnection { connection ->
         val channel = connection.openChannel()
-        channel.confirmSelect()
-        channel.confirmSelect()
+        channel.confirmSelect {}
+        channel.confirmSelect {}
         channel.close()
     }
 
     @Test
     fun testFlow() = withConnection { connection ->
         val channel = connection.openChannel()
-        channel.flow(active = true)
+        channel.flow {
+            active = true
+        }
         channel.close()
     }
 
@@ -385,36 +490,57 @@ class AMQPChannelTest {
         val body = "{}".toByteArray()
 
         repeat(6) {
-            channel.basicPublish(body = body, exchange = "", routingKey = "test", properties = Properties())
+            channel.basicPublish {
+                this.body = body
+                exchange = ""
+                routingKey = "test"
+                properties = Properties()
+            }
         }
 
         run {
-            val msg = channel.basicGet("test").message ?: kotlin.test.fail()
+            val msg = channel.basicGet {
+                queue = "test"
+            }.message ?: kotlin.test.fail()
             channel.basicAck(msg.deliveryTag)
 
-            val msg2 = channel.basicGet("test").message ?: kotlin.test.fail()
+            val msg2 = channel.basicGet {
+                queue = "test"
+            }.message ?: kotlin.test.fail()
             channel.basicAck(msg2)
         }
 
         run {
-            val msg = channel.basicGet("test").message ?: kotlin.test.fail()
+            val msg = channel.basicGet {
+                queue = "test"
+            }.message ?: kotlin.test.fail()
             channel.basicNack(msg.deliveryTag)
 
-            val msg2 = channel.basicGet("test").message ?: kotlin.test.fail()
+            val msg2 = channel.basicGet {
+                queue = "test"
+            }.message ?: kotlin.test.fail()
             channel.basicNack(msg2)
         }
 
         run {
-            val msg = channel.basicGet("test").message ?: kotlin.test.fail()
+            val msg = channel.basicGet {
+                queue = "test"
+            }.message ?: kotlin.test.fail()
             channel.basicReject(msg.deliveryTag)
 
-            val msg2 = channel.basicGet("test").message ?: kotlin.test.fail()
+            val msg2 = channel.basicGet {
+                queue = "test"
+            }.message ?: kotlin.test.fail()
             channel.basicReject(msg2)
         }
 
-        channel.basicRecover(requeue = true)
+        channel.basicRecover {
+            requeue = true
+        }
 
-        channel.queueDelete("test")
+        channel.queueDelete {
+            name = "test"
+        }
 
         channel.close()
     }
@@ -431,7 +557,7 @@ class AMQPChannelTest {
 
             val body = "{}".toByteArray()
 
-            channel.confirmSelect()
+            channel.confirmSelect {}
 
             val confirmJob = launch {
                 val mutex = Mutex()
@@ -445,18 +571,26 @@ class AMQPChannelTest {
             }
 
             for (i in 1..100) {
-                val result = channel.basicPublish(body = body, exchange = "", routingKey = "test_publish")
+                val result = channel.basicPublish {
+                    this.body = body
+                    exchange = ""
+                    routingKey = "test_publish"
+                }
                 assertEquals(i.toULong(), result.deliveryTag)
             }
 
             repeat(100) {
-                val result = channel.basicGet("test_publish")
+                val result = channel.basicGet {
+                    queue = "test_publish"
+                }
                 channel.basicAck(result.message ?: kotlin.test.fail("No message received"))
             }
 
             confirmJob.join()
 
-            channel.queueDelete("test_publish")
+            channel.queueDelete {
+                name = "test_publish"
+            }
             channel.close()
         }
     }
@@ -471,7 +605,11 @@ class AMQPChannelTest {
 
         val body = "{}".toByteArray()
         repeat(100) {
-            channel.basicPublish(body = body, exchange = "", routingKey = "test_consume")
+            channel.basicPublish {
+                this.body = body
+                exchange = ""
+                routingKey = "test_consume"
+            }
         }
 
         val deliveryChannel = channel.basicConsume(
@@ -491,7 +629,9 @@ class AMQPChannelTest {
         }
         assertEquals(100, count)
 
-        channel.queueDelete("test_consume")
+        channel.queueDelete {
+            name = "test_consume"
+        }
         channel.close()
     }
 
@@ -505,7 +645,11 @@ class AMQPChannelTest {
 
         val body = "{}".toByteArray()
         repeat(100) {
-            channel.basicPublish(body = body, exchange = "", routingKey = "test_consume")
+            channel.basicPublish {
+                this.body = body
+                exchange = ""
+                routingKey = "test_consume"
+            }
         }
 
         val deliveryChannel = channel.basicConsume(
@@ -522,7 +666,9 @@ class AMQPChannelTest {
         }
         assertEquals(100, count)
 
-        channel.queueDelete("test_consume")
+        channel.queueDelete {
+            name = "test_consume"
+        }
         channel.close()
     }
 
@@ -547,9 +693,17 @@ class AMQPChannelTest {
             }
 
             val receiveChannel = channel.basicConsume(queue = queueName)
-            channel.basicPublish(body = "baz".toByteArray(), exchange = "", routingKey = queueName)
+            channel.basicPublish {
+                body = "baz".toByteArray()
+                exchange = ""
+                routingKey = queueName
+            }
             channel.basicConsume(queue = queueName)
-            channel.basicPublish(body = "baz".toByteArray(), exchange = "", routingKey = queueName)
+            channel.basicPublish {
+                body = "baz".toByteArray()
+                exchange = ""
+                routingKey = queueName
+            }
             channel.basicCancel(receiveChannel.consumeOk.consumerTag)
         }
     }
@@ -583,11 +737,11 @@ class AMQPChannelTest {
 
             // Publish messages first
             repeat(messageCount) { i ->
-                channel.basicPublish(
-                    body = i.toString().encodeToByteArray(),
-                    exchange = "",
+                channel.basicPublish {
+                    body = i.toString().encodeToByteArray()
+                    exchange = ""
                     routingKey = queueName
-                )
+                }
             }
 
             // Consume messages with delay
@@ -627,7 +781,9 @@ class AMQPChannelTest {
                 "Messages should process concurrently: took ${totalTime}ms, expected < ${expectedMaxTime}ms"
             )
 
-            channel.queueDelete(queueName)
+            channel.queueDelete {
+                name = queueName
+            }
             channel.close()
         }
     }
@@ -657,11 +813,11 @@ class AMQPChannelTest {
 
             // Publish messages first
             repeat(messageCount) { i ->
-                channel.basicPublish(
-                    body = i.toString().encodeToByteArray(),
-                    exchange = "",
+                channel.basicPublish {
+                    body = i.toString().encodeToByteArray()
+                    exchange = ""
                     routingKey = queueName
-                )
+                }
             }
 
             // Consume messages - throw error on message 2
@@ -707,7 +863,9 @@ class AMQPChannelTest {
                 assertTrue(processedMessages.contains(4), "Message 4 should succeed")
             }
 
-            channel.queueDelete(queueName)
+            channel.queueDelete {
+                name = queueName
+            }
             channel.close()
         }
     }
